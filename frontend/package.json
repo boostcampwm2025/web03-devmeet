@@ -10,9 +10,12 @@
     "cz": "cz"
   },
   "dependencies": {
+    "konva": "^10.0.12",
     "next": "16.0.10",
     "react": "19.2.1",
     "react-dom": "19.2.1",
+    "react-konva": "^19.2.1",
+    "use-image": "^1.1.4",
     "zustand": "^5.0.9"
   },
   "devDependencies": {

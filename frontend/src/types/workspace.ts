@@ -16,8 +16,8 @@ export interface BaseItem {
   width: number;
   height?: number;
   rotation: number;
-  scaleX?: number;
-  scaleY?: number;
+  scaleX: number;
+  scaleY: number;
   opacity?: number;
   zIndex?: number;
   isLocked?: boolean;

@@ -30,7 +30,7 @@ jobs:
       # nodejs를 설정합니다.
       # pnpm-lock.yaml이 이 전역 cache를 참고하도록 한다.
       - name: nodejs 설정
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: "pnpm"

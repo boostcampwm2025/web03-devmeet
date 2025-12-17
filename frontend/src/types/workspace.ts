@@ -36,6 +36,7 @@ export interface TextItem extends BaseItem {
   fontStyle: FontStyle;
   textDecoration: string;
   align: TextAlign;
+  wrap: string;
   lineHeight?: number;
   letterSpacing?: number;
   stroke?: string;

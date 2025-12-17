@@ -167,7 +167,7 @@ export class JwtAccessTokenIssuer extends TokenIssuer {
       ];
       const issuer: string = this.config.get<string>(
         'NODE_APP_JWT_ISSUE_NAME',
-        'issure',
+        'issuer',
       );
       const audience: string = this.config.get<string>(
         'NODE_APP_JWT_AUDIENCE_NAME',

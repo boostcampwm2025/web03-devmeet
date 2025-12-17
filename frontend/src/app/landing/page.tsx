@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, useSpring } from 'framer-motion';
+import { motion, useSpring } from 'framer-motion';
 import CardItem from '@/components/card/CardItem';
 import { useMotionValue } from 'framer-motion';
 import { useState } from 'react';
@@ -13,34 +14,37 @@ const CARDS = Array.from({ length: VISIBLE_COUNT }, (_, i) => ({
 }));
 
 export default function LandingPage() {
-  return (
-    <main className="flex min-h-screen items-center justify-center">
-      <div className="flex w-full max-w-90 flex-col gap-16 px-6 py-4">
-        <section
-          className="flex flex-col items-center gap-8"
-          aria-labelledby="start-meeting-title"
-        >
-          <h2
-            id="start-meeting-title"
-            className="text-2xl font-bold text-neutral-900"
-          >
-            새 회의 시작
-          </h2>
-          <Button>시작하기</Button>
-        </section>
+  const rawRotation = useMotionValue(0); // 전역 회전값
 
-        {/* 구분선 */}
-        <div
-          className="flex w-full items-center gap-4 text-neutral-500"
-          aria-hidden
-        >
-          <span className="h-px flex-1 bg-neutral-500" />
-          <span className="text-sm font-bold">또는</span>
-          <span className="h-px flex-1 bg-neutral-500" />
-        </div>
+  /** 스프링기반 부드러운 로테이션 주기
+   * stiffness 낮을수록 → 더 부드러움
+   * damping 낮을수록 → 더 말랑
+   * 보통 damping 20~24
+   */
+  const smoothRotation = useSpring(rawRotation, {
+    stiffness: 120,
+    damping: 22,
+    mass: 0.9,
+  });
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  return (
+    <main className="relative h-screen w-screen overflow-hidden bg-[#9E3B34]">
+      {/* 랜딩 타이틀 */}
+      <div className="absolute top-24 w-full text-center text-white">
+        <h1 className="text-[36px] leading-snug font-semibold">
+          새로운 시작이 될
+          <br />
+          카드를 골라보세요
+        </h1>
+      </div>
 
       {/* 카드 영역 */}
       <motion.div
+        className="absolute -bottom-210 left-1/2 -translate-x-1/2"
+        drag="x"
         className="absolute -bottom-210 left-1/2 -translate-x-1/2"
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}

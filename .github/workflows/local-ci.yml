@@ -1,0 +1,103 @@
+name: local에서 CI가 실행 중 일때
+
+# dev, main 브런치에 push, pull_request 할때는 이 과정이 생략됩니다. 
+on:
+  push:
+    branches-ignore:
+      - main
+      - dev
+  pull_request:
+    branches-ignore:
+      - main
+      - dev
+
+# 같은 브런치에서는 기존에 것에 바로 push 하면 전에 것을 멈춥니다.
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 백엔드는 단위테스트 + 통합테스트 진행 후 -> docker build -> docker 백엔드 통합테스트를 진행합니다.
+  backend-test:
+    name: jest를 활용한 백엔드 테스트
+    runs-on: ubuntu-22.04
+
+    steps:
+      # 현재 브런치를 이 프로세스에 적용합니다.
+      - name: Checkout backend
+        uses: actions/checkout@v5
+
+      # pnpm을 사용할 수 있도록pnpm을 설정한다.
+      - name: pnpm 사용을 위한 세팅
+        uses: pnpm/action-setup@v4
+        with: 
+          version: 10
+      
+      # nodejs를 설정합니다.
+      # pnpm-lock.yaml이 이 전역 cache를 참고하도록 한다.
+      - name: nodejs 설정
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: "pnpm"
+          cache-dependency-path: ./rep/main_backend/pnpm-lock.yaml 
+
+      # pnpm을 이용해서 설치합니다. ( pnpm-lock.yaml을 사용 )
+      - name: backend package 설치
+        working-directory: ./rep/main_backend
+        run: pnpm install --frozen-lockfile
+
+      # 백엔드 관련 환경변수 추가
+      - name: backend 환경변수 파일 추가 
+        working-directory: ./rep/main_backend
+        run: echo "${{ secrets.NODE_BACKEND_LOCAL_ENV }}" > .env
+      
+      # backend 단위 테스트 실행
+      - name: backend 단위테스트 실행
+        working-directory: ./rep/main_backend
+        run: pnpm test:unit
+      
+      # backend 통합 테스트 실행 - 추후 추가
+
+  # 프론트엔드 테스트 진행
+
+  # 빌드 후 -> 빌드 된 컨테이너 테스트  
+  docker-build-and-integration-test:
+    name: Docker image 빌드 후 통합테스트
+    runs-on: ubuntu-22.04
+    needs: 
+      backend-test
+      # 나중에 프론트도 추가 - 테스트
+    
+    steps:
+      - name: Checkout docker
+        uses: actions/checkout@v5
+
+      - name: docker 환경 변수 설정(backend)
+        run: |
+          echo "${{ secrets.NODE_BACKEND_LOCAL_ENV }}" > .env.backend
+
+      # frontend도 필요하면 추가
+
+      # docker-compose를 활용해서 한번에 build하고 run  
+      - name: docker compose build and run
+        run: |
+          docker compose -f docker-compose.local.yml up -d
+
+      # 통합 테스트 진행
+      - name: 통합테스트 script 권한 부여
+        working-directory: ./test/intergration-build-test
+        run: |
+          # 나중에 통합테스트 추가되면 여기에 추가하면 된다.
+          chmod +x backend-intergration-test.sh
+          chmod +x frontend-intergration-test.sh
+        
+      # 백엔드 통합 테스트 진행
+      - name: backend 통합 테스트 진행
+        working-directory: ./test/intergration-build-test
+        run: ./backend-intergration-test.sh ${{ vars.BACKEND_LOCAL_URL }}
+
+      # 프론트엔드 통합 테스트 진행
+      - name: frontend 통합 테스트 진행
+        working-directory: ./test/intergration-build-test
+        run: ./frontend-intergration-test.sh ${{ vars.FRONTEND_LOCAL_URL }}

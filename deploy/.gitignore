@@ -1,1 +1,3 @@
-.env*
+https/.env*
+
+test/.env*

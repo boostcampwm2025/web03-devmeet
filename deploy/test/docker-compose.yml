@@ -1,0 +1,82 @@
+services:
+  main-backend-app-1:
+    container_name: main-backend-app-1
+    image: "${MAIN_BACKEND_IMG}:latest"
+    env_file:
+      - ./.env.backend
+    networks:
+      - clobby-network 
+    # 추후 로그 라던지 저장 하는 로직이 있다면 이용하면 좋을 것 같다. - volume추가 고민 있음
+
+  main-backend-app-2:
+    container_name: main-backend-app-2
+    image: "${MAIN_BACKEND_IMG}:latest"
+    env_file:
+      - ./.env.backend
+    networks:
+      - clobby-network
+
+  main-backend-app-3:
+    container_name: main-backend-app-3
+    image: "${MAIN_BACKEND_IMG}:latest"
+    env_file:
+      - ./.env.backend
+    networks:
+      - clobby-network
+
+  # backend에 로드밸런싱을 담당할 nginx 파일
+  main-backend-nginx:
+    container_name: main-backend-nginx
+    image: nginx:latest
+    # 일단 설정 파일만
+    volumes:
+      - ./nginx.backend.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - main-backend-app-1
+      - main-backend-app-2
+      - main-backend-app-3
+    networks:
+      - clobby-network
+    restart: unless-stopped
+
+  # frontend 빌드 
+  frontend:
+    container_name: frontend
+    image: "${FRONTEND_IMG}:latest"
+    # 환경 변수가 있다면
+    # env_file:
+    #   - ./.env.frontend
+    networks:
+      - clobby-network
+
+  # frontend를 더 효율적으로 서빙하기 위한 nginx - 지금은 큰 의미 없지만 추후 추가 가능하다.
+  # 마찬가지로 frontend도 만약 성능 최적화를 위해서 html 같은 파일을 정적으로 서빙하기 위해서 이렇게 해도 좋을것 같다.
+  frontend-nginx:
+    container_name: frontend-nginx
+    image: nginx:latest
+    volumes:
+      - ./nginx.frontend.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+    networks:
+      - clobby-network
+    restart: unless-stopped
+
+  # 실제 서빙해주는 gateway 입니다 나중에 kubernetes로 변경을 한다면 이 부분은 변경되거나 사라집니다.
+  gateway:
+    image: nginx:latest
+    container_name: gateway
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.gateway.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - main-backend-nginx
+      - frontend-nginx
+    networks:
+      - clobby-network
+
+# bridge 스타일로 각자가 독립적인 ip를 가지고 있음
+networks:
+  clobby-network:
+    driver: bridge

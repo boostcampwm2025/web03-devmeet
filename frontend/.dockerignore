@@ -1,0 +1,10 @@
+# docker를 빌드할때 들어가면 안되는 패키지
+.next
+node_modules
+
+# 실행에는 상관없는 패키지
+.eslintrc.js
+.gitignore
+.prettierrc
+cz-config.js
+README.md

@@ -1,0 +1,244 @@
+name: CI/CD 파이프라인
+
+on:
+  push:
+    branches:
+      - dev
+
+# 같은 dev 브런치는 업데이트가 되면 가장 최신것만 실행됩니다.
+concurrency:
+  group: dev
+  cancel-in-progress: true
+
+jobs:
+  # 추후 eslint, husky등 추가 테스트도 진행할 수 있습니다.
+  # jest 활용 backend unit, intergration test 진행
+  backend-test:
+    name: 백엔드 테스트 진행
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout backend
+        uses: actions/checkout@v5
+
+      # pnpm을 사용할 수 있게 해주는 앱 사용 -> workspace만 사용 
+      - name: pnpm 세팅
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      # nodejs 설정 후 pnpm-lock.yaml을 이용해서 설치
+      - name: nodejs 설정
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: "pnpm"
+          cache-dependency-path: ./rep/main_backend/pnpm-lock.yaml
+
+      # pnpm을 이용한 패키지 설치
+      - name: backend package 설치
+        working-directory: ./rep/main_backend
+        run: pnpm install --frozen-lockfile
+      
+      # 백엔드 환경변수
+      - name: backend 환경 변수 추가 
+        working-directory: ./rep/main_backend
+        run: echo "${{ secrets.NODE_BACKEND_LOCAL_ENV }}" > .env
+
+      # backend 단위 테스트 실행 
+      - name: backend unit test
+        working-directory: ./rep/main_backend
+        run: pnpm test:unit
+
+      # backend 통합 테스트 실행 - 추후 추가
+  
+  # backend build 진행
+  backend-build:
+    name: Docker 백엔드 빌드
+    runs-on: ubuntu-22.04
+    needs: backend-test
+
+    # 진행은 buildidx를 사용할 것입니다. 기존의 docker 레거시가 아닌 buildkit을 이용할 예정이고 이로 인해서 cache 성능을 높일 예정입니다.
+    steps:
+      - name: Checkout docker backend
+        uses: actions/checkout@v5
+
+      # CPU 설정  
+      - name: QEMU 설정
+        uses: docker/setup-qemu-action@v3
+
+      # buildIdx 세팅
+      - name: BuildIdx 세팅
+        uses: docker/setup-buildx-action@v3
+
+      # dockerhub 로그인 - 비밀번호는 토큰을 사용할 예정입니다. 
+      - name: Dockerhub 로그인
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      # docker build 후 캐싱 
+      - name: Docker 빌드 후 push (with cache)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./rep/main_backend
+          file: ./rep/main_backend/Dockerfile
+          push: true
+          # amd64를 사용해서 위에 조사를 스킵할 예정이다.
+          platforms: linux/amd64
+
+          # docker image 관리
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_MAIN_BACKEND_TEST_SERVER_IMG }}:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_MAIN_BACKEND_TEST_SERVER_IMG }}:${{github.sha}}
+
+          # caching 작업 - 모든 빌드단계 레이어 캐싱 즉 max를 설정해서 용량은 많이 쓰지만 성능은 높인다. 
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_MAIN_BACKEND_TEST_SERVER_IMG }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_MAIN_BACKEND_TEST_SERVER_IMG }}:buildcache,mode=max
+          
+  # frontend 테스트 진행
+
+  # frontend 빌드
+  frontend-build:
+    name: Docker 프론트엔드 빌드
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout docker frontend
+        uses: actions/checkout@v5
+
+      - name: QEMU 설정
+        uses: docker/setup-qemu-action@v3
+
+      - name: BuildIdx 세팅
+        uses: docker/setup-buildx-action@v3
+
+      - name: Dockerhub 로그인
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Docker 빌드 후 push (with cache)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_FRONTEND_TEST_SERVER_IMG }}:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_FRONTEND_TEST_SERVER_IMG }}:${{github.sha}}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_FRONTEND_TEST_SERVER_IMG }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_FRONTEND_TEST_SERVER_IMG }}:buildcache,mode=max
+  
+  # 전체 docker build 단위 테스트 진행
+  docker-integration-test:
+    name: Test Server Docker 통합 테스트
+    runs-on: ubuntu-22.04
+    needs: 
+      - backend-build
+      - frontend-build
+    
+    steps:
+      - name: Docker Checkout
+        uses: actions/checkout@v5
+
+      - name: Docker compose에 쓰일 환경변수 설정
+        run: |
+          cat << "EOF" > compose.env
+          MAIN_BACKEND_IMG=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_MAIN_BACKEND_TEST_SERVER_IMG }}
+          FRONTEND_IMG=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_FRONTEND_TEST_SERVER_IMG }}
+          EOF
+      
+      # frontend는 추후 추가하시면 됩니다.
+      - name: Docker compose에 각 이미지가 사용할 환경변수 설정
+        working-directory: ./deploy/test
+        run: echo ${{ secrets.NODE_BACKEND_ENV_TEST_SERVER }} > .env.backend
+
+      # docker compose 빌드 후 실행
+      - name: Docker compose 실행
+        working-directory: ./deploy/test
+        run: |
+          docker compose --env-file compose.env -f docker-compose.yml up -d
+          docker compose ps
+
+      # 통합 테스트 실행
+      - name: 통합 테스트용 script 권한 설정
+        working-directory: ./test/intergration-build-test
+        run: |
+          chmod +x backend-intergration-test.sh
+          chmod +x frontend-intergration-test.sh
+      
+      # 백엔드 통합테스트 진행
+      - name: backend 통합 테스트 진행
+        working-directory: ./test/intergration-build-test
+        run: ./backend-intergration-test.sh ${{ vars.TEST_URL }}
+
+      # 프론트엔드 통합테스트 진행
+      - name: frontend 통합 테스트 진행
+        working-directory: ./test/intergration-build-test
+        run: ./frontend-intergration-test.sh ${{ vars.TEST_URL }}
+
+      # docker 내리기
+      - name: docker 내림
+        if: always()
+        working-directory: ./deploy/test
+        run: docker compose --env-file compose.env -f docker-compose.yml down
+
+  # 테스트 서버로 전송
+  deploy-staging-server:
+    name: 배포용 파일 테스트 서버 업로드
+    runs-on: ubuntu-22.04
+    needs: docker-integration-test
+
+    steps:
+      - name: Staging Server Checkout
+        uses: actions/checkout@v5
+
+      # 테스트 서버로 실제로 전송
+      - name: SSH 접속 후 전송
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.TEST_SERVER_HOST }}
+          username: ${{ secrets.TEST_SERVER_USER }}
+          key: ${{ secrets.TEST_SERVER_SSH_KEY }}
+          source: ./deploy/test/*
+          target: /root/app
+
+      # 테스트 서버에서 배포 진행
+      - name: 테스트 서버 접속 후 배포 진행
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.TEST_SERVER_HOST }}
+          username: ${{ secrets.TEST_SERVER_USER }}
+          key: ${{ secrets.TEST_SERVER_SSH_KEY }} 
+          script: |
+            # 이동
+            mkdir -p /root/app
+            cd /root/app
+
+            # env 파일
+            echo "${{ secrets.NODE_BACKEND_ENV_TEST_SERVER }}" > .env
+            
+            # compose.env 파일 생성
+            cat << EOF > compose.env
+            MAIN_BACKEND_IMG=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_MAIN_BACKEND_TEST_SERVER_IMG }}
+            FRONTEND_IMG=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_FRONTEND_TEST_SERVER_IMG }}
+            EOF
+
+            # 이미지 pull  
+            docker compose --env-file compose.env -f docker-compose.yml pull
+
+            # 전에거 삭제 후 재시작 하기
+            docker compose --env-file compose.env -f docker-compose.yml up -d --remove-orphans
+            docker image prune -f
+
+            # docker compose 작동 확인
+            docker ps
+            echo "테스트 서버 배포 완료"
+
+  # e2e 테스트 진행
+
+  # 보안 테스트 추가

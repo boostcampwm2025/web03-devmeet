@@ -398,7 +398,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
     id: number | undefined;
     user_id: string | undefined;
     profile_path: string | undefined;
-    meme_type: string | undefined;
+    mime_type: string | undefined;
     created_at: Date | undefined;
     updated_at: Date | undefined;
     ok: boolean;
@@ -409,7 +409,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
       id: 1,
       user_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
       profile_path: 'profile.png',
-      meme_type: 'image/png',
+      mime_type: 'image/png',
       created_at: now,
       updated_at: now,
       ok: true,
@@ -419,7 +419,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
       id: 0,
       user_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
       profile_path: 'profile.png',
-      meme_type: 'image/png',
+      mime_type: 'image/png',
       created_at: now,
       updated_at: now,
       ok: true,
@@ -429,7 +429,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
       id: -1,
       user_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
       profile_path: 'profile.png',
-      meme_type: 'image/png',
+      mime_type: 'image/png',
       created_at: now,
       updated_at: now,
       ok: false,
@@ -439,7 +439,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
       id: 1,
       user_id: undefined,
       profile_path: 'profile.png',
-      meme_type: 'image/png',
+      mime_type: 'image/png',
       created_at: now,
       updated_at: now,
       ok: false,
@@ -449,7 +449,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
       id: 1,
       user_id: '       018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0       ',
       profile_path: 'profile.png',
-      meme_type: 'image/png',
+      mime_type: 'image/png',
       created_at: now,
       updated_at: now,
       ok: true,
@@ -459,7 +459,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
       id: 1,
       user_id: '550e8400-e29b-41d4-a716-446655440000',
       profile_path: 'profile.png',
-      meme_type: 'image/png',
+      mime_type: 'image/png',
       created_at: now,
       updated_at: now,
       ok: false,
@@ -469,7 +469,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
       id: 1,
       user_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
       profile_path: undefined,
-      meme_type: 'image/png',
+      mime_type: 'image/png',
       created_at: now,
       updated_at: now,
       ok: false,
@@ -479,7 +479,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
       id: 1,
       user_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
       profile_path: '      profile.png    ',
-      meme_type: 'image/png',
+      mime_type: 'image/png',
       created_at: now,
       updated_at: now,
       ok: true,
@@ -489,7 +489,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
       id: 1,
       user_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
       profile_path: Array(255).fill('p').join(''),
-      meme_type: 'image/png',
+      mime_type: 'image/png',
       created_at: now,
       updated_at: now,
       ok: true,
@@ -499,7 +499,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
       id: 1,
       user_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
       profile_path: Array(256).fill('p').join(''),
-      meme_type: 'image/png',
+      mime_type: 'image/png',
       created_at: now,
       updated_at: now,
       ok: false,
@@ -509,7 +509,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
       id: 1,
       user_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
       profile_path: 'profile.png',
-      meme_type: undefined,
+      mime_type: undefined,
       created_at: now,
       updated_at: now,
       ok: false,
@@ -519,7 +519,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
       id: 1,
       user_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
       profile_path: 'profile.png',
-      meme_type: '      image/png     ',
+      mime_type: '      image/png     ',
       created_at: now,
       updated_at: now,
       ok: true,
@@ -529,7 +529,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
       id: 1,
       user_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
       profile_path: 'profile.png',
-      meme_type: 'image/apng',
+      mime_type: 'image/apng',
       created_at: now,
       updated_at: now,
       ok: true,
@@ -539,7 +539,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
       id: 1,
       user_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
       profile_path: 'profile.png',
-      meme_type: 'Image/ApnG',
+      mime_type: 'Image/ApnG',
       created_at: now,
       updated_at: now,
       ok: true,
@@ -549,7 +549,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
       id: 1,
       user_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
       profile_path: 'profile.png',
-      meme_type: 'application/javascript',
+      mime_type: 'application/javascript',
       created_at: now,
       updated_at: now,
       ok: false,
@@ -558,17 +558,17 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
 
   test.each(TestCase3)(
     'user profile entity가 정합성을 제대로 지키는지 확인',
-    ({ id, user_id, profile_path, meme_type, created_at, updated_at, ok }) => {
+    ({ id, user_id, profile_path, mime_type, created_at, updated_at, ok }) => {
       const test3 = () => {
         id = id as number;
         user_id = user_id as string;
         profile_path = profile_path as string;
-        meme_type = meme_type as string;
+        mime_type = mime_type as string;
         return new UserProfile({
           id,
           user_id,
           profile_path,
-          meme_type,
+          mime_type,
         });
       };
 
@@ -577,7 +577,7 @@ describe('domain 레이어에 유저 entity 관련 단위테스트', () => {
         expect(t3.getId()).toBe(id);
         expect(t3.getUserId()).toBe(user_id?.trim());
         expect(t3.getProfilePath()).toBe(profile_path?.trim());
-        expect(t3.getMemeType()).toBe(meme_type?.trim().toLowerCase());
+        expect(t3.getMimeType()).toBe(mime_type?.trim().toLowerCase());
       } else expect(test3).toThrow();
     },
   );

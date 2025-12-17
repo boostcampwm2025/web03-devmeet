@@ -22,7 +22,7 @@ export interface BaseItem {
   scaleX: number;
   scaleY: number;
   opacity?: number;
-  zIndex?: number;
+  zIndex: number;
   isLocked?: boolean;
   isVisible?: boolean;
   name?: string;
@@ -44,6 +44,7 @@ export interface TextItem extends BaseItem {
   letterSpacing?: number;
   stroke?: string;
   strokeWidth?: number;
+  wrap?: string;
 }
 
 // 이미지

@@ -1,0 +1,44 @@
+import { NullInterfaceError } from '@error/application/application.error';
+import { Injectable } from '@nestjs/common';
+
+class OutboundBaseCache<T> {
+  protected cache: T;
+
+  constructor(cache: T) {
+    this.cache = cache;
+  }
+}
+
+// cache에 데이터를 입력할때 쓰이는 class
+@Injectable()
+export class InsertDataToCache<T> extends OutboundBaseCache<T> {
+  constructor(cahce: T) {
+    super(cahce);
+  }
+
+  public async insert(entity: any): Promise<boolean> | never {
+    throw new NullInterfaceError();
+  }
+}
+
+// cache에 데이터를 삭제할때 쓰이는 class
+@Injectable()
+export class DeleteDataToCache<T> extends OutboundBaseCache<T> {
+  constructor(cache: T) {
+    super(cache);
+  }
+
+  public async deleteNamespace(namespace: string): Promise<boolean> | never {
+    throw new NullInterfaceError();
+  }
+
+  public async deleteKey({
+    namespace,
+    keyName,
+  }: {
+    namespace: string;
+    keyName: string;
+  }): Promise<boolean> | never {
+    throw new NullInterfaceError();
+  }
+}

@@ -153,10 +153,13 @@ jobs:
           FRONTEND_IMG=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_FRONTEND_TEST_SERVER_IMG }}
           EOF
       
-      # frontend는 추후 추가하시면 됩니다.
+      # frontend는 추후 추가하시면 됩니다. -> backend 환경변수가 안먹는 오류가 발생 -> 일단 이렇게 수정
       - name: Docker compose에 각 이미지가 사용할 환경변수 설정
         working-directory: ./deploy/test
-        run: echo ${{ secrets.NODE_BACKEND_ENV_TEST_SERVER }} > .env.backend
+        run: |
+          cat << 'EOF' > .env.backend
+          ${{ secrets.NODE_BACKEND_LOCAL_ENV }}
+          EOF
 
       # docker compose 빌드 후 실행
       - name: Docker compose 실행

@@ -21,7 +21,7 @@ export class NotInvalidOauthUserError extends BaseError {
 export class NotValidEmailError extends BaseError {
   constructor() {
     super({
-      message: '이메일이 존재하지 않습니다.',
+      message: '이메일 또는 비밀번호가 올바르지 않습니다.',
       status: 401,
     });
   }
@@ -30,7 +30,7 @@ export class NotValidEmailError extends BaseError {
 export class NotAllowPasswordError extends BaseError {
   constructor() {
     super({
-      message: '비밀번호가 올바르지 않습니다.',
+      message: '이메일 또는 비밀번호가 올바르지 않습니다.',
       status: 401,
     });
   }

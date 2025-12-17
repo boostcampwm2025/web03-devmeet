@@ -1,27 +1,21 @@
 import type { Metadata } from 'next';
-import localFont from 'next/font/local';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
-// SUIT 폰트 설정
-const suit = localFont({
-  src: './fonts/SUIT-Variable.woff2',
-  display: 'swap',
-  variable: '--font-suit',
-  weight: '100 900',
+const geistSans = Geist({
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
-// Cafe24 폰트 설정
-const cafe24 = localFont({
-  src: [
-    { path: './fonts/Cafe24PROSlimAir.woff2', weight: '400', style: 'normal' },
-    { path: './fonts/Cafe24PROSlimAir.woff', weight: '400', style: 'normal' },
-  ],
-  display: 'swap',
-  variable: '--font-cafe24',
+const geistMono = Geist_Mono({
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-  title: '클로비 - Clobby',
+  title: '클로비',
+  description: '취미, 취향으로 연결하고, 누군가의 시작이 되어보세요.',
+  title: '클로비',
   description: '취미, 취향으로 연결하고, 누군가의 시작이 되어보세요.',
 };
 

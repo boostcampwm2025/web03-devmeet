@@ -220,6 +220,7 @@ jobs:
         uses: actions/checkout@v5
 
       # 테스트 서버로 실제로 전송
+      # 경로 아래 2개까지만 가능하도록 수정
       - name: SSH 접속 후 전송
         uses: appleboy/scp-action@v1
         with:
@@ -228,6 +229,7 @@ jobs:
           key: ${{ secrets.TEST_SERVER_SSH_KEY }}
           source: ./deploy/test/*
           target: /root/app
+          strip_components: 2
 
       # 테스트 서버에서 배포 진행
       - name: 테스트 서버 접속 후 배포 진행

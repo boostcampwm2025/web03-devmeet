@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 import { TextItem, ImageItem, VideoItem } from '@/types/workspace';
+import { useAddText } from '@/hooks/useAddText';
 
 import NavButton from './sidebar/NavButton';
 import CardPanel from './sidebar/card/CardPanel';
@@ -18,6 +19,8 @@ export default function Sidebar() {
 
   const { addItem, resizeWorkspace, setBackground, cardData } =
     useWorkspaceStore();
+
+  const { handleAddText } = useAddText();
 
   const handleSave = () => {
     // 저장 로직 구현
@@ -59,6 +62,9 @@ export default function Sidebar() {
             isActive={activeTab === 'text'}
             onClick={() => {
               setActiveTab('text');
+            }}
+            onDoubleClick={() => {
+              handleAddText();
             }}
           />
           <NavButton

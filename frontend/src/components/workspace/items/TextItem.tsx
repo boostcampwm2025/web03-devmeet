@@ -2,7 +2,9 @@
 
 import { Text } from 'react-konva';
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
+import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 import { WorkspaceItem } from '@/types/workspace';
+import Konva from 'konva';
 import Konva from 'konva';
 
 interface TextItemProps {
@@ -13,7 +15,13 @@ interface TextItemProps {
 }
 
 export default function TextItem({ item, onSelect, onChange }: TextItemProps) {
+export default function TextItem({ item, onSelect, onChange }: TextItemProps) {
   const { id, ...props } = item;
+
+  const editingNode = useWorkspaceStore((s) => s.editingNode);
+  const setEditingNode = useWorkspaceStore((s) => s.setEditingNode);
+
+  const isEditing = editingNode?.id() === item.id;
 
   const editingNode = useWorkspaceStore((s) => s.editingNode);
   const setEditingNode = useWorkspaceStore((s) => s.setEditingNode);
@@ -28,7 +36,6 @@ export default function TextItem({ item, onSelect, onChange }: TextItemProps) {
       visible={!isEditing}
       draggable
       onClick={onSelect}
-      // 더블 클릭시 해당 텍스트를 editingNode로 설정
       onDblClick={(e) => {
         setEditingNode(e.target as Konva.Text);
       }}

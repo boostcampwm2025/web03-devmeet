@@ -47,9 +47,8 @@ services:
     # env_file:
     #   - ./.env.frontend
     # 기본적인 환경 설정은 여기서 
-    environment:
-      - PORT=3000
-      - HOSTNAME=0.0.0.0
+    networks:
+      - clobby-network
 
   # 실제 서빙해주는 gateway 입니다 나중에 kubernetes로 변경을 한다면 이 부분은 변경되거나 사라집니다.
   gateway:

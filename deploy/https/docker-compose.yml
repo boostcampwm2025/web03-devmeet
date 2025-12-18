@@ -43,9 +43,6 @@ services:
     image: "${FRONTEND_IMG}:latest"
     networks:
       - clobby-network
-    environment:
-      - PORT=3000
-      - HOSTNAME=0.0.0.0
 
   # gateway가 다르다. 
   gateway:

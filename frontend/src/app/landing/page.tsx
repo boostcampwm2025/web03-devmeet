@@ -45,7 +45,7 @@ export default function LandingPage() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.4 }}
           >
-            <h1 className="text-[36px] leading-snug font-semibold">
+            <h1 className="font-cafe24 text-[36px] leading-snug font-semibold text-shadow-lg">
               새로운 시작이 될
               <br />
               카드를 골라보세요
@@ -67,7 +67,7 @@ export default function LandingPage() {
               ease: 'easeInOut',
             }}
           >
-            <h1 className="text-[36px] leading-snug font-semibold">
+            <h1 className="font-cafe24 text-[36px] leading-snug font-semibold text-shadow-lg">
               과연 어떤
               <br />
               카드일까요...?

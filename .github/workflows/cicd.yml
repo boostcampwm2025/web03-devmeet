@@ -211,7 +211,7 @@ jobs:
 
   # 테스트 서버로 전송
   deploy-staging-server:
-    name: 배포용 파일 테스트 서버 업로드
+    name: 테스트 서버 배포
     runs-on: ubuntu-22.04
     needs: docker-integration-test
 
@@ -244,7 +244,9 @@ jobs:
             cd /root/app
 
             # env 파일
-            echo "${{ secrets.NODE_BACKEND_ENV_TEST_SERVER }}" > .env.backend
+            cat << 'EOF' > .env.backend
+            ${{ secrets.NODE_BACKEND_ENV_TEST_SERVER }}
+            EOF
             
             # compose.env 파일 생성
             cat << EOF > compose.env
@@ -257,7 +259,7 @@ jobs:
 
             # 전에거 삭제 후 재시작 하기
             docker compose --env-file compose.env -f docker-compose.yml up -d --remove-orphans
-            docker image prune -f
+            docker image prune -a -f
 
             # docker compose 작동 확인
             docker ps

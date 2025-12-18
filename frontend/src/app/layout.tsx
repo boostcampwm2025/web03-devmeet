@@ -1,8 +1,18 @@
 import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
 import localFont from 'next/font/local';
 import './globals.css';
 
-// SUIT 폰트 설정
+const geistSans = Geist({
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
+});
+
+const geistMono = Geist_Mono({
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
+});
+
 const suit = localFont({
   src: './fonts/SUIT-Variable.woff2',
   display: 'swap',
@@ -10,11 +20,10 @@ const suit = localFont({
   weight: '100 900',
 });
 
-// Cafe24 폰트 설정
 const cafe24 = localFont({
   src: [
-    { path: './fonts/Cafe24PROSlimAir.woff2', weight: '400', style: 'normal' },
-    { path: './fonts/Cafe24PROSlimAir.woff', weight: '400', style: 'normal' },
+    { path: './fonts/Cafe24PROSlimAir.woff2', weight: '400' },
+    { path: './fonts/Cafe24PROSlimAir.woff', weight: '400' },
   ],
   display: 'swap',
   variable: '--font-cafe24',

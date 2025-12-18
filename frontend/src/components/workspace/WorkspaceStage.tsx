@@ -8,7 +8,7 @@ import RenderItem from './items/RenderItem';
 
 export default function WorkspaceStage() {
   // Store 상태 및 액션
-  const { cardData, selectedId, selectItem, updateItem, zoom } =
+  const { cardData, selectedId, selectItem, updateItem, zoom, removeItem } =
     useWorkspaceStore();
 
   // 접근 Ref 설정 (stage : 워크스페이스 / transformer : 선택 및 변형 도구)
@@ -50,6 +50,27 @@ export default function WorkspaceStage() {
       }
     }
   }, [selectedId, cardData.items, mounted]);
+
+  // 아이템 삭제 로직 : Delete,Backspace 키
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 아이템 선택
+      if (!selectedId) return;
+
+      // 키 감지
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        // Text의 경우 입력 중인 경우 방지
+        // const activeElement = document.activeElement?.tagName;
+        e.preventDefault();
+        removeItem(selectedId);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedId, removeItem]);
 
   // 선택 해제
   const handleCheckDeselect = (e: any) => {

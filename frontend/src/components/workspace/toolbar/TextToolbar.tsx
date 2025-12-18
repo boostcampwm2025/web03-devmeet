@@ -1,6 +1,6 @@
 'use client';
 
-import { TextItem, FontStyle } from '@/types/Workspace';
+import { TextItem, FontStyle } from '@/types/workspace';
 import IconButton from './IconButton';
 
 type EditableTextKey =

@@ -22,7 +22,7 @@ export interface BaseItem {
   scaleX: number;
   scaleY: number;
   opacity?: number;
-  zIndex?: number;
+  zIndex: number;
   isLocked?: boolean;
   isVisible?: boolean;
   name?: string;

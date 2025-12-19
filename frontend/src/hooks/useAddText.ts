@@ -1,5 +1,6 @@
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 import { WorkspaceItem } from '@/types/workspace';
+import { v4 as uuidv4 } from 'uuid';
 
 export function useAddText() {
   const addItem = useWorkspaceStore((state) => state.addItem);
@@ -7,7 +8,7 @@ export function useAddText() {
 
   const handleAddText = () => {
     const newTextItem: WorkspaceItem = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       type: 'text',
       text: '텍스트를 입력하세요.',
       fontSize: 24,

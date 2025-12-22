@@ -8,7 +8,6 @@ async function bootstrap() {
   const config = app.get(ConfigService);
 
   // cors 설정
-  
 
   // port, host 설정
   const port: number = config.get<number>('NODE_PORT', 8080);

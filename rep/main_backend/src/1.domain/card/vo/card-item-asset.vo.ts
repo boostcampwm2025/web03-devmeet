@@ -86,7 +86,7 @@ export function cardItemAssetStatusVo(
   const name: string = 'status';
 
   baseVo({ name, value: status, type: 'string' });
-  status = status.trim() as any;
+  status = status.trim().toLocaleLowerCase() as any;
 
   if (!statusList.includes(status)) throw new NotAllowStatusValue();
 

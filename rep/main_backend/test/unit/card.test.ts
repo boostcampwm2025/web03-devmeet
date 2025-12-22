@@ -1,5 +1,5 @@
-import { Card, CardItem } from "../../src/1.domain/card/entities";
-import { CardItemTypeProps, StatusProps } from "../../src/1.domain/card/vo";
+import { Card, CardItem, CardItemAsset } from "../../src/1.domain/card/entities";
+import { CardItemAssetStatusProps, CardItemTypeProps, StatusProps } from "../../src/1.domain/card/vo";
 
 
 describe("domain 레이어에 card와 관련된 단위테스트", () => {
@@ -1478,6 +1478,262 @@ describe("domain 레이어에 card와 관련된 단위테스트", () => {
       expect(t2.getName()).toBe(name?.trim());
       expect(t2.getOption()).toEqual(option);
     } else expect(test2).toThrow();
+  });
+
+  type TestCase3Props = {
+    item_id: string | undefined;
+    key_name: string | undefined;
+    mime_type: string | undefined;
+    size: number | undefined;
+    status: any;
+    created_at: Date | undefined;
+    updated_at: Date | undefined;
+    ok : boolean
+  };    
+
+  const TestCase3 : Array<TestCase3Props> = [
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "test.png",
+      mime_type : "image/apng",
+      size : 300,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      item_id: undefined,
+      key_name : "test.png",
+      mime_type : "image/apng",
+      size : 300,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : false
+    },    
+    {
+      item_id: '      018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0     ',
+      key_name : "test.png",
+      mime_type : "image/apng",
+      size : 300,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      item_id: '550e8400-e29b-41d4-a716-446655440000',
+      key_name : "test.png",
+      mime_type : "image/apng",
+      size : 300,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : false
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "     test.png     ",
+      mime_type : "image/apng",
+      size : 300,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : undefined,
+      mime_type : "image/apng",
+      size : 300,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : false
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : Array(2048).fill("k").join(""),
+      mime_type : "image/apng",
+      size : 300,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : Array(2049).fill("k").join(""),
+      mime_type : "image/apng",
+      size : 300,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : false
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "test.png",
+      mime_type : 'image/avif',
+      size : 300,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "test.png",
+      mime_type : '    image/gif     ',
+      size : 300,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "test.png",
+      mime_type : 'Image/aVif',
+      size : 300,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "test.png",
+      mime_type : 'video/mp4',
+      size : 300,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "test.png",
+      mime_type : 'video/mp',
+      size : 300,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : false
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "test.png",
+      mime_type : undefined,
+      size : 300,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : false
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "test.png",
+      mime_type : "image/apng",
+      size : 0,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "test.png",
+      mime_type : "image/apng",
+      size : -1,
+      status : "failed",
+      created_at : now,
+      updated_at : now,
+      ok : false
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "test.png",
+      mime_type : "image/apng",
+      size : 300,
+      status : "ready",
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "test.png",
+      mime_type : "image/apng",
+      size : 300,
+      status : "uploading",
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "test.png",
+      mime_type : "image/apng",
+      size : 300,
+      status : undefined,
+      created_at : now,
+      updated_at : now,
+      ok : false
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "test.png",
+      mime_type : "image/apng",
+      size : 300,
+      status : "     failed     ",
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "test.png",
+      mime_type : "image/apng",
+      size : 300,
+      status : "FaileD",
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      item_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      key_name : "test.png",
+      mime_type : "image/apng",
+      size : 300,
+      status : "another",
+      created_at : now,
+      updated_at : now,
+      ok : false
+    }
+  ];
+
+  test.each(TestCase3)("card_item asset에 정합성 테스트", ({ item_id, key_name, mime_type, size, status, created_at, updated_at, ok }) => {
+    const test3 = () => {
+      item_id = item_id as string;
+      key_name = key_name as string;
+      mime_type = mime_type as string;
+      size = size as number;
+      return new CardItemAsset({
+        item_id, key_name, mime_type, size, status, created_at, updated_at
+      });
+    };
+    if ( ok ) {
+      const t3 = test3();
+      expect(t3.getItemId()).toBe(item_id?.trim());
+      expect(t3.getKeyName()).toBe(key_name?.trim());
+      expect(t3.getMimeType()).toBe(mime_type?.trim().toLowerCase());
+      expect(t3.getStatus()).toBe(status?.trim().toLowerCase());
+      expect(t3.getSize()).toBe(size);
+    }else {
+      expect(test3).toThrow();
+    }
 
   });
 

@@ -105,7 +105,7 @@ export function cardItemTextTextDecorationVo( text_decoration : CardItemTextProp
 };
 
 // align 관련
-export function cardItemTextAlignVo( align : CardItemTextProps['align'] ) : string {
+export function cardItemTextAlignVo( align : CardItemTextProps['align'] ) : CardItemTextAlignProps {
   const name : string = "align";
 
   baseVo({ name, value : align, type : "string" });

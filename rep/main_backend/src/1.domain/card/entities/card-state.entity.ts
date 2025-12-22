@@ -23,12 +23,12 @@ export class CardState {
     updated_at = new Date(),
   }: CardStateProps) {
     this.id = idVo(id);
-    card_id = cardIdVo(card_id);
-    like_count = likeCountVo(like_count);
-    view_count = viewCountVo(view_count);
-    created_at =
+    this.card_id = cardIdVo(card_id);
+    this.like_count = likeCountVo(like_count);
+    this.view_count = viewCountVo(view_count);
+    this.created_at =
       created_at && created_at instanceof Date ? created_at : new Date();
-    updated_at =
+    this.updated_at =
       updated_at && updated_at instanceof Date ? updated_at : new Date();
 
     Object.freeze(this);

@@ -1,4 +1,4 @@
-import { Card, CardItem, CardItemAsset } from "../../src/1.domain/card/entities";
+import { Card, CardItem, CardItemAsset, CardState } from "../../src/1.domain/card/entities";
 import { CardItemAssetStatusProps, CardItemTypeProps, StatusProps } from "../../src/1.domain/card/vo";
 
 
@@ -1734,6 +1734,129 @@ describe("domain 레이어에 card와 관련된 단위테스트", () => {
     }else {
       expect(test3).toThrow();
     }
+  });
+
+  type TestCase4Props = {
+    id: number | undefined;
+    card_id: string | undefined;
+    like_count: number | undefined;
+    view_count: number | undefined;
+    created_at: Date;
+    updated_at: Date;
+    ok : boolean
+  };
+
+  const TestCase4 : Array<TestCase4Props> = [
+    {
+      id: 1,
+      card_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      like_count: 0,
+      view_count: 0,
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      id: 0,
+      card_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      like_count: 0,
+      view_count: 0,
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      id: -1,
+      card_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      like_count: 0,
+      view_count: 0,
+      created_at : now,
+      updated_at : now,
+      ok : false
+    },
+    {
+      id: 1,
+      card_id: undefined,
+      like_count: 0,
+      view_count: 0,
+      created_at : now,
+      updated_at : now,
+      ok : false
+    },
+    {
+      id: 1,
+      card_id: '550e8400-e29b-41d4-a716-446655440000',
+      like_count: 0,
+      view_count: 0,
+      created_at : now,
+      updated_at : now,
+      ok : false
+    },
+    {
+      id: 1,
+      card_id: '    018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0      ',
+      like_count: 0,
+      view_count: 0,
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      id: 1,
+      card_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      like_count: 1,
+      view_count: 0,
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      id: 1,
+      card_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      like_count: -1,
+      view_count: 0,
+      created_at : now,
+      updated_at : now,
+      ok : false
+    },
+    {
+      id: 1,
+      card_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      like_count: 0,
+      view_count: 1,
+      created_at : now,
+      updated_at : now,
+      ok : true
+    },
+    {
+      id: 1,
+      card_id: '018e9a48-3c8a-7b20-bc9d-9f5b8e9f88c0',
+      like_count: 0,
+      view_count: -1,
+      created_at : now,
+      updated_at : now,
+      ok : false
+    },
+  ];
+
+  test.each(TestCase4)("card_stat의 정합성 테스트", ({ id, card_id, like_count, view_count, created_at, updated_at, ok }) => {
+    const test4 = () => {
+      id = id as number;
+      card_id = card_id as string;
+      like_count = like_count as number;
+      view_count = view_count as number;
+      return new CardState({
+        id, card_id, like_count, view_count, created_at, updated_at
+      });
+    }
+
+    if ( ok ) {
+      const t4 = test4();
+      expect(t4.getId()).toBe(id);
+      expect(t4.getCardId()).toBe(card_id?.trim());
+      expect(t4.getLikeCount()).toBe(like_count);
+      expect(t4.getViewCount()).toBe(view_count);
+    } else expect(test4).toThrow();
 
   });
 

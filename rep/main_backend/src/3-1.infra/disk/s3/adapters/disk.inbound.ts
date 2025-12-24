@@ -1,5 +1,5 @@
-import { CheckUploadDataFromDisk, GetMultiPartUploadUrlFromDisk, GetMultiPartVerGroupIdFromDisk, GetUploadUrlFromDisk } from "@app/ports/disk/disk.inbound";
-import { CreateMultipartUploadCommand, HeadObjectCommand, PutObjectCommand, S3Client, UploadPartCommand } from "@aws-sdk/client-s3";
+import { CheckUploadDataFromDisk, CheckUploadDatasFromDisk, GetMultiPartUploadUrlFromDisk, GetMultiPartVerGroupIdFromDisk, GetUploadUrlFromDisk } from "@app/ports/disk/disk.inbound";
+import { CreateMultipartUploadCommand, HeadObjectCommand, ListPartsCommand, ListPartsCommandOutput, Part, PutObjectCommand, S3Client, UploadPartCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Inject, Injectable } from "@nestjs/common";
 import { S3_DISK } from "../../disk.constants";
@@ -7,6 +7,7 @@ import { ConfigService } from "@nestjs/config";
 import path from "path";
 import { GetUrlTypes } from "@app/card/queries/dto";
 import { DiskError } from "@error/infra/card/card.error";
+import { CheckCardItemDataTag } from "@app/card/commands/dto";
 
 
 @Injectable()
@@ -131,4 +132,71 @@ export class CheckPresignedUrlFromAwsS3 extends CheckUploadDataFromDisk<S3Client
       throw new DiskError(err);
     };
   };
+};
+
+@Injectable()
+export class CheckUploadDatasFromAwsS3 extends CheckUploadDatasFromDisk<S3Client> {
+
+  constructor(
+    @Inject(S3_DISK) disk : S3Client,
+    private readonly config : ConfigService
+  ) { super(disk); };
+
+  private parseEtag(etag : string) : string {
+    return etag.replace(/"/g, '').trim();
+  }
+
+  // 여러개의 etag일 경우 이를 이용해서 검증을 해주어야 한다.
+  async checks({ pathName, upload_id, tags }: { pathName: string; upload_id: string; tags: Array<CheckCardItemDataTag>; }): Promise<boolean> {
+    
+    const disk = this.disk;
+
+    const Bucket : string = this.config.get<string>("NODE_APP_AWS_BUCKET_NAME", "bucket");
+
+    if ( !tags || tags.length === 0 ) return false;
+
+    const uploadPartSet = new Map<number, string>();
+    let nextPartNumber : string | undefined = undefined;
+
+    while (true) {
+
+      const res : ListPartsCommandOutput = await disk.send(
+        new ListPartsCommand({
+          Bucket,
+          Key : pathName,
+          UploadId : upload_id,
+          PartNumberMarker : nextPartNumber
+        })
+      );
+
+      const parts : Array<Part> = res.Parts ?? []; // null, undefiend이면 빈 배열
+      for ( const part of parts ) {
+        if ( typeof part.PartNumber === "number" && typeof part.ETag === "string" ) {
+          uploadPartSet.set(part.PartNumber, this.parseEtag(part.ETag));
+        };
+      };
+
+      if  ( !res.IsTruncated ) break;
+
+      nextPartNumber = String(res.NextPartNumberMarker);
+      if ( !nextPartNumber ) break;
+    };
+
+    for ( const tag of tags ) {
+
+      const pn : number = tag.part_number;
+      const etag : string = tag.etag;
+
+      if ( typeof pn !== "number" || typeof etag !== "string" ) return false;
+
+      const s3Etag = uploadPartSet.get(pn);
+
+      if (!s3Etag) return false;
+
+      if ( s3Etag !== this.parseEtag(etag) ) return false;
+    };
+
+    return true;
+  };
+
 };

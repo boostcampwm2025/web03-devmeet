@@ -12,7 +12,7 @@ import { InsertDataToCache } from "@/2.application/ports/cache/cache.outbound";
 
 type UploadCardItemUsecaseProps<T, ET, DT> = {
   itemIdGenerator : IdGenerator;
-  insertCardItemToDb : InsertValueToDb<T>;
+  insertCardItemToDb : InsertValueToDb<T>; // card_item 정보만 저장할 infra 함수
   insertCardItemAndCardItemAssetToDb : InsertValueToDb<T>;
   deleteCardItemAndCardItemAssetToDb : DeleteValueToDb<T>;
   getUploadUrlFromDisk : GetUploadUrlFromDisk<ET>;
@@ -109,7 +109,7 @@ export class UploadingCardItemUsecase<T, ET, DT> {
       return returnDto;
     } else {
       // 정합성 파악
-      if ( !dto.file_info?.size ) throw new NotAllowCreateCardItemNotUploadInfo();
+      if ( !dto.file_info ) throw new NotAllowCreateCardItemNotUploadInfo();
       const newCardAggregate = cardAggregate.addCardItemAndAsset({
         cardItemInput : {
           type: dto.type,

@@ -1,11 +1,12 @@
-import { GetMultiPartUploadUrlFromDisk, GetMultiPartVerGroupIdFromDisk, GetUploadUrlFromDisk } from "@app/ports/disk/disk.inbound";
-import { CreateMultipartUploadCommand, PutObjectCommand, S3Client, UploadPartCommand } from "@aws-sdk/client-s3";
+import { CheckUploadDataFromDisk, GetMultiPartUploadUrlFromDisk, GetMultiPartVerGroupIdFromDisk, GetUploadUrlFromDisk } from "@app/ports/disk/disk.inbound";
+import { CreateMultipartUploadCommand, HeadObjectCommand, PutObjectCommand, S3Client, UploadPartCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Inject, Injectable } from "@nestjs/common";
 import { S3_DISK } from "../../disk.constants";
 import { ConfigService } from "@nestjs/config";
 import path from "path";
 import { GetUrlTypes } from "@app/card/queries/dto";
+import { DiskError } from "@error/infra/card/card.error";
 
 
 @Injectable()
@@ -97,4 +98,37 @@ export class GetPresignedUrlsFromS3Bucket extends GetMultiPartUploadUrlFromDisk<
     })
   );
   }
+};
+
+@Injectable()
+export class CheckPresignedUrlFromAwsS3 extends CheckUploadDataFromDisk<S3Client> {
+
+  constructor(
+    @Inject(S3_DISK) disk : S3Client,
+    private readonly config : ConfigService
+  ) { super(disk); };
+
+  async check({ pathName, etag }: { pathName: string; etag: string; }): Promise<boolean> {
+    
+    const Bucket : string = this.config.get<string>("NODE_APP_AWS_BUCKET_NAME", "bucket");
+    
+    try {
+      const result = await this.disk.send(
+        new HeadObjectCommand({
+          Bucket,
+          Key : pathName
+        })
+      );
+      if ( !result.ETag ) return false;
+
+      // 보통 s3에는 "" 이런식으로 가져온다고 한다.
+      const s3Etag = result.ETag.replace(/"/g, '');
+      const inputEtag = etag.replace(/"/g, '');
+
+      // 같으면 맞고 아니면 에러
+      return s3Etag === inputEtag;
+    } catch (err) {
+      throw new DiskError(err);
+    };
+  };
 };

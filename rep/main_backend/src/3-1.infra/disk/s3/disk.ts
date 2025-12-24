@@ -2,7 +2,7 @@ import { Global, Module } from "@nestjs/common";
 import { S3_DISK } from "../disk.constants";
 import { ConfigService } from "@nestjs/config";
 import { S3Client } from "@aws-sdk/client-s3";
-import { GetMultipartUploadIdFromS3Bucket, GetPresignedUrlFromS3Bucket, GetPresignedUrlsFromS3Bucket } from "./adapters/disk.inbound";
+import { CheckPresignedUrlFromAwsS3, GetMultipartUploadIdFromS3Bucket, GetPresignedUrlFromS3Bucket, GetPresignedUrlsFromS3Bucket } from "./adapters/disk.inbound";
 
 
 @Global()
@@ -31,13 +31,15 @@ import { GetMultipartUploadIdFromS3Bucket, GetPresignedUrlFromS3Bucket, GetPresi
     },
     GetPresignedUrlFromS3Bucket,
     GetMultipartUploadIdFromS3Bucket,
-    GetPresignedUrlsFromS3Bucket
+    GetPresignedUrlsFromS3Bucket,
+    CheckPresignedUrlFromAwsS3,
   ],
   exports : [
     S3_DISK,
     GetPresignedUrlFromS3Bucket,
     GetMultipartUploadIdFromS3Bucket,
-    GetPresignedUrlsFromS3Bucket
+    GetPresignedUrlsFromS3Bucket,
+    CheckPresignedUrlFromAwsS3,
   ]
 })
 export class S3DiskModule {};

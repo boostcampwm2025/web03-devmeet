@@ -18,3 +18,12 @@ export class NotInsertDatabaseError extends BaseError {
     });
   }
 }
+
+export class DiskError extends BaseError {
+  constructor(err : Error) {
+    super({
+      message : `${err}`,
+      status : 500
+    })
+  }
+};

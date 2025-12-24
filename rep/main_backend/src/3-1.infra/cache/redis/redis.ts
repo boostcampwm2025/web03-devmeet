@@ -8,6 +8,7 @@ import {
 import { REDIS_SERVER } from '../cache.constants';
 import { SelectHsetDataFromRedis } from './user/user.inbound';
 import { InsertCardItemAssetInitDataToRedis } from './card/card.outbound';
+import { SelectCardItemAssetFromRedis } from './card/card.inbound';
 
 @Global()
 @Module({
@@ -47,6 +48,7 @@ import { InsertCardItemAssetInitDataToRedis } from './card/card.outbound';
     SelectHsetDataFromRedis,
     DeleteUserDataToRedis,
     InsertCardItemAssetInitDataToRedis,
+    SelectCardItemAssetFromRedis
   ],
   exports: [
     REDIS_SERVER,
@@ -54,6 +56,7 @@ import { InsertCardItemAssetInitDataToRedis } from './card/card.outbound';
     SelectHsetDataFromRedis,
     DeleteUserDataToRedis,
     InsertCardItemAssetInitDataToRedis,
+    SelectCardItemAssetFromRedis
   ],
 })
 export class RedisModule {}

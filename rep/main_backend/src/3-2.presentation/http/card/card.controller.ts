@@ -115,4 +115,10 @@ export class CardController {
     return { "message" : "ok" };
   };
 
+  // file에 내용만 update할때 사용하는 거
+  @Post(":card_id/items/:item_id/file")
+  async updateCardItemFileController() {
+    
+  }
+
 };

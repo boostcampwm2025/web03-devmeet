@@ -2,11 +2,11 @@ import { Module } from "@nestjs/common";
 import { CardController } from "./card.controller";
 import { AuthModule } from "../auth/auth.module";
 import { CardService } from "./card.service";
-import { CheckCardItemDatasUsecase, CheckCardItemDataUsecase, CreateCardUsecase, UploadingCardItemUsecase } from "@app/card/commands/usecase";
+import { CheckCardItemDatasUsecase, CheckCardItemDataUsecase, CreateCardUsecase, UpdateCardItemDataUsecase, UploadingCardItemUsecase } from "@app/card/commands/usecase";
 import { CARD_ITEM_ASSET_NAMESPACE, CARD_ITEM_ID_ATTRIBUTE_NAME, CARD_ITEM_ID_KEY_NAME, CARD_ITEM_STATUS_ATTRIBUTE_NAME, CARD_ITEM_STATUS_KEY_NAME, CardIdGenerator, CardItemPathMapping } from "./card.interface";
-import { DeleteCardItemAndCardAssetDataToMysql, InsertCardAndCardStateDataToMysql, InsertCardItemAndCardAssetDataToMysql, InsertCardItemDataToMysql, UpdateCardItemAssetDataToMysql } from "@infra/db/mysql/card/card.outbound";
+import { DeleteCardItemAndCardAssetDataToMysql, InsertCardAndCardStateDataToMysql, InsertCardItemAndCardAssetDataToMysql, InsertCardItemDataToMysql, UpdateCardItemAssetDataToMysql, UpdateCardItemAssetEntityToMySql } from "@infra/db/mysql/card/card.outbound";
 import { CheckPresignedUrlFromAwsS3, CheckUploadDatasFromAwsS3, GetMultipartUploadIdFromS3Bucket, GetPresignedUrlFromS3Bucket, GetPresignedUrlsFromS3Bucket } from "@infra/disk/s3/adapters/disk.inbound";
-import { InsertCardItemAssetInitDataToRedis, UpdateCardItemAssetDataToRedis } from "@infra/cache/redis/card/card.outbound";
+import { InsertCardItemAssetInitDataToRedis, UpdateCardItemAssetDataToRedis, UpdateCardItemAssetEntityToRedis } from "@infra/cache/redis/card/card.outbound";
 import { GetMultipartDataUrlUsecase } from "@app/card/queries/usecase";
 import { CACHE_CARD_ITEM_ASSET_KEY_NAME, CACHE_CARD_NAMESPACE_NAME } from "@infra/cache/cache.constants";
 import { DB_CARD_ITEM_ASSETS_ATTRIBUTE_NAME } from "@infra/db/db.constants";
@@ -203,7 +203,40 @@ import { CompleteUploadToAwsS3 } from "@/3-1.infra/disk/s3/adapters/disk.outboun
       ]
     },
     
-
+    // 파일의 내용을 변경하고 싶을때 사용하는 module
+    {
+      provide : UpdateCardItemDataUsecase,
+      useFactory : (
+        cardAssetNamespace : string,
+        itemIdKeyName : string, 
+        itemIdAttribute : string,
+        selectCardAssetFromCache : SelectCardItemAssetFromRedis,
+        selectCardAssetFromDb : SelectCardItemAssetFromMysql,
+        insertCardAssetToCache : InsertCardItemAssetInitDataToRedis,
+        getUploadUrlFromDisk : GetPresignedUrlFromS3Bucket,
+        getMultiVerGroupIdFromDisk : GetMultipartUploadIdFromS3Bucket,
+        updateCardAssetToDb : UpdateCardItemAssetEntityToMySql,
+        updateCardAssetToCache : UpdateCardItemAssetEntityToRedis
+      ) => {
+        return new UpdateCardItemDataUsecase({
+          usecaseValues : {
+            cardAssetNamespace, itemIdKeyName, itemIdAttribute
+          }, selectCardAssetFromCache, selectCardAssetFromDb, insertCardAssetToCache, getUploadUrlFromDisk, getMultiVerGroupIdFromDisk, updateCardAssetToDb, updateCardAssetToCache
+        })
+      },
+      inject : [
+        CARD_ITEM_ASSET_NAMESPACE,
+        CARD_ITEM_ID_KEY_NAME,
+        CARD_ITEM_ID_ATTRIBUTE_NAME,
+        SelectCardItemAssetFromRedis,
+        SelectCardItemAssetFromMysql,
+        InsertCardItemAssetInitDataToRedis,
+        GetPresignedUrlFromS3Bucket,
+        GetMultipartUploadIdFromS3Bucket,
+        UpdateCardItemAssetEntityToMySql,
+        UpdateCardItemAssetEntityToRedis
+      ]
+    },
   ],
 })
 export class CardModule{};

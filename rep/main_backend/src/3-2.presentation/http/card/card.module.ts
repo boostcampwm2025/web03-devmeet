@@ -12,6 +12,7 @@ import { CACHE_CARD_ITEM_ASSET_KEY_NAME, CACHE_CARD_NAMESPACE_NAME } from "@infr
 import { DB_CARD_ITEM_ASSETS_ATTRIBUTE_NAME } from "@infra/db/db.constants";
 import { SelectCardItemAssetFromRedis } from "@infra/cache/redis/card/card.inbound";
 import { SelectCardItemAssetFromMysql } from "@infra/db/mysql/card/card.inbound";
+import { CompleteUploadToAwsS3 } from "@/3-1.infra/disk/s3/adapters/disk.outbound";
 
 
 @Module({
@@ -175,13 +176,14 @@ import { SelectCardItemAssetFromMysql } from "@infra/db/mysql/card/card.inbound"
         insertCardAssetToCache : InsertCardItemAssetInitDataToRedis,
         pathMapping : CardItemPathMapping,
         checkUploadFromDisk : CheckUploadDatasFromAwsS3,
+        completeUploadToDisk : CompleteUploadToAwsS3,
         updateCardAssetToDb : UpdateCardItemAssetDataToMysql,
         updateCardAssetToCache : UpdateCardItemAssetDataToRedis 
       ) => {
         return new CheckCardItemDatasUsecase({
           usecaseValues : {
             cardAssetNamespace, itemIdKeyName, itemIdAttribute, statusColName, statusKeyName
-          }, selectCardAssetFromCache, selectCardAssetFromDb, insertCardAssetToCache, pathMapping, checkUploadFromDisk, updateCardAssetToDb, updateCardAssetToCache
+          }, selectCardAssetFromCache, selectCardAssetFromDb, insertCardAssetToCache, pathMapping, checkUploadFromDisk, completeUploadToDisk, updateCardAssetToDb, updateCardAssetToCache
         })
       },
       inject : [
@@ -195,6 +197,7 @@ import { SelectCardItemAssetFromMysql } from "@infra/db/mysql/card/card.inbound"
         InsertCardItemAssetInitDataToRedis,
         CardItemPathMapping,
         CheckUploadDatasFromAwsS3,
+        CompleteUploadToAwsS3,
         UpdateCardItemAssetDataToMysql,
         UpdateCardItemAssetDataToRedis
       ]

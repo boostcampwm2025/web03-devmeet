@@ -27,3 +27,12 @@ export class DiskError extends BaseError {
     })
   }
 };
+
+export class NotCompleteDataToDisk extends BaseError {
+  constructor() {
+    super({
+      message: '아직 모든 파일을 업로드 하지 않았습니다.',
+      status: 500,
+    });
+  }
+}

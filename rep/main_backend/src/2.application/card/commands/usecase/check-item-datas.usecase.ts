@@ -9,6 +9,7 @@ import { InsertDataToCache, UpdateDataToCache } from "@app/ports/cache/cache.out
 import { CardItemAssetProps, cardItemAssetStatusList } from "@domain/card/vo";
 import { InsertCardAssetDataProps } from "./uploading-card-item.usecase";
 import { PathMapping } from "@domain/shared";
+import { CompleteUploadFileToDisk } from "@/2.application/ports/disk/disk.outbound";
 
 
 type CheckCarItemDatasUsecaseValues = {
@@ -26,6 +27,7 @@ type CheckCardItemDatasUsecaseProps<T, ET, DT> = {
   insertCardAssetToCache : InsertDataToCache<T>; // 데이터가 없을때 저장할 캐싱
   pathMapping : PathMapping // path를 만들어준다. 
   checkUploadFromDisk : CheckUploadDatasFromDisk<DT>;
+  completeUploadToDisk : CompleteUploadFileToDisk<DT>; // 조각난 upload 파일을 다시 모아주는 로직 -> 다시 검증
   updateCardAssetToDb : UpdateValueToDb<ET>; // db upadate
   updateCardAssetToCache : UpdateDataToCache<T>; // cache update
 };
@@ -39,11 +41,12 @@ export class CheckCardItemDatasUsecase<T, ET, DT> {
   private readonly insertCardAssetToCache : CheckCardItemDatasUsecaseProps<T, ET, DT>["insertCardAssetToCache"];
   private readonly pathMapping : CheckCardItemDatasUsecaseProps<T, ET, DT>["pathMapping"];
   private readonly checkUploadFromDisk : CheckCardItemDatasUsecaseProps<T, ET, DT>["checkUploadFromDisk"];
+  private readonly completeUploadToDisk : CheckCardItemDatasUsecaseProps<T, ET, DT>["completeUploadToDisk"];
   private readonly updateCardAssetToDb : CheckCardItemDatasUsecaseProps<T, ET, DT>["updateCardAssetToDb"];
   private readonly updateCardAssetToCache : CheckCardItemDatasUsecaseProps<T, ET, DT>["updateCardAssetToCache"];
 
   constructor({ 
-    usecaseValues, selectCardAssetFromCache, selectCardAssetFromDb, insertCardAssetToCache, pathMapping, checkUploadFromDisk, updateCardAssetToDb, updateCardAssetToCache
+    usecaseValues, selectCardAssetFromCache, selectCardAssetFromDb, insertCardAssetToCache, pathMapping, checkUploadFromDisk, completeUploadToDisk, updateCardAssetToDb, updateCardAssetToCache
   } : CheckCardItemDatasUsecaseProps<T, ET, DT>) {
     this.usecaseValues = usecaseValues;
     this.selectCardAssetFromCache = selectCardAssetFromCache;
@@ -51,6 +54,7 @@ export class CheckCardItemDatasUsecase<T, ET, DT> {
     this.insertCardAssetToCache = insertCardAssetToCache;
     this.pathMapping = pathMapping;
     this.checkUploadFromDisk = checkUploadFromDisk;
+    this.completeUploadToDisk = completeUploadToDisk;
     this.updateCardAssetToDb = updateCardAssetToDb;
     this.updateCardAssetToCache = updateCardAssetToCache;
   }
@@ -93,7 +97,10 @@ export class CheckCardItemDatasUsecase<T, ET, DT> {
     const checked : boolean = await this.checkUploadFromDisk.checks({ pathName : filePath, upload_id : dto.upload_id, tags : dto.tags }); // 여기 안에서 문제가 발생하면 어디가 문제 였는지 이야기 해주면 될 것 같다. 
     if ( !checked ) throw new NotAllowUploadDataToCheck(undefined);
 
-    // 3. 변경 ( db, cache )
+    // 3. 결합
+    await this.completeUploadToDisk.complete({ pathName : filePath, upload_id : dto.upload_id, size : cardAsset.size });
+
+    // 4. 변경 ( db, cache )
     const updateChecked : boolean = await this.updateCardAssetToDb.update({ uniqueValue : dto.item_id, updateColName : this.usecaseValues.statusColName, updateValue : cardItemAssetStatusList[1] }); // 상태를 변경해주면 되기 때문에
     if ( !updateChecked ) throw new NotAllowUpdateDataToDb();
 

@@ -146,14 +146,13 @@ export class CheckUploadDatasFromAwsS3 extends CheckUploadDatasFromDisk<S3Client
     return etag.replace(/"/g, '').trim();
   }
 
-  // 여러개의 etag일 경우 이를 이용해서 검증을 해주어야 한다.
-  async checks({ pathName, upload_id, tags }: { pathName: string; upload_id: string; tags: Array<CheckCardItemDataTag>; }): Promise<boolean> {
-    
+  // 현재 업로드 된 전체 리스트 가져오기
+  private async loadAllUploadParts({
+    Bucket, Key, UploadId
+  } : {
+    Bucket : string; Key : string; UploadId : string;
+  }) : Promise<Map<number, string>> {
     const disk = this.disk;
-
-    const Bucket : string = this.config.get<string>("NODE_APP_AWS_BUCKET_NAME", "bucket");
-
-    if ( !tags || tags.length === 0 ) return false;
 
     const uploadPartSet = new Map<number, string>();
     let nextPartNumber : string | undefined = undefined;
@@ -163,8 +162,8 @@ export class CheckUploadDatasFromAwsS3 extends CheckUploadDatasFromDisk<S3Client
       const res : ListPartsCommandOutput = await disk.send(
         new ListPartsCommand({
           Bucket,
-          Key : pathName,
-          UploadId : upload_id,
+          Key,
+          UploadId,
           PartNumberMarker : nextPartNumber
         })
       );
@@ -182,6 +181,23 @@ export class CheckUploadDatasFromAwsS3 extends CheckUploadDatasFromDisk<S3Client
       if ( !nextPartNumber ) break;
     };
 
+    return uploadPartSet;
+  };
+
+  // 여러개의 etag일 경우 이를 이용해서 검증을 해주어야 한다.
+  async checks({ pathName, upload_id, tags }: { pathName: string; upload_id: string; tags: Array<CheckCardItemDataTag>; }): Promise<boolean> {
+    
+    const Bucket : string = this.config.get<string>("NODE_APP_AWS_BUCKET_NAME", "bucket");
+
+    if ( !tags || tags.length === 0 ) return false;
+
+    const uploadPartSet = await this.loadAllUploadParts({
+      Bucket,
+      Key : pathName,
+      UploadId : upload_id
+    });
+
+    // tag 추가 검증
     for ( const tag of tags ) {
 
       const pn : number = tag.part_number;
@@ -195,6 +211,9 @@ export class CheckUploadDatasFromAwsS3 extends CheckUploadDatasFromDisk<S3Client
 
       if ( s3Etag !== this.parseEtag(etag) ) return false;
     };
+
+    // 지금 까지 검증된 데이터 complete로 합치기
+
 
     return true;
   };

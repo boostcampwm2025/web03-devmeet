@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Param, Patch, Post, Req, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, HttpCode, Param, Patch, Post, Req, Sse, UseGuards, UsePipes, ValidationPipe, MessageEvent } from "@nestjs/common";
 import { JwtGuard } from "../auth/guards";
 import { type Request } from "express";
 import { CardService } from "./card.service";
@@ -6,12 +6,16 @@ import { Payload } from "@app/auth/commands/dto";
 import { CheckEtagsValidate, CheckEtagValidate, CreateCardItemValidate, CreateCardValidate, GetPresignedUrlsValidate, UpdateCardItemFileValdate } from "./card.validate";
 import { AfterCreateCardItemDataInfo, AfterUpdateCardItemDataInfo, CheckCardItemDatasUrlProps, CheckCardItemDataUrlProps, CreateCardDto, CreateCardItemDataDto, UpdateCardItemInfoProps } from "@app/card/commands/dto";
 import { MultiPartResponseDataDto, UploadMultipartDataDto } from "@app/card/queries/dto";
+import { RedisSseBrokerService } from "@infra/channel/redis/channel.service";
+import { CHANNEL_SSE_NAME } from "@infra/channel/channel.constants";
+import { map, Observable } from "rxjs";
 
 
 @Controller("api/cards")
 export class CardController {
   constructor(
-    private readonly cardService : CardService
+    private readonly cardService : CardService,
+    private readonly redisSseBroker : RedisSseBrokerService
   ) {}
 
   @Post("")
@@ -34,6 +38,29 @@ export class CardController {
     const card_id : string = await this.cardService.createCardService(dto);
     return {card_id};
   };
+
+  // sse를 활용하여 card_id에 해당하는 card_item 리스트를 볼 수 있다. - get 요청
+  @Sse(":card_id/sse")
+  @UseGuards(JwtGuard) 
+  sseCardItemListController(
+    @Req() req : Request,
+    @Param("card_id") card_id : string
+  ) : Observable<MessageEvent> {
+    const channel : string = `${CHANNEL_SSE_NAME.CARD_ITEMS}:${card_id}:list`;
+    this.redisSseBroker.subscribe(channel); // 채널에 연결
+    req.on("close", () => {
+      this.redisSseBroker.release(channel); // 닫히면 channel을 release한다. 
+    });
+    // 유저에게 현재 card_item_list를 우선적으로 전달해준다. 
+    
+    // data에서 가져와서 유저에게 전달한다.
+    return this.redisSseBroker.onChannel(channel).pipe(
+      map((payload) => ({
+        data : payload.data
+      }))
+    );
+  };
+
 
   @Post(":card_id/items")
   @UseGuards(JwtGuard)

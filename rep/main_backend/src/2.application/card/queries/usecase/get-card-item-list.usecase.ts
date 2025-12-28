@@ -1,3 +1,4 @@
+// 이 부분이 많이 고민 이었다. -> 실시간을 사용한다면 이 usecase를 사용하기는 할 것이다. 
 import { SelectDatasFromCache } from "@app/ports/cache/cache.inbound";
 import { SelectDataFromDb, SelectDatasFromDb } from "@app/ports/db/db.inbound";
 import { Injectable } from "@nestjs/common";

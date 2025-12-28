@@ -11,7 +11,27 @@ export const CACHE_USER_SESSION_KEY_NAME = Object.freeze({
 
 // card와 관련된 namespace
 export const CACHE_CARD_NAMESPACE_NAME = Object.freeze({
-  CACHE_CARD_ITEM_ASSET : "cache:card:item_asset" // card와 관련된 namespace 중에서 item_asset만
+  CACHE_CAR_ITEM : "cache:card:item", // card_item과 관련해서 저장
+  CACHE_CARD_ITEM_ASSET : "cache:card:item_asset", // card와 관련된 namespace 중에서 item_asset만
+} as const);
+
+export const CACHE_CARD_ITEM_KEY_NAME = Object.freeze({
+  CARD_ID : "card_id",
+  ITEM_ID : "item_id",
+  TYPE : "type",
+  X : "x",
+  Y : "y",
+  WIDTH : "width",
+  HEIGHT : "height",
+  ROTATION : "rotation",
+  SCALE_X : "scale_x",
+  SCALE_Y : "scale_y",
+  OPACITY : "opacity",
+  Z_INDEX : "z_index",
+  IS_LOCKED : "is_locked",
+  IS_VISIBLE : "is_visible",
+  NAME : "name",
+  OPTION: "option",
 } as const);
 
 export const CACHE_CARD_ITEM_ASSET_KEY_NAME = Object.freeze({

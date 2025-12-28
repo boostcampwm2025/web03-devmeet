@@ -14,11 +14,30 @@ import { JwtModule } from '@infra/auth/jwt/jwt.module';
 import { CardModule } from '@present/http/card/card.module';
 import { S3DiskModule } from '@infra/disk/s3/disk';
 import { RedisChannelModule } from '@infra/channel/redis/channel';
+import { GraphQLModule } from '@nestjs/graphql';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { join } from "path";
+import { type Request, type Response } from "express";
+import { SettingGraphqlModule } from './3-2.presentation/graphql/setting/setting.module';
 
 @Module({
   imports: [
     // 사용 모듈
-    ConfigModule.forRoot({}),
+    ConfigModule.forRoot({}), // env 파일을 사용하기 위해서 설치한 모듈 global로 설정하여 import 필요없게 했음
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver : ApolloDriver, // apollo가 graphql에 대해서 관리할 수 있도록 처리
+
+      // 경로 변경 
+      path : "/api/graphql",
+
+      autoSchemaFile : join( process.cwd(), "src/3-2.presentation/graphql/schema.gql" ), // 파일 고정 ( graphql 파일 생성 )
+      sortSchema : true, // graphql 파일이 자주 변경되는걸 막아주고 알파벳 순으로 정렬되도록 함
+
+      playground : process.env.NODE_ENV !== "production", // graphql 테스트 
+      introspection : process.env.NODE_ENV !== "production", // 그 playground를 조회할 수 있게 하는 기능 
+
+      context : ({ req, res } : { req : Request, res : Response }) => ({ req, res }) // req, res 접근을 만들 수 있다면 ( 공통적으로 graphql이 모두 받게 되는 context )
+    }), // graphql에 대한 진입점도 만들고 그에 따른 처리를 하기 위해서 사용
 
     // infra
     MysqlModule, // mysql을 사용하기 위한 모듈
@@ -31,6 +50,8 @@ import { RedisChannelModule } from '@infra/channel/redis/channel';
     SettingModule, // 헬스 체크를 위한 모듈
     AuthModule, // 인증과 관련된 모듈
     CardModule, // card와 관련된 모듈
+
+    SettingGraphqlModule, // graphql에 헬스체크를 위한 모듈
   ],
   controllers: [],
   providers: [],

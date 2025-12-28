@@ -1,0 +1,12 @@
+import { Resolver, Query } from "@nestjs/graphql";
+
+
+@Resolver()
+export class SettingResolver {
+
+  @Query(() => String)
+  health() : string {
+    return "graphql 체크 완료"
+  };
+
+};

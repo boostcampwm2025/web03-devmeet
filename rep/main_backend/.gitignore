@@ -36,3 +36,6 @@ lerna-debug.log*
 
 # ENV
 .env
+
+# graphql 스키마 파일
+src/3-2.presentation/graphql/schema.gql

@@ -9,7 +9,7 @@ async function bootstrap() {
 
   const env = config.get<string>("NODE_ENV", "deployment");
 
-  // 개발 환경일때만 허용하도록 한다. 
+  // 개발 환경일때만 허용하도록 한다. -> 실제 배포에서는 cors 정책이 필요하지는 않다. 
   if ( env !== "production" ) {
     // cors 설정
     const origin : Array<string> = config

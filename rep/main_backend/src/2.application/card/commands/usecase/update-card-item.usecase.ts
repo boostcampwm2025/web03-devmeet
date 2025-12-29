@@ -6,24 +6,24 @@ import { UpdateValuesToDb } from "@app/ports/db/db.outbound";
 
 
 export type UpdateCardItemsUsecaseProps<T> = {
-  updateCardItems : UpdateValuesToDb<T>
+  updateCardItemsToDb : UpdateValuesToDb<T>
 };
 
 @Injectable()
 export class UpdateCardItemsUsecase<T> {
 
-  private readonly updateCardItems : UpdateCardItemsUsecaseProps<T>["updateCardItems"];
+  private readonly updateCardItemsToDb : UpdateCardItemsUsecaseProps<T>["updateCardItemsToDb"];
 
   constructor({
-    updateCardItems
+    updateCardItemsToDb
   } : UpdateCardItemsUsecaseProps<T>) {
-    this.updateCardItems = updateCardItems;
+    this.updateCardItemsToDb = updateCardItemsToDb;
   }
 
   async execute( dtos : Array<UpdateCardItemDto> ) : Promise<void> {
 
     // 1. 수정하려는 card_item 정보를 입력해서 수정을 한다. 
-    await this.updateCardItems.updates(dtos);
+    await this.updateCardItemsToDb.updates(dtos);
 
     // 나중에 추가할 거 더 없으려나?
   }

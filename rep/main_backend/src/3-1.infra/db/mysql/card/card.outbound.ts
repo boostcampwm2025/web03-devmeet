@@ -1,12 +1,12 @@
-import { DeleteValueToDb, InsertValueToDb, UpdateValueToDb } from "@app/ports/db/db.outbound";
+import { DeleteValueToDb, InsertValueToDb, UpdateValuesToDb, UpdateValueToDb } from "@app/ports/db/db.outbound";
 import { Inject, Injectable } from "@nestjs/common";
-import { ResultSetHeader, type Pool } from "mysql2/promise";
+import { PoolConnection, ResultSetHeader, type Pool } from "mysql2/promise";
 import { DB_CARD_ITEM_ASSETS_ATTRIBUTE_NAME, DB_CARD_ITEMS_ATTRIBUTE_NAME, DB_CARD_STATS_ATTRIBUTE_NAME, DB_CARDS_ATTRIBUTE_NAME, DB_TABLE_NAME, MYSQL_DB } from "../../db.constants";
 import { InsertCardAndCardStateDataProps, InsertCardItemAndAssetDataProps } from "@app/card/commands/usecase";
 import { DatabaseError } from "@error/infra/infra.error";
 import { CardItemProps } from "@domain/card/vo";
 import { NotFoundRefereceError, NotInsertDatabaseError } from "@error/infra/card/card.error";
-import { UpdateCardItemAssetValueProps } from "@app/card/commands/dto";
+import { UpdateCardItemAssetValueProps, UpdateCardItemDto } from "@app/card/commands/dto";
 
 
 @Injectable()
@@ -516,5 +516,121 @@ export class UpdateCardStatToMySql extends UpdateValueToDb<Pool> {
 
     return updated;
   };
+
+}
+
+// card_item의 정보를 수정하는 로직
+@Injectable()
+export class UpdateCardItemsToMysql extends UpdateValuesToDb<Pool> {
+
+  // 수정 가능한 col이름
+  private readonly updateColName = [
+    "x",
+    "y",
+    "width",
+    "height",
+    "rotation",
+    "scale_x",
+    "scale_y",
+    "opacity",
+    "z_index",
+    "is_locked",
+    "is_visible",
+    "name",
+    "option",
+  ] as const;
+
+  constructor(
+    @Inject(MYSQL_DB) db : Pool,
+  ) { super(db); };
+
+  // 변경된 숫자 
+  private async updateOne({
+    connection, tableName, entity
+  } : {
+    connection : PoolConnection, tableName : string, entity : UpdateCardItemDto
+  }) : Promise<number> {
+
+    const { item_id } = entity;
+
+    const cols : Array<string> = [];
+    const values : Array<any> = [];
+
+    // col 확인
+    for ( const col of this.updateColName ) {
+      // 수정 열에 없다면 스킵
+      if ( !(col in entity) ) continue;
+
+      // undefiend는 mysql에 넣을 수 없다 따라서 null만 가능하게 하기 위해서
+      const v = entity[col];
+      if ( v === undefined ) continue;
+
+      cols.push(`\`${col}\` = ?`); 
+
+      if ( col === "option" ) {
+        // JSON 타입에 mysql 8.0 이라면 그냥 넣어도 큰 문제는 없지만 혹시 모를 x : () => {} 이런거 같은 경우 에러를 일으키기 때문에 안전하다. 
+        values.push(v === null ? null : JSON.stringify(v)); // option 때문에 일단 이런식으로 수정 
+        continue;
+      }
+      values.push(v);
+    }
+
+    if ( cols.length === 0 ) return 0;
+    
+    const sql : string = `
+    UPDATE \`${tableName}\`
+    SET ${ cols.join(",") }
+    WHERE \`${DB_CARD_ITEMS_ATTRIBUTE_NAME.ITEM_ID}\` = UUID_TO_BIN(?, true)
+    `.trim();
+    values.push(item_id);
+
+    const [ res ] = await connection.execute<ResultSetHeader>(sql, values);
+
+    return res.affectedRows;
+  }
+
+  // 정합성을 높이자
+  private async updateData({
+    db, tableName, entities
+  } : {
+    db : Pool, tableName : string, entities: Array<UpdateCardItemDto>
+  }) : Promise<boolean> {
+
+    const connection = await db.getConnection();
+    try {
+
+      await connection.beginTransaction();
+
+      // 마지막 값이 수정 값으로 설정하도록 수정 -> guard로서 넣는게 맞을까? 
+      const entitesNotDup = new Map<string, UpdateCardItemDto>();
+      for ( const e of entities ) entitesNotDup.set(e.item_id, e);
+      // 마지막만 남은 data들
+      const datas = [...entitesNotDup.values()];
+
+      // 수정할 데이터 선정
+      for ( const data of datas ) {
+        if ( !data.item_id ) continue; // 만약 해당 item_id가 없다면 graphql에서 잡히기는 했을거다 여기서는 그냥 스킵으로 가자
+        await this.updateOne({ connection, tableName, entity : data });
+      }
+
+      await connection.commit();
+      return true;
+    } catch (err) {
+      if ( connection ) await connection.rollback();
+      throw new DatabaseError(err);
+    } finally {
+      if (connection) connection.release();
+    }
+
+  }
+
+  async updates(entities: Array<UpdateCardItemDto>): Promise<boolean> {
+
+    const db : Pool = this.db;
+    const tableName : string = DB_TABLE_NAME.CARD_ITEMS;
+
+    const updated : boolean = await this.updateData({ db, tableName, entities });
+    return updated;
+  }
 
 }

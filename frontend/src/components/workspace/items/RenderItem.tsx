@@ -4,6 +4,8 @@ import { WorkspaceItem } from '@/types/workspace';
 
 // 아이템 컴포넌트
 import TextItem from './TextItem';
+import ImageItem from './ImageItem';
+import VideoItem from './VideoItem';
 // import ImageItem from './ImageItem';
 // import VideoItem from './VideoItem';
 

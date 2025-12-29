@@ -11,6 +11,8 @@ import { UpdateValueToDb } from "@app/ports/db/db.outbound";
 type GetCardItemDatasUsecaseValues = {
   cardIdAttribute : string;
   cardNamespace : string;
+  cardViewCountAttribute : string; // 나중에 like_count까지 확장가능
+  cardViewCountKeyName : string; // 나중에 like_count까지 확장가능 -> cache도 마찬가지
 };
 
 type GetCardItemDatasUsecaseProps<T, CT, ET> = {
@@ -96,9 +98,9 @@ export class GetCardItemDatasUsecase<T, CT, ET> {
     };
 
     // 조회수 올리기 -> 아예 여기서 속도가 좀 느려지더라도 명확하게 하자 
-    await this.updateCardStatToDb.update({ uniqueValue : card_id, updateColName : "", updateValue : "" }); // card_stat에 값 변경
+    await this.updateCardStatToDb.update({ uniqueValue : card_id, updateColName : this.usecaseValues.cardViewCountAttribute, updateValue : 1 }); // card_stat에 값 변경
     const namespace : string = `${this.usecaseValues.cardNamespace}:${card_id}`;
-    await this.updateCardStatToCache.updateKey({ namespace, keyName : "", updateValue : undefined }); // cache에서 card 정보 변경
+    await this.updateCardStatToCache.updateKey({ namespace, keyName : this.usecaseValues.cardViewCountKeyName, updateValue : 1 }); // cache에서 card 정보 변경
 
     return [
       ...completeCheckData,

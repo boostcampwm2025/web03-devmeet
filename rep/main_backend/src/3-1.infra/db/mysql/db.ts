@@ -10,7 +10,7 @@ import {
   InsertOauthAndUserDataToMysql,
   InsertUserDataToMySql,
 } from './user/user.outbound';
-import { DeleteCardItemAndCardAssetDataToMysql, InsertCardAndCardStateDataToMysql, InsertCardItemAndCardAssetDataToMysql, InsertCardItemDataToMysql, UpdateCardItemAssetDataToMysql, UpdateCardItemAssetEntityToMySql } from './card/card.outbound';
+import { DeleteCardItemAndCardAssetDataToMysql, InsertCardAndCardStateDataToMysql, InsertCardItemAndCardAssetDataToMysql, InsertCardItemDataToMysql, UpdateCardItemAssetDataToMysql, UpdateCardItemAssetEntityToMySql, UpdateCardStatToMySql } from './card/card.outbound';
 import { SelectAllCardItemAndAssetFromMysql, SelectCardAndStatFromMysql, SelectCardItemAssetFromMysql } from './card/card.inbound';
 
 @Global()
@@ -69,7 +69,8 @@ import { SelectAllCardItemAndAssetFromMysql, SelectCardAndStatFromMysql, SelectC
     SelectCardItemAssetFromMysql,
     UpdateCardItemAssetEntityToMySql,
     SelectAllCardItemAndAssetFromMysql,
-    SelectCardAndStatFromMysql
+    SelectCardAndStatFromMysql,
+    UpdateCardStatToMySql
   ],
   exports: [
     MYSQL_DB,
@@ -85,7 +86,8 @@ import { SelectAllCardItemAndAssetFromMysql, SelectCardAndStatFromMysql, SelectC
     SelectCardItemAssetFromMysql,
     UpdateCardItemAssetEntityToMySql,
     SelectAllCardItemAndAssetFromMysql,
-    SelectCardAndStatFromMysql
+    SelectCardAndStatFromMysql,
+    UpdateCardStatToMySql
   ],
 })
 export class MysqlModule {}

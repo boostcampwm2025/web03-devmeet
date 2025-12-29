@@ -475,3 +475,45 @@ export class UpdateCardItemAssetEntityToMySql extends UpdateValueToDb<Pool> {
   }
 
 };
+
+// card_stat에 조회수, 좋아요 같은 값을 변하게 해주는 로직 
+@Injectable()
+export class UpdateCardStatToMySql extends UpdateValueToDb<Pool> {
+
+  constructor(
+    @Inject(MYSQL_DB) db : Pool,
+  ) { super(db); };
+
+  private async updateTable({
+    db, tableName, uniqueValue, updateColName, updateValue
+  } : {
+    db : Pool, tableName : string, uniqueValue: string; updateColName: string; updateValue: number
+  }) : Promise<boolean> {
+
+    // 상한선도 막을 수 있다는 점이다. 
+    const sql : string = `
+    UPDATE \`${tableName}\`
+    SET 
+      \`${updateColName}\` = GREATEST(\`${updateColName}\` + ?, 0)
+    WHERE 
+      \`${DB_CARD_STATS_ATTRIBUTE_NAME.CARD_ID}\` = UUID_TO_BIN(?, true)
+    `;
+
+    const [ res ] = await db.query<ResultSetHeader>(sql, [ updateValue, uniqueValue ]);
+
+    return res && res.affectedRows ? true : false;
+  }
+
+  // updateColname을 변환 시킬것이고 updateValue는 얼마만큼 변환시키는지 숫자를 나타내도록 함 updateValue -> 1 이면 1 올림
+  // uniqueValue는 card_id 이다.
+  async update({ uniqueValue, updateColName, updateValue }: { uniqueValue: string; updateColName: string; updateValue: number; }): Promise<boolean> {
+   
+    const db = this.db;
+    const tableName : string = DB_TABLE_NAME.CARD_STATS;  
+
+    const updated : boolean = await this.updateTable({ db, tableName, uniqueValue, updateColName, updateValue });
+
+    return updated;
+  };
+
+}

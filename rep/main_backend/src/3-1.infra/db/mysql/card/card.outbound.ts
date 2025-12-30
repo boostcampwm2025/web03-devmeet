@@ -580,7 +580,7 @@ export class UpdateCardItemsToMysql extends UpdateValuesToDb<Pool> {
     const sql : string = `
     UPDATE \`${tableName}\`
     SET ${ cols.join(",") }
-    WHERE \`${DB_CARD_ITEMS_ATTRIBUTE_NAME.ITEM_ID}\` = UUID_TO_BIN(?, true)
+    WHERE \`${DB_CARD_ITEMS_ATTRIBUTE_NAME.ITEM_ID}\` = UUID_TO_BIN(?, true) AND \`${DB_CARD_ITEMS_ATTRIBUTE_NAME.DELETED_AT}\` IS NULL
     `.trim();
     values.push(item_id);
 
@@ -747,7 +747,7 @@ export class UpdateCardToMysql extends UpdateValueToDb<Pool> {
     const sql : string = `
     UPDATE \`${tableName}\`
     SET ${placeholders}
-    WHERE \`${DB_CARDS_ATTRIBUTE_NAME.CARD_ID}\` = UUID_TO_BIN(?, true)
+    WHERE \`${DB_CARDS_ATTRIBUTE_NAME.CARD_ID}\` = UUID_TO_BIN(?, true) AND \`${DB_CARDS_ATTRIBUTE_NAME.DELETED_AT}\` IS NULL
     `;
 
     const [ result ] = await db.execute<ResultSetHeader>(sql, vals);

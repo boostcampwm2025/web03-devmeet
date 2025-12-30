@@ -122,24 +122,31 @@ export default function CardItem({
 
         {/* 카드 앞면 */}
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 overflow-hidden rounded-lg"
           style={{
             backfaceVisibility: 'hidden',
-            transform: 'rotateY(180deg)', // 미리 뒤집어두기
+            transform: 'rotateY(180deg)',
           }}
         >
-          <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-lg border-4 border-white bg-gray-100">
-            <Image
-              src={sampleImg}
-              alt="sample"
-              className="rounded-md object-cover"
-              draggable={false}
-              priority
+          {/* 회전 전용 wrapper - 부모의 w, h를 채우도록 */}
+          <div className="relative flex h-full w-full items-center justify-center">
+            <div
+              className="absolute"
               style={{
+                width: '240px', // CardItem의 h-60
+                height: '140px', // CardItem의 w-35
                 transform: 'rotate(90deg)',
-                scale: 1.5, // 추후 스케일로 지정하지 않게 고려필요
               }}
-            />
+            >
+              <Image
+                src={sampleImg}
+                alt="sample"
+                fill
+                className="rounded-lg border-4 border-white bg-gray-100 object-cover"
+                draggable={false}
+                priority
+              />
+            </div>
           </div>
         </div>
       </div>

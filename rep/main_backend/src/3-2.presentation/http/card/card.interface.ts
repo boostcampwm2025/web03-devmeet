@@ -33,3 +33,14 @@ export class CardItemPathMapping implements PathMapping {
     return path.posix.join(...pathList);
   }
 };
+
+// 스트림과 관련된 type들 
+export type ListState = {
+  recents : Array<any>;
+  popularities : Array<any>; 
+};
+
+// 스트림을 나눌 메시지
+export type PartialMsg = 
+  | { type : "recents"; data : ListState["recents"] }
+  | { type : "popularities"; data : ListState['popularities'] };

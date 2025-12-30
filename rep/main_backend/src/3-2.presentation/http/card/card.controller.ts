@@ -6,9 +6,10 @@ import { Payload } from "@app/auth/commands/dto";
 import { CheckEtagsValidate, CheckEtagValidate, CreateCardItemValidate, CreateCardValidate, GetPresignedUrlsValidate, UpdateCardItemFileValdate } from "./card.validate";
 import { AfterCreateCardItemDataInfo, AfterUpdateCardItemDataInfo, CheckCardItemDatasUrlProps, CheckCardItemDataUrlProps, CreateCardDto, CreateCardItemDataDto, UpdateCardItemInfoProps } from "@app/card/commands/dto";
 import { MultiPartResponseDataDto, UploadMultipartDataDto } from "@app/card/queries/dto";
-import { map, Observable } from "rxjs";
+import { auditTime, map, merge, Observable, scan } from "rxjs";
 import { CHANNEL_SSE_NAME } from "@infra/channel/channel.constants";
 import { RedisSseBrokerService } from "@infra/channel/redis/channel.service";
+import { ListState, PartialMsg } from "./card.interface";
 
 
 @Controller("api/cards")
@@ -44,18 +45,51 @@ export class CardController {
   sseCardItemListController(
     @Req() req : Request
   ) : Observable<MessageEvent> {
-    const channel : string = `${CHANNEL_SSE_NAME.CARD_ITEMS}:list`;
-    this.redisSseBroker.subscribe(channel); // 채널에 연결
-    req.on("close", () => {
-      this.redisSseBroker.release(channel); // 닫히면 channel을 release한다. 
-    });
-    // 유저에게 현재 card_item_list를 우선적으로 전달해준다. 
+
+    // 필요한 채널이 있으면 여기서 생성하고 구독하면 된다. 
+    // 1. 최근 리스트
+    const recents : string = `${CHANNEL_SSE_NAME.CARD_ITEMS}:recent`; 
+    this.redisSseBroker.subscribe(recents); 
+    // 2. 조회수 높은 거 리스트
+    const popularity : string = `${CHANNEL_SSE_NAME.CARD_ITEMS}:popularity`; 
+    this.redisSseBroker.subscribe(popularity);
     
-    // data에서 가져와서 유저에게 전달한다. -> 해당 payload를 data : any 에 맞게 변형 하는 pipe를 사용
-    return this.redisSseBroker.onChannel(channel).pipe(
-      map((payload) => ({
-        data : payload.data
+    req.on("close", () => {
+      this.redisSseBroker.release(recents); // 닫히면 channel을 release한다. 
+      this.redisSseBroker.release(popularity);
+    });
+
+    // throthling을 백엔드에서도 처리할 수는 있다. 
+    auditTime(100) // 100ms 초 동안 가장 마지막만 인정을 한다는 점이다. -> 프론트를 위해서 이렇게 처리
+     
+    // 스트림 생성 -> 데이터가 들어왔을때 이에 대해서 수정을 해주어야 한다. 
+    const recentsStream$ = this.redisSseBroker.onChannel(recents).pipe(
+      map((payload : any) : PartialMsg => ({
+        type : "recents",
+        data : payload.data ?? payload
       }))
+    );
+    const popularityStream$ = this.redisSseBroker.onChannel(popularity).pipe(
+      map((payload : any) : PartialMsg => ({
+        type : "popularities",
+        data : payload.data ?? payload
+      }))
+    );
+
+    // data에서 가져와서 유저에게 전달한다. -> 해당 payload를 data : any 에 맞게 변형 하는 pipe를 사용
+    return merge(recentsStream$, popularityStream$).pipe(
+      // 값이 들어올때마다 state, msg를 처리해준다.
+      scan((state : ListState, msg : PartialMsg) => {
+        switch(msg.type) {
+          case "recents":
+            return { ...state, recents : msg.data };
+          case "popularities":
+            return { ...state, popularities : msg.data };
+          default:
+            return state; // 이상한게 들어오면 그냥 원래 있는거 주면 그만이다. 
+        }
+      }, { recents: [], popularities : [] }),
+      map((state) => ({ data : state}))
     );
   };
 

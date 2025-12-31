@@ -1,9 +1,10 @@
 import { SelectDataFromDb } from "@app/ports/db/db.inbound";
 import { Inject, Injectable } from "@nestjs/common";
 import { RowDataPacket, type Pool } from "mysql2/promise";
-import { DB_CARD_ITEM_ASSETS_ATTRIBUTE_NAME, DB_CARD_ITEMS_ATTRIBUTE_NAME, DB_CARD_STATS_ATTRIBUTE_NAME, DB_CARDS_ATTRIBUTE_NAME, DB_TABLE_NAME, MYSQL_DB } from "../../db.constants";
+import { DB_CARD_ITEM_ASSETS_ATTRIBUTE_NAME, DB_CARD_ITEMS_ATTRIBUTE_NAME, DB_CARD_STATS_ATTRIBUTE_NAME, DB_CARDS_ATTRIBUTE_NAME, DB_TABLE_NAME, DB_USER_PROFILES_ATTRIBUTE_NAME, DB_USERS_ATTRIBUTE_NAME, MYSQL_DB } from "../../db.constants";
 import { CardItemAssetProps, CardItemAssetStatusProps, CardItemProps } from "@domain/card/vo";
 import { GetCardItemAndAssetListsType, GetCardMetaAndStatProps } from "@app/card/queries/usecase";
+import { CardDataProps } from "@app/card/queries/dto";
 
 
 interface CardItemAssetRowPacket extends RowDataPacket {
@@ -301,4 +302,195 @@ export class SelectCardAndStatFromMysql extends SelectDataFromDb<Pool> {
     return data;
   };
 
+};
+
+// 실시간으로 카드 리스트를 가져오는 것인데 (초반도 이걸 사용하기는 한다.) ->  
+type CardListDataTypes = {
+  "recents" : Array<CardDataProps>,
+  "popularities" : Array<CardDataProps>
+};
+
+type CardListRow = {
+  card_id: string;
+  category_id: number;
+  thumbnail_path: string | null;
+  status: 'published' | 'draft' | 'archived';
+  title: string;
+
+  like_count: number | string;
+  view_count: number | string;
+
+  user_id: string;
+  nickname: string;
+  email: string;
+  profile_path: string | null;
+
+  created_at: Date;
+  updated_at: Date;
+};
+
+@Injectable()
+export class SelectCardListsFromMysql extends SelectDataFromDb<Pool> {
+
+  constructor(
+    @Inject(MYSQL_DB) db : Pool
+  ) { super(db); };
+
+  // 변경을 위한 함수들
+  private toNumber(v: number | string): number {
+    return typeof v === "number" ? v : Number(v);
+  }
+  private mapRowToCardData(row: CardListRow): CardDataProps {
+    return {
+      card_id: row.card_id,
+      category_id: row.category_id,
+      thumbnail_path: row.thumbnail_path,
+      status: row.status,
+      title: row.title,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+
+      user: {
+        user_id: row.user_id,
+        nickname: row.nickname,
+        email: row.email,
+        profile_path: row.profile_path,
+      },
+
+      stat: {
+        like_count: this.toNumber(row.like_count),
+        view_count: this.toNumber(row.view_count),
+      },
+    };
+  }
+
+  private async selectData({
+    db
+  } : {
+    db : Pool
+  }) : Promise<CardListDataTypes> {
+    // 기본 설정
+    const cardTableName : string = DB_TABLE_NAME.CARDS
+    const cardNamespace : string = "c";
+
+    const cardStatTableName : string = DB_TABLE_NAME.CARD_STATS;
+    const cardStatNamespace : string = "cs";
+
+    const userTableName : string = DB_TABLE_NAME.USERS;
+    const userNamespace : string = "u";
+
+    const userProfileTableName : string = DB_TABLE_NAME.USER_PROFILES;
+    const userProfileNamespace : string = "up";
+
+    const mainNamespace : string = "m";
+
+    // 최신 카드 가져오기 
+    const recentSql: string = `
+    SELECT 
+      BIN_TO_UUID(${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CARD_ID}\`, true) AS card_id,
+      ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CATEGORY_ID}\`,
+      ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.THUMBNAIL_PATH}\`,
+      ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.STATUS}\`,
+      ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.TITLE}\`,
+      ${cardStatNamespace}.\`${DB_CARD_STATS_ATTRIBUTE_NAME.LIKE_COUNT}\`,
+      ${cardStatNamespace}.\`${DB_CARD_STATS_ATTRIBUTE_NAME.VIEW_COUNT}\`,
+      BIN_TO_UUID(${userNamespace}.\`${DB_USERS_ATTRIBUTE_NAME.USER_ID}\`, true) AS user_id, 
+      ${userNamespace}.\`${DB_USERS_ATTRIBUTE_NAME.NICKNAME}\`,
+      ${userNamespace}.\`${DB_USERS_ATTRIBUTE_NAME.EMAIL}\`,
+      ${userProfileNamespace}.\`${DB_USER_PROFILES_ATTRIBUTE_NAME.PROFILE_PATH}\`,
+      ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CREATED_AT}\`,
+      ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.UPDATED_AT}\`
+    FROM (
+      SELECT
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CARD_ID}\`,
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.USER_ID}\`,
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CATEGORY_ID}\`,
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.THUMBNAIL_PATH}\`,
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.STATUS}\`,
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.TITLE}\`,
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CREATED_AT}\`,
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.UPDATED_AT}\`
+      FROM \`${cardTableName}\` ${cardNamespace}
+      WHERE ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.DELETED_AT}\` IS NULL
+      ORDER BY ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CREATED_AT}\` DESC
+      LIMIT 20
+    ) ${mainNamespace}
+    JOIN \`${cardStatTableName}\` ${cardStatNamespace}
+      ON ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CARD_ID}\`
+      = ${cardStatNamespace}.\`${DB_CARD_STATS_ATTRIBUTE_NAME.CARD_ID}\`
+    JOIN \`${userTableName}\` ${userNamespace}
+      ON ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.USER_ID}\`
+      = ${userNamespace}.\`${DB_USERS_ATTRIBUTE_NAME.USER_ID}\`
+    LEFT JOIN \`${userProfileTableName}\` ${userProfileNamespace}
+      ON ${userNamespace}.\`${DB_USERS_ATTRIBUTE_NAME.USER_ID}\`
+      = ${userProfileNamespace}.\`${DB_USER_PROFILES_ATTRIBUTE_NAME.USER_ID}\`
+    ORDER BY ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CREATED_AT}\` DESC
+    `;
+
+    // 가장 높은 조회수 기준 조회하기 
+    const popularitySql : string = `
+    SELECT 
+      BIN_TO_UUID(${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CARD_ID}\`, true) card_id,
+      ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CATEGORY_ID}\`,
+      ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.THUMBNAIL_PATH}\`,
+      ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.STATUS}\`,
+      ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.TITLE}\`,
+      ${mainNamespace}.\`${DB_CARD_STATS_ATTRIBUTE_NAME.LIKE_COUNT}\`,
+      ${mainNamespace}.\`${DB_CARD_STATS_ATTRIBUTE_NAME.VIEW_COUNT}\`,
+      BIN_TO_UUID(${userNamespace}.\`${DB_USERS_ATTRIBUTE_NAME.USER_ID}\`, true) user_id,
+      ${userNamespace}.\`${DB_USERS_ATTRIBUTE_NAME.NICKNAME}\`,
+      ${userNamespace}.\`${DB_USERS_ATTRIBUTE_NAME.EMAIL}\`,
+      ${userProfileNamespace}.\`${DB_USER_PROFILES_ATTRIBUTE_NAME.PROFILE_PATH}\`,
+      ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CREATED_AT}\`,
+      ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.UPDATED_AT}\`
+    FROM (
+      SELECT
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CARD_ID}\`,
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.USER_ID}\`,
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CATEGORY_ID}\`,
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.THUMBNAIL_PATH}\`,
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.STATUS}\`,
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.TITLE}\`,
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CREATED_AT}\`,
+        ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.UPDATED_AT}\`,
+        ${cardStatNamespace}.\`${DB_CARD_STATS_ATTRIBUTE_NAME.LIKE_COUNT}\`,
+        ${cardStatNamespace}.\`${DB_CARD_STATS_ATTRIBUTE_NAME.VIEW_COUNT}\`
+      FROM \`${cardTableName}\` ${cardNamespace}
+      JOIN \`${cardStatTableName}\` ${cardStatNamespace}
+        ON ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.CARD_ID}\`
+        = ${cardStatNamespace}.\`${DB_CARD_STATS_ATTRIBUTE_NAME.CARD_ID}\`
+      WHERE ${cardNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.DELETED_AT}\` IS NULL 
+      ORDER BY ${cardStatNamespace}.\`${DB_CARD_STATS_ATTRIBUTE_NAME.VIEW_COUNT}\` DESC
+      LIMIT 20
+    ) ${mainNamespace}
+    JOIN \`${userTableName}\` ${userNamespace}
+      ON ${mainNamespace}.\`${DB_CARDS_ATTRIBUTE_NAME.USER_ID}\`
+      = ${userNamespace}.\`${DB_USERS_ATTRIBUTE_NAME.USER_ID}\`
+    LEFT JOIN \`${userProfileTableName}\` ${userProfileNamespace}
+      ON ${userNamespace}.\`${DB_USERS_ATTRIBUTE_NAME.USER_ID}\`
+      = ${userProfileNamespace}.\`${DB_USER_PROFILES_ATTRIBUTE_NAME.USER_ID}\`
+    ORDER BY ${mainNamespace}.\`${DB_CARD_STATS_ATTRIBUTE_NAME.VIEW_COUNT}\` DESC
+    `;
+
+    const [ recentRows, popularRows ] = await Promise.all([
+      db.query(recentSql).then(([rows]) => rows as Array<CardListRow>),
+      db.query(popularitySql).then(([rows]) => rows as Array<CardListRow>)
+    ]);
+
+    return {
+      "recents" : recentRows.map((row) => this.mapRowToCardData(row)),
+      "popularities" : popularRows.map((row) => this.mapRowToCardData(row))
+    };
+  }
+
+  // 여기에 attributeName, attributeValue는 없다. 
+  async select({ attributeName, attributeValue, }: { attributeName: string; attributeValue: string; }): Promise<CardListDataTypes> {
+
+    const db : Pool = this.db;
+
+    const data = await this.selectData({ db });
+
+    return data;
+  };
+  
 };

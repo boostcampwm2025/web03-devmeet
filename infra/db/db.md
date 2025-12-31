@@ -122,10 +122,13 @@ CREATE TABLE `Cards` (
 ### 2. 인덱싱
 ```sql
 CREATE INDEX idx_cards_user_status_deleted_updated
-  ON `Cards`(user_id, `status`, deleted_at, updated_at);
+  ON `Cards`(user_id, deleted_at, updated_at);
 
-CREATE INDEX idx_cards_category_status_deleted_updated
-  ON `Cards` (category_id, `status`, deleted_at, updated_at);
+CREATE INDEX idx_cards_category_status_deleted_created
+  ON `Cards` (category_id, deleted_at, created_at);
+
+CREATE INDEX idx_cards_deleted_at_created
+  ON `Cards` (deleted_at, created_at);
 ```
 
 ## Card_items
@@ -181,6 +184,13 @@ CREATE TABLE `Card_stats`(
 
   CONSTRAINT fk_card_card_stat_card_id FOREIGN KEY (`card_id`) REFERENCES `Cards`(`card_id`) ON UPDATE CASCADE ON DELETE CASCADE
 );
+```
+
+### 2. 인덱싱
+
+```sql
+CREATE INDEX idx_card_stats_view_count 
+  ON `Card_stats`(`view_count` DESC);
 ```
 
 ## Categories

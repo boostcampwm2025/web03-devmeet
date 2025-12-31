@@ -806,5 +806,3 @@ export class DeleteCardToMysql extends DeleteValueToDb<Pool> {
   };
 
 };
-
-// 실시간으로 카드 리스트를 가져오는 것인데 (초반도 이걸 사용하기는 한다.) ->  

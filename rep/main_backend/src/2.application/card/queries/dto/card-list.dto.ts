@@ -6,7 +6,7 @@ type CardUserProps = {
   user_id : string;
   nickname : string;
   email : string;
-  profile_path : string | undefined;
+  profile_path : string | null;
 };
 
 type CardStatProps = {
@@ -17,11 +17,11 @@ type CardStatProps = {
 export type CardDataProps = {
   card_id: string;
   category_id: number;
-  thumbnail_path: string | undefined;
+  thumbnail_path: string | null;
   status: CardStatusProps;
   title: string;
-  created_at?: Date;
-  updated_at?: Date;
+  created_at: Date;
+  updated_at: Date;
 
   // 유저 정보
   user : CardUserProps;
@@ -30,4 +30,4 @@ export type CardDataProps = {
   stat : CardStatProps;
 };
 
-export type CardListDataProps = Record<string, CardDataProps>; // type : card_data
+export type CardListDataProps = Record<string, Array<CardDataProps>>; // type : card_data

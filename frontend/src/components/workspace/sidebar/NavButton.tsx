@@ -5,7 +5,7 @@ import { ComponentType, SVGProps } from 'react';
 interface NavButtonProps {
   icon: ComponentType<SVGProps<SVGSVGElement>>;
   label: string;
-  bgColor?: string; // 기본 배경색
+  bgColor?: string;
   activeBgColor?: string;
   isActive?: boolean;
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;

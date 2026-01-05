@@ -59,18 +59,21 @@ export default function Sidebar() {
         <NavButton
           icon={PentagonIcon}
           label="polygon"
+          activeBgColor="bg-neutral-700"
           isActive={activeTab === 'polygon'}
           onClick={(e) => handleTabClick('polygon', e)}
         />
         <NavButton
           icon={TextBoxIcon}
           label="text"
+          activeBgColor="bg-neutral-700"
           isActive={activeTab === 'text'}
           onClick={(e) => handleTabClick('text', e)}
         />
         <NavButton
           icon={ImageIcon}
-          label="image"
+          label="media"
+          activeBgColor="bg-neutral-700"
           isActive={activeTab === 'media'}
           onClick={(e) => handleTabClick('media', e)}
         />

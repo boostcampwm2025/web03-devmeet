@@ -15,41 +15,37 @@ import {
   WorkspaceIcon,
 } from '@/assets/icons/meeting';
 import MeetingButton from '@/components/meeting/MeetingButton';
-import { useState } from 'react';
+import { useMeeingStore } from '@/store/useMeetingStore';
 
 export default function MeetingMenu() {
-  // 추후 전역 변수로 수정 필요
-  const [meetingState, setMeetingState] = useState({
-    audio: 'ON',
-    video: 'ON',
-    members: 1,
-    newChat: true,
-    workspace: false,
-    codeEditor: false,
-  });
+  const {
+    audio,
+    setAudio,
+    video,
+    setVideo,
+    members,
+    hasNewChat,
+    setHasNewChat,
+    isWorkspaceOpen,
+    isCodeEditorOpen,
+    setIsOpen,
+  } = useMeeingStore();
 
-  const toggleAudio = () =>
-    setMeetingState((prev) => ({
-      ...prev,
-      audio: prev.audio === 'ON' ? 'OFF' : 'ON',
-    }));
+  const toggleAudio = () => setAudio(audio === 'ON' ? 'OFF' : 'ON');
 
-  const toggleVideo = () =>
-    setMeetingState((prev) => ({
-      ...prev,
-      video: prev.video === 'ON' ? 'OFF' : 'ON',
-    }));
+  const toggleVideo = () => setVideo(video === 'ON' ? 'OFF' : 'ON');
 
   const onChatClick = () => {
-    setMeetingState((prev) => ({ ...prev, newChat: false }));
+    setHasNewChat(false);
+    setIsOpen('isChatOpen', true);
   };
 
   const onWorkspaceClick = () => {
-    setMeetingState((prev) => ({ ...prev, workspace: !prev.workspace }));
+    setIsOpen('isWorkspaceOpen', !isWorkspaceOpen);
   };
 
   const onCodeEditorClick = () => {
-    setMeetingState((prev) => ({ ...prev, codeEditor: !prev.codeEditor }));
+    setIsOpen('isCodeEditorOpen', !isCodeEditorOpen);
   };
 
   return (
@@ -58,7 +54,7 @@ export default function MeetingMenu() {
       <section className="flex gap-2">
         <MeetingButton
           icon={
-            meetingState.audio === 'ON' ? (
+            audio === 'ON' ? (
               <MicOnIcon className="h-8 w-8" />
             ) : (
               <MicOffIcon className="h-8 w-8" />
@@ -69,7 +65,7 @@ export default function MeetingMenu() {
         />
         <MeetingButton
           icon={
-            meetingState.video === 'ON' ? (
+            video === 'ON' ? (
               <CamOnIcon className="h-8 w-8" />
             ) : (
               <CamOffIcon className="h-8 w-8" />
@@ -92,12 +88,12 @@ export default function MeetingMenu() {
             text="참가자"
           />
           <span className="absolute top-0.5 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-600 text-xs font-bold text-neutral-50">
-            {meetingState.members}
+            {members}
           </span>
         </div>
         <MeetingButton
           icon={
-            meetingState.newChat ? (
+            hasNewChat ? (
               <MarkedChatIcon className="h-8 w-8" />
             ) : (
               <ChatIcon className="h-8 w-8" />
@@ -113,13 +109,13 @@ export default function MeetingMenu() {
         <MeetingButton
           icon={<WorkspaceIcon className="h-8 w-8" />}
           text="워크스페이스"
-          isActive={meetingState.workspace}
+          isActive={isWorkspaceOpen}
           onClick={onWorkspaceClick}
         />
         <MeetingButton
           icon={<CodeIcon className="h-8 w-8" />}
           text="코드 에디터"
-          isActive={meetingState.codeEditor}
+          isActive={isCodeEditorOpen}
           onClick={onCodeEditorClick}
         />
       </section>

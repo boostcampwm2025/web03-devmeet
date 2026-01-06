@@ -11,7 +11,7 @@ const style: {
 } = {
   base: 'inline-flex items-center justify-center box-border select-none m-0 p-0 w-fit h-fit cursor-pointer disabled:cursor-default',
   size: {
-    sm: 'h-full max-h-[50px] px-3 py-[6px] text-sm font-bold',
+    sm: 'h-full h-auto px-3 py-[6px] text-sm font-bold',
     lg: 'w-full h-full max-h-[52px] py-4 px-2 text-base font-bold',
   },
   shape: {
@@ -20,7 +20,7 @@ const style: {
   },
   color: {
     active: 'text-white', // TODO: 버튼 호버 시 활성화되는 스타일
-    primary: 'bg-sky-600 text-white', // sky
+    primary: 'bg-sky-600 text-white hover:bg-sky-700', // sky
     secondary: 'bg-sky-700 text-white', // dark-sky
     outlinePrimary: 'bg-white border border-sky-600 text-sky-600',
     disabled: 'bg-neutral-500 text-white', // ex. 취소 버튼

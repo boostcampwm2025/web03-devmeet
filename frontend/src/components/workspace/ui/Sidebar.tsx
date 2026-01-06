@@ -53,7 +53,7 @@ export default function Sidebar() {
           isActive={activeTab === 'eraser'}
         />
 
-        <div className="h-px w-8 bg-neutral-200" />
+        <div className="h-px w-8 bg-neutral-400" />
 
         <NavButton
           icon={PentagonIcon}

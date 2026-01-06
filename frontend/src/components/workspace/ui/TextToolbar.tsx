@@ -97,18 +97,18 @@ export default function TextToolbar() {
       </div>
 
       {/* 색상 */}
-      <div className="h-8 w-px bg-neutral-200" />
+      <div className="h-8 w-px bg-neutral-400" />
       <NavButton icon={TextColorIcon} label="글자 색상" />
       <NavButton icon={BgColorIcon} label="배경 색상" />
 
       {/* 정렬 */}
-      <div className="h-8 w-px bg-neutral-200" />
+      <div className="h-8 w-px bg-neutral-400" />
       <NavButton icon={AlignLeftIcon} label="좌측 정렬" />
       <NavButton icon={AlignCenterIcon} label="중앙 정렬" />
       <NavButton icon={AlignRightIcon} label="우측 정렬" />
 
       {/* 스타일 */}
-      <div className="h-8 w-px bg-neutral-200" />
+      <div className="h-8 w-px bg-neutral-400" />
       <NavButton icon={BoldIcon} label="굵게" />
       <NavButton icon={ItalicIcon} label="기울임" />
       <NavButton icon={UnderlineIcon} label="밑줄" />
@@ -116,7 +116,7 @@ export default function TextToolbar() {
       <NavButton icon={LinkIcon} label="링크" />
 
       {/* 목록 */}
-      <div className="h-8 w-px bg-neutral-200" />
+      <div className="h-8 w-px bg-neutral-400" />
       <NavButton icon={UnorderListIcon} label="순서 없는 목록" />
       <NavButton icon={OrderedListIcon} label="순서 있는 목록" />
     </div>

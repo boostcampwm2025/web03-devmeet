@@ -8,9 +8,10 @@ import {
   EyeOnIcon,
 } from '@/assets/icons/common';
 import Modal from '@/components/common/Modal';
+import ToastMessage from '@/components/common/ToastMessage';
 import { useMeeingStore } from '@/store/useMeetingStore';
 import { hidePassword } from '@/utils/hidePassword';
-import { MouseEvent, useState } from 'react';
+import { MouseEvent, useEffect, useState } from 'react';
 
 export default function InfoModal() {
   const { id, host, password } = DUMMY_MEETING_INFO;
@@ -20,8 +21,22 @@ export default function InfoModal() {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isPasswordHidden, setIsPasswordHidden] = useState(true);
   const [value, setValue] = useState('');
+  const [hasCopied, setHasCopied] = useState(false);
 
   const onModalClose = () => setIsOpen('isInfoOpen', false);
+
+  const onCodeCopyClick = () => {
+    navigator.clipboard.writeText(id);
+    setHasCopied(true);
+  };
+
+  // 클립보드 복사 시 토스트 메세지 1.5초간 표시
+  useEffect(() => {
+    if (!hasCopied) return;
+    const timer = setTimeout(() => setHasCopied(false), 1500);
+
+    return () => clearTimeout(timer);
+  }, [hasCopied]);
 
   const onPasswordHideClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
@@ -47,7 +62,10 @@ export default function InfoModal() {
           <span className="font-bold text-neutral-50">{host}</span>
         </li>
 
-        <li className="flex w-full cursor-pointer flex-col gap-1 overflow-hidden rounded-sm px-2 py-1 hover:bg-neutral-500">
+        <li
+          className="flex w-full cursor-pointer flex-col gap-1 overflow-hidden rounded-sm px-2 py-1 hover:bg-neutral-500"
+          onClick={onCodeCopyClick}
+        >
           <span className="text-sm text-neutral-200">회의 코드</span>
           <div className="flex w-full items-center gap-2 overflow-hidden">
             <span className="w-full text-left font-bold text-neutral-50">{`${id}`}</span>
@@ -98,6 +116,8 @@ export default function InfoModal() {
           </Modal>
         )}
       </ul>
+
+      {hasCopied && <ToastMessage message="클립보드에 코드가 복사되었습니다" />}
     </Modal>
   );
 }

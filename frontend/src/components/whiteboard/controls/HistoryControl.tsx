@@ -1,6 +1,7 @@
 'use client';
 
-import NavButton from '../common/NavButton';
+import NavButton from '@/components/whiteboard/common/NavButton';
+
 import { UndoIcon, RedoIcon } from '@/assets/icons/whiteboard';
 
 export default function HistoryControls() {

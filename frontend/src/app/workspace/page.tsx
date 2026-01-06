@@ -33,13 +33,10 @@ export default function WorkspacePage() {
 
         {/* 워크스페이스 영역*/}
         <main className="relative flex flex-1 items-center justify-center overflow-hidden bg-neutral-200">
-        <main className="relative flex flex-1 items-center justify-center overflow-hidden bg-neutral-200">
           <WorkspaceStage />
         </main>
 
         {/* 하단 카드 정보 바 */}
-        {/* TODO : 추후 슬라이드로 변경 예정 */}
-        <footer className="flex h-20 items-center justify-end gap-4 border-t border-neutral-200 bg-white px-4 text-xl text-black">
         {/* TODO : 추후 슬라이드로 변경 예정 */}
         <footer className="flex h-20 items-center justify-end gap-4 border-t border-neutral-200 bg-white px-4 text-xl text-black">
           <span>Zoom: {Math.round(zoom * 100)}%</span>

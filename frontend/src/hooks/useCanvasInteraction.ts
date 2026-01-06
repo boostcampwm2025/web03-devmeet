@@ -1,0 +1,93 @@
+import { KonvaEventObject } from 'konva/lib/Node';
+import { useCanvasStore } from '@/store/useCanvasStore';
+import { MIN_SCALE, MAX_SCALE, SCALE_BY } from '@/constants/canvas';
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, value));
+
+export const useCanvasInteraction = (
+  windowWidth: number,
+  windowHeight: number,
+) => {
+  const canvasWidth = useCanvasStore((state) => state.canvasWidth);
+  const canvasHeight = useCanvasStore((state) => state.canvasHeight);
+  const setStageScale = useCanvasStore((state) => state.setStageScale);
+  const setStagePos = useCanvasStore((state) => state.setStagePos);
+
+  // stage 위치를 화면 범위 내로 제한
+  const constrainStagePosition = (
+    pos: { x: number; y: number },
+    scale: number,
+  ) => {
+    const scaledCanvasWidth = canvasWidth * scale;
+    const scaledCanvasHeight = canvasHeight * scale;
+
+    let x = pos.x;
+    let y = pos.y;
+
+    if (scaledCanvasWidth <= windowWidth) {
+      x = (windowWidth - scaledCanvasWidth) / 2;
+    } else {
+      x = clamp(x, windowWidth - scaledCanvasWidth, 0);
+    }
+
+    if (scaledCanvasHeight <= windowHeight) {
+      y = (windowHeight - scaledCanvasHeight) / 2;
+    } else {
+      y = clamp(y, windowHeight - scaledCanvasHeight, 0);
+    }
+
+    return { x, y };
+  };
+
+  // 마우스 휠로 줌 인/아웃
+  const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
+    e.evt.preventDefault();
+
+    const stage = e.target.getStage();
+    if (!stage) return;
+
+    const oldScale = stage.scaleX();
+    const pointer = stage.getPointerPosition();
+    if (!pointer) return;
+
+    const rawScale =
+      e.evt.deltaY < 0 ? oldScale * SCALE_BY : oldScale / SCALE_BY;
+    const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, rawScale));
+
+    if (newScale === oldScale) return;
+
+    const mousePointTo = {
+      x: (pointer.x - stage.x()) / oldScale,
+      y: (pointer.y - stage.y()) / oldScale,
+    };
+
+    const newPos = {
+      x: pointer.x - mousePointTo.x * newScale,
+      y: pointer.y - mousePointTo.y * newScale,
+    };
+
+    setStageScale(newScale);
+    setStagePos(constrainStagePosition(newPos, newScale));
+  };
+
+  const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
+    const stage = e.target.getStage();
+    if (!stage) return;
+
+    stage.position(constrainStagePosition(stage.position(), stage.scaleX()));
+  };
+
+  const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
+    const stage = e.target.getStage();
+    if (!stage) return;
+
+    setStagePos(stage.position());
+  };
+
+  return {
+    handleWheel,
+    handleDragMove,
+    handleDragEnd,
+  };
+};

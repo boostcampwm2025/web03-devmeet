@@ -3,10 +3,7 @@
 import NavButton from '../common/NavButton';
 import { ZoomOutIcon, ZoomInIcon } from '@/assets/icons/whiteboard';
 import { useCanvasStore } from '@/store/useCanvasStore';
-
-// 줌 최소/최대 배율
-const MIN_SCALE = 0.1;
-const MAX_SCALE = 10;
+import { MIN_SCALE, MAX_SCALE, ZOOM_STEP } from '@/constants/canvas';
 
 export default function ZoomControls() {
   const stageScale = useCanvasStore((state) => state.stageScale);
@@ -16,13 +13,13 @@ export default function ZoomControls() {
 
   // 줌 인
   const handleZoomIn = () => {
-    const newScale = Math.min(stageScale + 0.1, MAX_SCALE);
+    const newScale = Math.min(stageScale + ZOOM_STEP, MAX_SCALE);
     zoomToCenter(newScale);
   };
 
   // 줌 아웃
   const handleZoomOut = () => {
-    const newScale = Math.max(stageScale - 0.1, MIN_SCALE);
+    const newScale = Math.max(stageScale - ZOOM_STEP, MIN_SCALE);
     zoomToCenter(newScale);
   };
 

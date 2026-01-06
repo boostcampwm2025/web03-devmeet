@@ -1,7 +1,5 @@
 import { create } from 'zustand';
-
-export const CANVAS_WIDTH = 12000;
-export const CANVAS_HEIGHT = 7000;
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/constants/canvas';
 
 interface CanvasState {
   stageScale: number;
@@ -15,6 +13,8 @@ interface CanvasState {
 
 export const useCanvasStore = create<CanvasState>((set) => ({
   stageScale: 1,
+  // 브라우저에서만 window 접근
+  // 캔버스 중앙을 화면 중앙에
   stagePos:
     typeof window !== 'undefined'
       ? {

@@ -1,3 +1,5 @@
+import Portal from '@/components/common/Portal';
+
 interface ModalProps {
   title: string;
   cancelText: string;
@@ -22,36 +24,44 @@ export default function Modal({
   isWarning,
 }: ModalProps) {
   return (
-    <dialog
-      className={`fixed top-1/2 left-1/2 flex min-h-40 min-w-80 -translate-1/2 flex-col gap-4 rounded-lg border p-6 ${isLightMode ? styles.dialog.light : styles.dialog.dark}`}
-    >
-      <h2
-        className={`font-bold ${isLightMode ? styles.h2.light : styles.h2.dark}`}
+    <Portal>
+      <div
+        className="fixed top-0 left-0 z-50 h-screen w-screen bg-neutral-900/30"
+        onClick={onCancel}
       >
-        {title}
-      </h2>
-      <section
-        className={`flex-1 ${isLightMode ? styles.section.light : styles.section.dark}`}
-      >
-        {children}
-      </section>
-      <div className="flex w-full justify-end gap-3">
-        <button
-          onClick={onCancel}
-          className={`rounded-sm px-3 py-1.5 text-sm font-bold ${isLightMode ? styles.cancelBtn.light : styles.cancelBtn.dark}`}
+        <dialog
+          className={`absolute top-1/2 left-1/2 flex min-h-40 min-w-80 -translate-1/2 flex-col gap-4 rounded-lg border p-6 ${isLightMode ? styles.dialog.light : styles.dialog.dark}`}
+          onClick={(e) => e.stopPropagation()}
         >
-          {cancelText}
-        </button>
-        {confirmText && onConfirm && (
-          <button
-            onClick={onConfirm}
-            className={`rounded-sm px-3 py-1.5 text-sm font-bold ${isLightMode ? styles.confirmBtn.light : styles.confirmBtn.dark} ${isWarning ? (isLightMode ? 'bg-red-600!' : 'bg-red-700!') : ''}`}
+          <h2
+            className={`font-bold ${isLightMode ? styles.h2.light : styles.h2.dark}`}
           >
-            {confirmText}
-          </button>
-        )}
+            {title}
+          </h2>
+          <section
+            className={`flex-1 ${isLightMode ? styles.section.light : styles.section.dark}`}
+          >
+            {children}
+          </section>
+          <div className="flex w-full justify-end gap-3">
+            <button
+              onClick={onCancel}
+              className={`rounded-sm px-3 py-1.5 text-sm font-bold ${isLightMode ? styles.cancelBtn.light : styles.cancelBtn.dark}`}
+            >
+              {cancelText}
+            </button>
+            {confirmText && onConfirm && (
+              <button
+                onClick={onConfirm}
+                className={`rounded-sm px-3 py-1.5 text-sm font-bold ${isLightMode ? styles.confirmBtn.light : styles.confirmBtn.dark} ${isWarning ? (isLightMode ? 'bg-red-600!' : 'bg-red-700!') : ''}`}
+              >
+                {confirmText}
+              </button>
+            )}
+          </div>
+        </dialog>
       </div>
-    </dialog>
+    </Portal>
   );
 }
 

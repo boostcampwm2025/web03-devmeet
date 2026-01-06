@@ -14,8 +14,11 @@ import {
   ShareIcon,
   WorkspaceIcon,
 } from '@/assets/icons/meeting';
+import Modal from '@/components/common/Modal';
 import MeetingButton from '@/components/meeting/MeetingButton';
 import { useMeeingStore } from '@/store/useMeetingStore';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function MeetingMenu() {
   const {
@@ -53,6 +56,11 @@ export default function MeetingMenu() {
   const onCodeEditorClick = () => {
     setIsOpen('isCodeEditorOpen', !isCodeEditorOpen);
   };
+
+  const router = useRouter();
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const toggleExitModal = () => setIsExitModalOpen((prev) => !prev);
+  const onExit = () => router.replace('/');
 
   return (
     <nav className="flex w-full justify-between px-4 py-2">
@@ -130,7 +138,20 @@ export default function MeetingMenu() {
       <MeetingButton
         icon={<ExitMeetingIcon className="h-8 w-8" />}
         text="나가기"
+        onClick={toggleExitModal}
       />
+      {isExitModalOpen && (
+        <Modal
+          title="회의 나가기"
+          cancelText="취소"
+          onCancel={toggleExitModal}
+          confirmText="나가기"
+          onConfirm={onExit}
+          isWarning
+        >
+          회의를 나갈까요?
+        </Modal>
+      )}
     </nav>
   );
 }

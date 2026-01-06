@@ -32,6 +32,8 @@ export default function RootLayout({
     <html lang="ko">
       <body className={`${suit.variable} ${cafe24.variable} antialiased`}>
         {children}
+
+        <div id="modal-root" />
       </body>
     </html>
   );

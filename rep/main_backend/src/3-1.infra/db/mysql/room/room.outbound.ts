@@ -1,8 +1,8 @@
 import { DeleteValueToDb, InsertValueToDb } from "@app/ports/db/db.outbound";
 import { Inject, Injectable } from "@nestjs/common";
 import { ResultSetHeader, type Pool } from "mysql2/promise";
-import { DB_ROOMS_ATTRIBUTE_NAME, DB_TABLE_NAME, MYSQL_DB } from "../../db.constants";
-import { RoomProps } from "@domain/room/vo";
+import { DB_ROOM_PARTICIPANTS_ATTRIBUTE_NAME, DB_ROOMS_ATTRIBUTE_NAME, DB_TABLE_NAME, MYSQL_DB } from "../../db.constants";
+import { RoomParticipantProps, RoomProps } from "@domain/room/vo";
 
 
 // mysql에 room에 대한 데이터 저장
@@ -89,4 +89,41 @@ export class DeleteRoomDataToMysql extends DeleteValueToDb<Pool> {
 
     return true;
   };
+};
+
+@Injectable()
+export class InsertRoomParticipantInfoDataToMysql extends InsertValueToDb<Pool> {
+
+  constructor(
+    @Inject(MYSQL_DB) db : Pool
+  ) { super(db); };
+
+  private async insertData({
+    db, tableName, entity
+  } : {
+    db : Pool, tableName : string, entity : RoomParticipantProps
+  }) : Promise<boolean> {
+
+    const sql : string = `
+    INSERT INTO \`${tableName}\`(
+    \`${DB_ROOM_PARTICIPANTS_ATTRIBUTE_NAME.ROOM_ID}\`,
+    \`${DB_ROOM_PARTICIPANTS_ATTRIBUTE_NAME.USER_ID}\`
+    )
+    VALUES ( UUID_TO_BIN(?, true), UUID_TO_BIN(?, true) )
+    `
+
+    const [ result ] = await db.execute<ResultSetHeader>(sql, [ entity.room_id, entity.user_id ]);
+
+    return result && result.affectedRows ? true : false;
+  }
+
+  async insert(entity: RoomParticipantProps): Promise<boolean> {
+
+    const db = this.db;
+    const tableName : string = DB_TABLE_NAME.ROOM_PARTICIPANTS;
+
+    const inserted : boolean = await this.insertData({ db, tableName, entity });
+
+    return inserted;
+  }
 };

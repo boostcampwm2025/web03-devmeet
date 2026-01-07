@@ -139,3 +139,4 @@ export class InsertRoomParticipantInfoDataToMysql extends InsertValueToDb<Pool> 
     return inserted;
   }
 };
+

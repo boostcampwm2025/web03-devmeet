@@ -230,6 +230,9 @@ import { JwtGuard } from './guards';
     UserIdGenerator,
     JwtGuard,
   ],
-  exports: [JwtGuard],
+  exports: [
+    JwtGuard,
+    JwtAuth
+  ],
 })
 export class AuthModule {}

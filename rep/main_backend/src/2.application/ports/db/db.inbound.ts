@@ -28,3 +28,17 @@ export class SelectDataFromDb<T> extends InboundBaseDb<T> {
     throw new NullInterfaceError();
   }
 }
+
+@Injectable()
+export class SelectDatasFromDb<T> extends InboundBaseDb<T> {
+  constructor(db : T) {
+    super(db);
+  }
+
+  public async selects(attributes : Array<{
+    attributeName: string;
+    attributeValue: any;
+  }>) : Promise<Array<any> | undefined> | never {
+    throw new NullInterfaceError();
+  };;
+}

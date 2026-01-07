@@ -120,4 +120,7 @@ CREATE INDEX idx_room_participants_user_id_joined_at
 
 CREATE INDEX idx_room_participants_room_id_left_at
   ON `Room_participants`(`room_id`, `left_at`);
+
+CREATE INDEX idx_room_participants_room_id_user_id_left_at
+  ON `Room_participants`(`room_id`, `user_id`, `left_at`);
 ```

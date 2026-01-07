@@ -104,13 +104,25 @@ export class InsertRoomParticipantInfoDataToMysql extends InsertValueToDb<Pool> 
     db : Pool, tableName : string, entity : RoomParticipantProps
   }) : Promise<boolean> {
 
-    const sql : string = `
-    INSERT INTO \`${tableName}\`(
-    \`${DB_ROOM_PARTICIPANTS_ATTRIBUTE_NAME.ROOM_ID}\`,
-    \`${DB_ROOM_PARTICIPANTS_ATTRIBUTE_NAME.USER_ID}\`
+    // 해당 user_id, room_id가 
+    const sql = `
+    INSERT INTO \`${tableName}\` (
+      \`${DB_ROOM_PARTICIPANTS_ATTRIBUTE_NAME.ROOM_ID}\`,
+      \`${DB_ROOM_PARTICIPANTS_ATTRIBUTE_NAME.USER_ID}\`
     )
-    VALUES ( UUID_TO_BIN(?, true), UUID_TO_BIN(?, true) )
-    `
+    SELECT
+      UUID_TO_BIN(?, true),
+      UUID_TO_BIN(?, true)
+    FROM DUAL
+    WHERE NOT EXISTS (
+      SELECT 1
+      FROM \`${tableName}\`
+      WHERE
+        \`${DB_ROOM_PARTICIPANTS_ATTRIBUTE_NAME.ROOM_ID}\` = UUID_TO_BIN(?, true)
+        AND \`${DB_ROOM_PARTICIPANTS_ATTRIBUTE_NAME.USER_ID}\` = UUID_TO_BIN(?, true)
+        AND \`${DB_ROOM_PARTICIPANTS_ATTRIBUTE_NAME.LEFT_AT}\` IS NULL
+    );
+    `;
 
     const [ result ] = await db.execute<ResultSetHeader>(sql, [ entity.room_id, entity.user_id ]);
 

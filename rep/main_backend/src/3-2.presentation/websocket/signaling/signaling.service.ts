@@ -56,6 +56,13 @@ export class SignalingWebsocketService {
 
   // ip를 파싱할때 사용하는 함수
   private extractClientIp(client : Socket) : string {
+    
+    // 아래에서 위조 될수 있으니 최우선은 이 ip를 기준으로 한다. 
+    const realIp = client.handshake.headers['x-real-ip'];
+    if (typeof realIp === 'string') {
+      return realIp;
+    }
+
     // nginx가 클라이언트의 원 IP를 전달하기 위해서 만든 헤더이다. ( 즉 Nginx가 집적 걸어줌 )
     const forwarded = client.handshake.headers['x-forwarded-for'];
 

@@ -10,7 +10,7 @@ import {
   InsertOauthAndUserDataToMysql,
   InsertUserDataToMySql,
 } from './user/user.outbound';
-import { DeleteRoomDataToMysql, InsertRoomDataToMysql, InsertRoomParticipantInfoDataToMysql } from './room/room.outbound';
+import { DeleteHardRoomParticipantInfoDataToMysql, DeleteRoomDataToMysql, InsertRoomDataToMysql, InsertRoomParticipantInfoDataToMysql } from './room/room.outbound';
 import { SelectRoomDataFromMysql } from './room/room.inbound';
 
 @Global()
@@ -64,7 +64,8 @@ import { SelectRoomDataFromMysql } from './room/room.inbound';
     InsertRoomDataToMysql,
     DeleteRoomDataToMysql,
     SelectRoomDataFromMysql,
-    InsertRoomParticipantInfoDataToMysql
+    InsertRoomParticipantInfoDataToMysql,
+    DeleteHardRoomParticipantInfoDataToMysql // 에러가 발생했을때 그 방문기록을 하드 삭제하기 위한 객체
   ],
   exports: [
     MYSQL_DB,
@@ -75,7 +76,8 @@ import { SelectRoomDataFromMysql } from './room/room.inbound';
     InsertRoomDataToMysql,
     DeleteRoomDataToMysql,
     SelectRoomDataFromMysql,
-    InsertRoomParticipantInfoDataToMysql
+    InsertRoomParticipantInfoDataToMysql,
+    DeleteHardRoomParticipantInfoDataToMysql
   ],
 })
 export class MysqlModule {}

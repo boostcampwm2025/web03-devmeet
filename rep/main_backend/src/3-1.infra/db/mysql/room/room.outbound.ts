@@ -140,3 +140,39 @@ export class InsertRoomParticipantInfoDataToMysql extends InsertValueToDb<Pool> 
   }
 };
 
+// 이건 에러가 발생했을때 삭제를 진행하는 것이다.
+@Injectable()
+export class DeleteHardRoomParticipantInfoDataToMysql extends DeleteValueToDb<Pool> {
+
+  constructor (
+    @Inject(MYSQL_DB) db : Pool
+  ) { super(db); };
+
+  private async deleteData({
+    db, tableName, room_id, user_id
+  } : {
+    db : Pool, tableName : string, room_id : string, user_id : string
+  }) : Promise<boolean> {
+
+    // 하드 삭제
+    const sql : string = `
+    DELETE FROM \`${tableName}\`
+    WHERE \`${DB_ROOM_PARTICIPANTS_ATTRIBUTE_NAME.ROOM_ID}\` = UUID_TO_BIN(?, true) AND
+    \`${DB_ROOM_PARTICIPANTS_ATTRIBUTE_NAME.USER_ID}\` = UUID_TO_BIN(?, true) AND 
+    \`${DB_ROOM_PARTICIPANTS_ATTRIBUTE_NAME.LEFT_AT}\` IS NULL
+    `;
+
+    const [ result ] = await db.execute<ResultSetHeader>(sql, [ room_id, user_id ]);
+    
+    return result && result.affectedRows ? true : false;
+  };
+
+  // uniqueValue는 room_id이고 addOption은 user_id이다. 
+  async delete({ uniqueValue, addOption }: { uniqueValue: string; addOption: string; }): Promise<boolean> {
+
+    const db = this.db;
+    const tableName : string = DB_TABLE_NAME.ROOM_PARTICIPANTS;
+    const deleted : boolean = await this.deleteData({ db, tableName, room_id : uniqueValue, user_id : addOption });
+    return deleted;
+  };
+};

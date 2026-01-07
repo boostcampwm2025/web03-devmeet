@@ -1,5 +1,5 @@
 // 시작점과 끝점을 제외한 중간점들만 추출
-export function getControlPoints(points: number[]) {
+export const getControlPoints = (points: number[]) => {
   const controlPoints = [];
   for (let i = 2; i < points.length - 2; i += 2) {
     controlPoints.push({
@@ -9,17 +9,17 @@ export function getControlPoints(points: number[]) {
     });
   }
   return controlPoints;
-}
+};
 
 // 점-선분 간 거리 계산 (클릭한 위치에서 가장 가까운 선분 찾기용)
-export function pointToSegmentDistance(
+export const pointToSegmentDistance = (
   px: number,
   py: number,
   x1: number,
   y1: number,
   x2: number,
   y2: number,
-) {
+) => {
   const dx = x2 - x1;
   const dy = y2 - y1;
   const lengthSquared = dx * dx + dy * dy;
@@ -35,4 +35,4 @@ export function pointToSegmentDistance(
   const closestY = y1 + t * dy;
 
   return Math.hypot(px - closestX, py - closestY);
-}
+};

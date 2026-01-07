@@ -2,7 +2,7 @@
 
 import { Circle } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
-import { getControlPoints } from '@/components/whiteboard/utils/arrow';
+import { getControlPoints } from '@/utils/arrow';
 import type { ArrowItem } from '@/types/whiteboard';
 
 interface ArrowHandlesProps {

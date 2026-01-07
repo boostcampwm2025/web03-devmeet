@@ -2,7 +2,7 @@
 
 import NavButton from '@/components/whiteboard/common/NavButton';
 import { useCanvasStore } from '@/store/useCanvasStore';
-import { screenToWorld } from '@/components/whiteboard/utils/coordinate';
+import { screenToWorld } from '@/utils/coordinate';
 
 import {
   TriangleIcon,

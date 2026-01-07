@@ -3,7 +3,7 @@
 import NavButton from '@/components/whiteboard/common/NavButton';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { TextBoxIcon } from '@/assets/icons/whiteboard';
-import { screenToWorld } from '@/components/whiteboard/utils/coordinate';
+import { screenToWorld } from '@/utils/coordinate';
 
 export default function TextPanel() {
   const addText = useCanvasStore((state) => state.addText);

@@ -2,8 +2,8 @@ import { useState } from 'react';
 import Konva from 'konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import type { ArrowItem, WhiteboardItem } from '@/types/whiteboard';
-import { pointToSegmentDistance } from '@/components/whiteboard/utils/arrow';
-import { getWorldPointerPosition } from '@/components/whiteboard/utils/coordinate';
+import { pointToSegmentDistance } from '@/utils/arrow';
+import { getWorldPointerPosition } from '@/utils/coordinate';
 
 interface UseArrowHandlesProps {
   arrow: ArrowItem | null;

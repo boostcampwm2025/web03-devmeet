@@ -1,6 +1,10 @@
 import { KonvaEventObject } from 'konva/lib/Node';
 import { useCanvasStore } from '@/store/useCanvasStore';
-import { MIN_SCALE, MAX_SCALE, SCALE_BY } from '@/constants/canvas';
+import {
+  MIN_SCALE,
+  MAX_SCALE,
+  SCALE_BY,
+} from '@/components/whiteboard/constants/canvas';
 
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));

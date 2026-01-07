@@ -3,7 +3,11 @@
 import NavButton from '../common/NavButton';
 import { ZoomOutIcon, ZoomInIcon } from '@/assets/icons/whiteboard';
 import { useCanvasStore } from '@/store/useCanvasStore';
-import { MIN_SCALE, MAX_SCALE, ZOOM_STEP } from '@/constants/canvas';
+import {
+  MIN_SCALE,
+  MAX_SCALE,
+  ZOOM_STEP,
+} from '@/components/whiteboard/constants/canvas';
 
 export default function ZoomControls() {
   const stageScale = useCanvasStore((state) => state.stageScale);
@@ -45,7 +49,6 @@ export default function ZoomControls() {
     setStageScale(newScale);
     setStagePos(newPos);
   };
-
 
   const zoomPercentage = Math.round(stageScale * 100);
 

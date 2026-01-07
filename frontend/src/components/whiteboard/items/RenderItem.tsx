@@ -1,6 +1,7 @@
 'use client';
 
 import { Text, Arrow } from 'react-konva';
+import { useCanvasStore } from '@/store/useCanvasStore';
 import type {
   TextItem,
   ArrowItem,
@@ -12,13 +13,21 @@ interface RenderItemProps {
   isSelected: boolean;
   onSelect: (id: string) => void;
   onChange: (newAttributes: Partial<WhiteboardItem>) => void;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+  onArrowDblClick?: (id: string) => void;
 }
 
 export default function RenderItem({
   item,
   onSelect,
   onChange,
+  onDragStart,
+  onDragEnd,
+  onArrowDblClick,
 }: RenderItemProps) {
+  const setEditingTextId = useCanvasStore((state) => state.setEditingTextId);
+
   // 텍스트 렌더링
   if (item.type === 'text') {
     const textItem = item as TextItem;
@@ -42,12 +51,8 @@ export default function RenderItem({
           }
         }}
         onDblClick={() => {
-          const event = new CustomEvent('editText', { detail: { id: item.id } });
-          window.dispatchEvent(event);
-        }}
-        onDblTap={() => {
-          const event = new CustomEvent('editText', { detail: { id: item.id } });
-          window.dispatchEvent(event);
+          setEditingTextId(item.id);
+          onSelect(item.id);
         }}
         onDragEnd={(e) => {
           onChange({
@@ -78,15 +83,10 @@ export default function RenderItem({
     const arrowItem = item as ArrowItem;
     return (
       <Arrow
+        {...arrowItem}
         id={item.id}
-        points={arrowItem.points}
-        stroke={arrowItem.stroke}
-        strokeWidth={arrowItem.strokeWidth}
-        pointerLength={arrowItem.pointerLength}
-        pointerWidth={arrowItem.pointerWidth}
         draggable
         onMouseDown={() => onSelect(item.id)}
-        onTouchStart={() => onSelect(item.id)}
         onMouseEnter={(e) => {
           const container = e.target.getStage()?.container();
           if (container) {
@@ -99,6 +99,12 @@ export default function RenderItem({
             container.style.cursor = 'default';
           }
         }}
+        onDblClick={() => {
+          onArrowDblClick?.(item.id);
+        }}
+        onDragStart={() => {
+          onDragStart?.();
+        }}
         onDragEnd={(e) => {
           const pos = e.target.position();
           const newPoints = arrowItem.points.map((p, i) =>
@@ -110,6 +116,8 @@ export default function RenderItem({
           onChange({
             points: newPoints,
           });
+          
+          onDragEnd?.();
         }}
       />
     );

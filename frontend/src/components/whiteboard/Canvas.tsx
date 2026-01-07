@@ -1,15 +1,17 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import Konva from 'konva';
 import { Stage, Layer, Rect } from 'react-konva';
 import { useCanvasStore } from '@/store/useCanvasStore';
-import type { WhiteboardItem, TextItem } from '@/types/whiteboard';
+import type { WhiteboardItem, TextItem, ArrowItem } from '@/types/whiteboard';
 import { useWindowSize } from '@/hooks/useWindowSize';
 import { useCanvasInteraction } from '@/hooks/useCanvasInteraction';
+import { useArrowHandles } from '@/hooks/useArrowHandles';
 import RenderItem from '@/components/whiteboard/items/RenderItem';
 import TextArea from '@/components/whiteboard/items/text/TextArea';
 import ItemTransformer from '@/components/whiteboard/controls/ItemTransformer';
+import ArrowHandles from '@/components/whiteboard/items/arrow/ArrowHandles';
 
 export default function Canvas() {
   const stageScale = useCanvasStore((state) => state.stageScale);
@@ -25,6 +27,7 @@ export default function Canvas() {
   const setEditingTextId = useCanvasStore((state) => state.setEditingTextId);
 
   const stageRef = useRef<Konva.Stage | null>(null);
+  const [isDraggingArrow, setIsDraggingArrow] = useState(false);
 
   const size = useWindowSize();
   const { handleWheel, handleDragMove, handleDragEnd } = useCanvasInteraction(
@@ -32,7 +35,32 @@ export default function Canvas() {
     size.height,
   );
 
-  const editingItem = items.find((item) => item.id === editingTextId) as TextItem | undefined;
+  const editingItem = useMemo(
+    () => items.find((item) => item.id === editingTextId) as TextItem | undefined,
+    [items, editingTextId]
+  );
+
+  const selectedItem = useMemo(
+    () => items.find((item) => item.id === selectedId),
+    [items, selectedId]
+  );
+
+  const isArrowSelected = selectedItem?.type === 'arrow';
+
+  const {
+    selectedHandleIndex,
+    setSelectedHandleIndex,
+    handleHandleClick,
+    handleArrowStartDrag,
+    handleArrowControlPointDrag,
+    handleArrowEndDrag,
+    handleArrowDblClick,
+    deleteControlPoint,
+  } = useArrowHandles({
+    arrow: isArrowSelected ? (selectedItem as ArrowItem) : null,
+    stageRef,
+    updateItem,
+  });
 
   // 키보드 삭제
   useEffect(() => {
@@ -41,27 +69,21 @@ export default function Canvas() {
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
+
+        // 화살표 중간점 삭제 시도
+        if (isArrowSelected && selectedHandleIndex !== null) {
+          const deleted = deleteControlPoint();
+          if (deleted) return;
+        }
+
+        // 아이템 삭제
         deleteItem(selectedId);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedId, editingTextId, deleteItem]);
-
-  // 텍스트 더블클릭 편집 모드
-  useEffect(() => {
-    const handleEditText = (e: Event) => {
-      const customEvent = e as CustomEvent<{ id: string }>;
-      const textId = customEvent.detail.id;
-      
-      setEditingTextId(textId);
-      selectItem(textId);
-    };
-
-    window.addEventListener('editText', handleEditText);
-    return () => window.removeEventListener('editText', handleEditText);
-  }, [setEditingTextId, selectItem]);
+  }, [selectedId, editingTextId, deleteItem, isArrowSelected, selectedHandleIndex, deleteControlPoint]);
 
   // 선택 해제
   const handleCheckDeselect = (
@@ -74,6 +96,7 @@ export default function Canvas() {
 
     if (clickedOnEmpty) {
       selectItem(null);
+      setSelectedHandleIndex(null);
     }
   };
 
@@ -133,8 +156,31 @@ export default function Canvas() {
               onChange={(newAttributes) =>
                 handleItemChange(item.id, newAttributes)
               }
+              onArrowDblClick={handleArrowDblClick}
+              onDragStart={() => {
+                if (item.type === 'arrow') {
+                  setIsDraggingArrow(true);
+                }
+              }}
+              onDragEnd={() => {
+                if (item.type === 'arrow') {
+                  setIsDraggingArrow(false);
+                }
+              }}
             />
           ))}
+
+          {/* 화살표 핸들 (드래그 중이 아닐 때만) */}
+          {isArrowSelected && selectedItem && !isDraggingArrow && (
+            <ArrowHandles
+              arrow={selectedItem as ArrowItem}
+              selectedHandleIndex={selectedHandleIndex}
+              onHandleClick={handleHandleClick}
+              onStartDrag={handleArrowStartDrag}
+              onControlPointDrag={handleArrowControlPointDrag}
+              onEndDrag={handleArrowEndDrag}
+            />
+          )}
 
           {/* Transformer */}
           <ItemTransformer

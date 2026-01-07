@@ -20,13 +20,14 @@ export default function ItemTransformer({
 
   const selectedItem = items.find((item) => item.id === selectedId);
   const isTextSelected = selectedItem?.type === 'text';
+  const isArrowSelected = selectedItem?.type === 'arrow';
 
-  // Transformer 연결
+  // Transformer 연결 (화살표는 제외)
   useEffect(() => {
     if (transformerRef.current && stageRef.current) {
       const stage = stageRef.current;
 
-      if (selectedId) {
+      if (selectedId && !isArrowSelected) {
         const selectedNode = stage.findOne('#' + selectedId);
         if (selectedNode) {
           transformerRef.current.nodes([selectedNode]);
@@ -38,7 +39,7 @@ export default function ItemTransformer({
         transformerRef.current.nodes([]);
       }
     }
-  }, [selectedId, items, stageRef]);
+  }, [selectedId, items, stageRef, isArrowSelected]);
 
   return (
     <Transformer

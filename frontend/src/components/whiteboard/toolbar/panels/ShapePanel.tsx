@@ -5,11 +5,11 @@ import NavButton from '@/components/whiteboard/common/NavButton';
 import { PanelProps } from '@/types/whiteboardUI';
 
 import {
+  CircleIcon,
   TriangleIcon,
   SquareIcon,
-  PentagonIcon,
-  CircleIcon,
   DiamondIcon,
+  PentagonIcon,
 } from '@/assets/icons/whiteboard';
 
 export default function ShapePanel({ selectedTool, onSelect }: PanelProps) {

@@ -1,8 +1,9 @@
 import { MediasoupService } from "@infra/media/mediasoup/media";
 import { Injectable, Logger } from "@nestjs/common";
-import { RoomEntry } from "./sfu.validate";
-import { SfuError } from "@error/presentation/sfu/sfu.error";
-import { mediaSoupRouterConfig } from "@infra/media/mediasoup/config";
+import { RoomEntry, TransportEntry } from "./sfu.validate";
+import { SfuError, SfuErrorMessage } from "@error/presentation/sfu/sfu.error";
+import { mediaSoupRouterConfig, listenIps } from "@infra/media/mediasoup/config";
+import { Router, WebRtcTransport } from "mediasoup/types";
 
 
 @Injectable()
@@ -15,6 +16,8 @@ export class SfuService {
   private readonly roomRouters = new Map<string, RoomEntry>(); // room_id : RoomEntry
   private readonly createRoomRoutings = new Map<string, Promise<RoomEntry>>(); // room_id : Promise<RoomEntry> -> 생성하고 있는 중인 룸
 
+  // transport가 저장이 되야 한다. 
+  private readonly transports = new Map<string, WebRtcTransport>(); // transport_id : transport 저장 ( 나중에 transport를  )
 
   constructor(
     private readonly mediaSoupService : MediasoupService,
@@ -35,6 +38,7 @@ export class SfuService {
         room_id,
         router,
         worker_pid : worker.pid,
+        transport_ids : new Set<string>(),
         created_at : new Date()
       };
 
@@ -84,14 +88,111 @@ export class SfuService {
   };
 
   // 방이 닫혔을때 로직도 구현해두자
-  closeRoomRouter(room_id : string) {
+  closeRoomRouter(room_id : string) : void {
     const entry = this.roomRouters.get(room_id);
     if ( !entry ) return;
+
+    // transport를 관리
+    for (const transport_id of entry.transport_ids) {
+      const t = this.transports.get(transport_id);
+      if (t && !t.closed) {
+        try { t.close(); } catch {}
+      }
+      this.transports.delete(transport_id);
+    };
+
     try {
-      entry.router.close();
+      if (!entry.router.closed) entry.router.close();
     } finally {
       this.roomRouters.delete(room_id); // 근데 생각해보면 close를 해두어서 삭제되기는 할거다. 
     };
   };  
+
+  // room의 정보를 최신으로 바꾸는 로직이다.
+  private patchRoomEntry(room_id : string, patch : (entry : RoomEntry) => void) : void {
+    const entry = this.roomRouters.get(room_id);
+    if ( !entry ) return;
+    patch(entry);
+
+    this.roomRouters.set(room_id, entry);
+  };
+
+  private transPortLogging(room_id : string, transport : WebRtcTransport) : void {
+    // transport에 대해서 내부 디버깅을 위해서 추가
+
+    // ice 상태에 대해서 로깅
+    transport.on("icestatechange", (state) => {
+      this.logger.debug({room_id, transportId : transport.id, state}, "transport에 ice부분에 상태가 변했습니다.");
+    });
+
+    // dtls 핸드세이킹 과정중 상태변화 로깅
+    transport.on("dtlsstatechange", (state) => {
+      this.logger.debug({room_id, transportId : transport.id, state}, "transport에 dtls부분에 상태가 변했습니다.");
+    });
+  };
+
+  // 2. transport 부분 생성 
+  async createTransPort(room_id : string) : Promise<TransportEntry> {
+
+    const roomEntry = this.roomRouters.get(room_id);
+    if ( !roomEntry ) throw new SfuErrorMessage("room_id를 다시 확인해주세요");
+    const router : Router = roomEntry.router;
+
+    let transport : WebRtcTransport | undefined;
+
+    try {
+      // ip 설정을 해두고 
+      transport = await router.createWebRtcTransport({
+        listenIps,
+        enableUdp : true, // udp 허용
+        enableTcp : true, // tcp 허용
+        preferUdp : true, // udp가 최우선
+        initialAvailableOutgoingBitrate: 1_000_000, // 첫 바이트는 이정도 
+      });
+
+      // transport 로깅
+      this.transPortLogging(room_id, transport);
+
+      // 최대 전송율 정하기 
+      try {
+        await transport.setMaxIncomingBitrate(1_500_000); // 최대 
+      } catch (err) {
+        this.logger.warn(err); // 에러 메시지만 이유는 화면공유, 음성, 비디오등 다 다른데 하나로 고정할수는 없음 ( 상황에 따라서 나중에 개선해야 함 )
+      }     
+
+      // transport id를 가져온다. 
+      const transportId : string = transport.id;
+
+      // 메모리에 저장
+      this.transports.set(transportId, transport);
+      
+      // router 갱신
+      this.patchRoomEntry(room_id, (entry) => {
+        entry.transport_ids.add(transportId);
+      });
+
+      // transport 없어졌을때 이벤트 생성
+      transport.observer.on("close", () => {
+        this.transports.delete(transportId);
+
+        // router 갱신
+        this.patchRoomEntry(room_id, (entry) => {
+          entry.transport_ids.delete(transportId);
+        });
+      });
+      
+      return {
+        transportId: transportId,
+        iceParameters: transport.iceParameters, // ice에 파라미터 정보
+        iceCandidates: transport.iceCandidates, // ice 후보들 전달
+        dtlsParameters: transport.dtlsParameters // dtls 핸드세이크를 위한 파라미터들
+      };
+    } catch (err) {
+      if ( transport && !transport.closed ) transport.close();
+      throw err;
+    }
+
+  };
+
 
 };

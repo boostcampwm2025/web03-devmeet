@@ -119,8 +119,8 @@ export class SignalingWebsocketGateway implements OnGatewayInit, OnGatewayConnec
   // 방에 가입 한 후 라우터 생성 -> 방에 가입 시킨 다음에 본격적으로 라우터를 생성하는 이벤트를 주어야 한다.
   // 따로 분리해놓은 이유는 -> 정확히 방에 가입한 사람들만 이것을 이용하게 하고 싶기 때문이다.
   // reture을 안준 이유도 sdp를 하는 방식이 다 다르기 때문이다.
-  @SubscribeMessage(WEBSOCKET_SIGNALING_EVENT_NAME.CONNECT_ROUTER)
-  async connectRouterGateway(
+  @SubscribeMessage(WEBSOCKET_SIGNALING_EVENT_NAME.NEGOTIATE_SDP)
+  async sdpNegotiateGateway(
     @ConnectedSocket() client : Socket
   ) {
     const room_id : string = client.data.room_id;

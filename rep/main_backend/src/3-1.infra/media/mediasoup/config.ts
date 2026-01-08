@@ -1,4 +1,4 @@
-import { RouterOptions, RtpCodecCapability, type WorkerSettings } from "mediasoup/types";
+import { RouterOptions, RtpCodecCapability, type TransportListenIp, type WorkerSettings } from "mediasoup/types";
 
 
 // worker에 쓰이는 config
@@ -69,3 +69,11 @@ export const mediaSoupRouterConfig : RouterOptions = {
     }
   ]
 };
+
+// listenIps에 대해서 
+export const listenIps : Array<TransportListenIp> = [
+  {
+    ip : "0.0.0.0", // 허용하는 프론트엔드 ip,
+    announcedIp: process.env.NODE_APP_SFU_PUBLIC_IP ?? "127.0.0.1" // ice 검증에서 나의 ip를 소개 클라이언트는 이 ip로 접근한다. 즉 udp로 접근이 가능한 ip를 알려주어야 한다.
+  }
+];

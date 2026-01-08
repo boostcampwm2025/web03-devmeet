@@ -25,3 +25,19 @@ export class SelectDataFromCache<T> extends InboundBaseCache<T> {
     throw new NullInterfaceError();
   }
 }
+
+// 여러개의 값을 뽑아야 할때 사용
+@Injectable()
+export class SelectDatasFromCache<T> extends InboundBaseCache<T> {
+  constructor( cache: T ) {
+    super(cache);
+  };
+
+  public async selects({
+    namespaces
+  } : {
+    namespaces : Array<string>
+  }) : Promise<Array<any> | any | undefined>  | never {
+    throw new NullInterfaceError();
+  }
+};

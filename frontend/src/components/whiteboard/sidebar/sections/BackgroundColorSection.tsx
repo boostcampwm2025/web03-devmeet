@@ -3,18 +3,18 @@
 import Section from '@/components/whiteboard/sidebar/ui/Section';
 import ColorPicker from '@/components/whiteboard/sidebar/ui/ColorPicker';
 
-// 테두리 색상 설정 section
-interface StrokeColorSectionProps {
+// 배경 색상 설정 section
+interface BackgroundColorSectionProps {
   color: string;
   onChange: (color: string) => void;
 }
 
-export default function StrokeColorSection({
+export default function BackgroundColorSection({
   color,
   onChange,
-}: StrokeColorSectionProps) {
+}: BackgroundColorSectionProps) {
   return (
-    <Section title="Stroke">
+    <Section title="Background">
       <ColorPicker color={color} onChange={onChange} allowTransparent={true} />
     </Section>
   );

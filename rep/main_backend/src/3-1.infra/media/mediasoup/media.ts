@@ -1,8 +1,8 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
-import { type Worker } from "mediasoup/types";
+import { Router, type Worker } from "mediasoup/types";
 import * as mediasoup from "mediasoup";
 import * as os from "os";
-import { mediaSoupWorkerConfig } from "./config";
+import { mediaSoupRouterConfig, mediaSoupWorkerConfig } from "./config";
 
 
 @Injectable()
@@ -56,4 +56,12 @@ export class MediasoupService implements OnModuleInit, OnModuleDestroy {
   getWorker(worker_idx : number) : Worker | undefined {
     return this.workers[worker_idx];
   };
+
+  // router 생성해주는 메서드
+  async createRouterOnPickedWorker(): Promise<{ router: Router; workerIdx: number; workerPid: number }> {
+    const { worker, workerIdx } = this.picWorker();
+    const router = await worker.createRouter(mediaSoupRouterConfig);
+    return { router, workerIdx, workerPid: worker.pid };
+  }
+
 };

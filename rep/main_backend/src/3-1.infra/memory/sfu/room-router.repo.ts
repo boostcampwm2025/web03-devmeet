@@ -1,6 +1,6 @@
-import { RoomEntry } from '@present/webrtc/sfu/sfu.validate';
 import { Injectable } from '@nestjs/common';
 import { RoomRouterRepositoryPort } from '@app/sfu/ports';
+import { RoomEntry } from '@app/sfu/commands/dto';
 
 
 @Injectable()

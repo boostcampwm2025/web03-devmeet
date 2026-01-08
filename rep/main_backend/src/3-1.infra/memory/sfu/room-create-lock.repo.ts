@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 
 
 @Injectable()
-export class InMemoryRoomCreateLock implements RoomCreateLockPort {
+export class RoomCreateLockRepo implements RoomCreateLockPort {
   private readonly creating = new Map<string, Promise<RoomEntry>>();
 
   get(roomId: string) { return this.creating.get(roomId); }

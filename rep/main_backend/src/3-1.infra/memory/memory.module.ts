@@ -1,15 +1,16 @@
-import { Module } from "@nestjs/common";
-import { InMemoryRoomCreateLock, RoomRouterRepository } from "./sfu";
+import { Global, Module } from "@nestjs/common";
+import { RoomCreateLockRepo, RoomRouterRepository } from "./sfu";
 
 
+@Global()
 @Module({
   providers : [
     RoomRouterRepository,
-    InMemoryRoomCreateLock
+    RoomCreateLockRepo
   ],
   exports : [
     RoomRouterRepository,
-    InMemoryRoomCreateLock
+    RoomCreateLockRepo
   ]
 })
 export class MemoryModule {};

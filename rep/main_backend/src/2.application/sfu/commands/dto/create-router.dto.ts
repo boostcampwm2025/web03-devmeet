@@ -1,6 +1,7 @@
 import { Router } from "mediasoup/types";
 
 
+// room_id에 대해서 worker, router, room_id, created_at으로 메모리에서 worker에서 router를 어떻게 관리하는지 작성한다. 
 export type RoomEntry = {
   room_id : string;
   worker_idx : number; // 이 라우터를 운영하기 위해서 필요한 정보 

@@ -86,6 +86,7 @@ export default function RenderItem({
         {...arrowItem}
         id={item.id}
         draggable
+        hitStrokeWidth={30}  
         onMouseDown={() => onSelect(item.id)}
         onMouseEnter={(e) => {
           const container = e.target.getStage()?.container();

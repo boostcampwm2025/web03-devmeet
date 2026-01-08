@@ -86,13 +86,11 @@ export class JwtAuth<T> {
           return new_access_token
             ? { ...payload, access_token: new_access_token }
             : undefined;
-
-          // 에러가 있을때는 token 정리
+            
         } catch (err) {
           throw new UnthorizedError(err.message);
         }
       } else {
-        // 토큰 삭제
         throw new UnthorizedError(err.message);
       }
     }

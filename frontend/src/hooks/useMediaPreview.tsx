@@ -22,6 +22,7 @@ export const useMediaPreview = (micId?: string, cameraId?: string) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // 초기 스트림 생성 로직
   useEffect(() => {
     let cancelled = false;
 
@@ -40,7 +41,7 @@ export const useMediaPreview = (micId?: string, cameraId?: string) => {
         setMedia((prev) => ({
           ...prev,
           micPermission: 'granted',
-          audioOn: audioTrack!.enabled,
+          audioOn: true, // 초기화 시 켜짐
         }));
       } catch {
         if (cancelled) return;
@@ -62,7 +63,7 @@ export const useMediaPreview = (micId?: string, cameraId?: string) => {
         setMedia((prev) => ({
           ...prev,
           cameraPermission: 'granted',
-          videoOn: videoTrack!.enabled,
+          videoOn: true, // 초기화 시 켜짐
         }));
       } catch {
         if (cancelled) return;
@@ -81,12 +82,9 @@ export const useMediaPreview = (micId?: string, cameraId?: string) => {
         ...(videoTrack ? [videoTrack] : []),
       ];
 
-      if (tracks.length > 0) {
-        const combinedStream = new MediaStream(tracks);
-        streamRef.current?.getTracks().forEach((t) => t.stop());
-        streamRef.current = combinedStream;
-        setStream(combinedStream);
-      }
+      const combinedStream = new MediaStream(tracks);
+      streamRef.current = combinedStream;
+      setStream(combinedStream);
     })();
 
     return () => {
@@ -96,23 +94,66 @@ export const useMediaPreview = (micId?: string, cameraId?: string) => {
     };
   }, [micId, cameraId]);
 
-  const toggleVideo = useCallback(() => {
-    streamRef.current?.getVideoTracks().forEach((track) => {
-      track.enabled = !track.enabled;
-      setMedia((prev) => ({ ...prev, videoOn: track.enabled }));
-    });
-  }, []);
+  const toggleVideo = useCallback(async () => {
+    if (!streamRef.current) return;
 
-  const toggleAudio = useCallback(() => {
-    streamRef.current?.getAudioTracks().forEach((track) => {
-      track.enabled = !track.enabled;
-      setMedia((prev) => ({ ...prev, audioOn: track.enabled }));
-    });
-  }, []);
+    if (media.videoOn) {
+      // off시 트랙 중지 및 스트림에서 제거
+      const videoTracks = streamRef.current.getVideoTracks();
+      videoTracks.forEach((track) => {
+        track.stop();
+        streamRef.current?.removeTrack(track);
+      });
+      setMedia((prev) => ({ ...prev, videoOn: false }));
+    } else {
+      // on시 새로운 장치 스트림 요청
+      try {
+        const newStream = await navigator.mediaDevices.getUserMedia({
+          video: cameraId ? { deviceId: cameraId } : true,
+        });
+        const newTrack = newStream.getVideoTracks()[0];
+
+        streamRef.current.addTrack(newTrack);
+        setMedia((prev) => ({ ...prev, videoOn: true }));
+      } catch (error) {
+        // TODO: 토스트 메시지로 바꾸기
+        alert('카메라 권한을 허용해주세요.');
+      }
+    }
+  }, [media.videoOn, cameraId]);
+
+  const toggleAudio = useCallback(async () => {
+    if (!streamRef.current) return;
+
+    if (media.audioOn) {
+      const audioTracks = streamRef.current.getAudioTracks();
+      audioTracks.forEach((track) => {
+        track.stop();
+        streamRef.current?.removeTrack(track);
+      });
+      setMedia((prev) => ({ ...prev, audioOn: false }));
+    } else {
+      try {
+        const newStream = await navigator.mediaDevices.getUserMedia({
+          audio: micId ? { deviceId: micId } : true,
+        });
+        const newTrack = newStream.getAudioTracks()[0];
+
+        streamRef.current.addTrack(newTrack);
+        setMedia((prev) => ({ ...prev, audioOn: true }));
+      } catch (error) {
+        // TODO: 토스트 메시지로 바꾸기
+        alert('마이크 권한을 허용해주세요.');
+      }
+    }
+  }, [media.audioOn, micId]);
 
   const canRenderVideo = useMemo(() => {
     return (
-      media.videoOn && media.cameraPermission === 'granted' && stream !== null
+      media.videoOn &&
+      media.cameraPermission === 'granted' &&
+      stream !== null &&
+      stream.getVideoTracks().length > 0
     );
   }, [media.videoOn, media.cameraPermission, stream]);
 

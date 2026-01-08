@@ -1,34 +1,25 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { ConnectTransportType, TransportEntry } from "./sfu.validate";
+import { Injectable } from "@nestjs/common";
+import { ConnectTransportType } from "./sfu.validate";
 import { SfuErrorMessage } from "@error/presentation/sfu/sfu.error";
-import { listenIps } from "@infra/media/mediasoup/config";
-import { Router, Transport, WebRtcTransport } from "mediasoup/types";
-import { CreateSfuTransportInfoToRedis, DeleteSfuTransportInfoToRedis } from "@infra/cache/redis/sfu/sfu.outbound";
-import { CreateRoomTransportDto, CreateTransportDto, RoomEntry } from "@app/sfu/commands/dto";
+import { Transport } from "mediasoup/types";
+import { CreateTransportDto, RoomEntry, TransportEntry } from "@app/sfu/commands/dto";
 import { CACHE_SFU_NAMESPACE_NAME } from "@infra/cache/cache.constants";
 import { SelectSfuTransportDataFromRedis } from "@infra/cache/redis/sfu/sfu.inbound";
 import { RoomTransportInfo } from "@app/sfu/queries/dto";
-import { CreateRouterUsecase } from "@app/sfu/commands/usecase";
-import { RoomRouterRepository } from "@infra/memory/sfu";
+import { CreateRouterUsecase, CreateTransportUsecase } from "@app/sfu/commands/usecase";
+import { RoomRouterRepository, TransportRepository } from "@infra/memory/sfu";
 
 
 @Injectable()
 export class SfuService {
-
-  // sfu 서버가 관리하는 로직 ( 메모리 낭비가 있는데 어떻게 하면 좀 효율적으로 저장이 가능할까? )
-  private readonly logger = new Logger(SfuService.name);
   
-  // transport가 저장이 되야 한다. 
-  private readonly transports = new Map<string, WebRtcTransport>(); // transport_id : transport 저장 ( 나중에 transport를  )
-
   constructor(
     // usecase
     private readonly createRouterUsecase : CreateRouterUsecase,
+    private readonly createTransportUsecase : CreateTransportUsecase<any>,
     // infra
     private readonly roomRouters : RoomRouterRepository,
-
-    private readonly insertTranportInfoToRedis : CreateSfuTransportInfoToRedis,
-    private readonly deleteTransportInfoToRedis : DeleteSfuTransportInfoToRedis,
+    private readonly transports : TransportRepository,
     private readonly selectSfuTransportInfoFromRedis : SelectSfuTransportDataFromRedis
   ) {}
 
@@ -58,101 +49,10 @@ export class SfuService {
     };
   };  
 
-  // room의 정보를 최신으로 바꾸는 로직이다.
-  private patchRoomEntry(room_id : string, patch : (entry : RoomEntry) => void) : void {
-    const entry = this.roomRouters.get(room_id);
-    if ( !entry ) return;
-    patch(entry);
-
-    this.roomRouters.set(room_id, entry);
-  };
-
-  private transPortLogging(room_id : string, transport : WebRtcTransport) : void {
-    // transport에 대해서 내부 디버깅을 위해서 추가
-
-    // ice 상태에 대해서 로깅
-    transport.on("icestatechange", (state) => {
-      this.logger.debug({room_id, transportId : transport.id, state}, "transport에 ice부분에 상태가 변했습니다.");
-    });
-
-    // dtls 핸드세이킹 과정중 상태변화 로깅
-    transport.on("dtlsstatechange", (state) => {
-      this.logger.debug({room_id, transportId : transport.id, state}, "transport에 dtls부분에 상태가 변했습니다.");
-    });
-  };
 
   // 2. transport 부분 생성 ( 나중에 전체적인 부분 usecase로 빼자고 )
   async createTransPort(dto : CreateTransportDto) : Promise<TransportEntry> {
-
-    const roomEntry = this.roomRouters.get(dto.room_id);
-    if ( !roomEntry ) throw new SfuErrorMessage("room_id를 다시 확인해주세요");
-    const router : Router = roomEntry.router;
-
-    let transport : WebRtcTransport | undefined;
-
-    try {
-      // ip 설정을 해두고 
-      transport = await router.createWebRtcTransport({
-        listenIps,
-        enableUdp : true, // udp 허용
-        enableTcp : true, // tcp 허용
-        preferUdp : true, // udp가 최우선
-        initialAvailableOutgoingBitrate: 1_000_000, // 첫 바이트는 이정도 
-      });
-
-      // transport 로깅
-      this.transPortLogging(dto.room_id, transport);
-
-      // 최대 전송율 정하기 
-      try {
-        await transport.setMaxIncomingBitrate(1_500_000); // 최대 
-      } catch (err) {
-        this.logger.warn(err); // 에러 메시지만 이유는 화면공유, 음성, 비디오등 다 다른데 하나로 고정할수는 없음 ( 상황에 따라서 나중에 개선해야 함 )
-      }     
-
-      // transport id를 가져온다. 
-      const transportId : string = transport.id;
-
-      // 메모리에 저장
-      this.transports.set(transportId, transport);
-      
-      // router 갱신
-      this.patchRoomEntry(dto.room_id, (entry) => {
-        entry.transport_ids.add(transportId);
-      });
-
-      // cache에 정보 저장
-      const validate : CreateRoomTransportDto = {
-        ...dto,
-        transport_id : transportId
-      }
-      await this.insertTranportInfoToRedis.insert(validate);
-
-      // transport 없어졌을때 이벤트 생성
-      transport.observer.on("close", () => {
-        this.transports.delete(transportId);
-
-        // router 갱신
-        this.patchRoomEntry(dto.room_id, (entry) => {
-          entry.transport_ids.delete(transportId);
-        });
-
-        // cache에 삭제
-        const namespace : string = `${CACHE_SFU_NAMESPACE_NAME.TRANSPORT_INFO}:${transportId}`;
-        this.deleteTransportInfoToRedis.deleteNamespace(namespace);
-      });
-      
-      return {
-        transportId: transportId,
-        iceParameters: transport.iceParameters, // ice에 파라미터 정보
-        iceCandidates: transport.iceCandidates, // ice 후보들 전달
-        dtlsParameters: transport.dtlsParameters // dtls 핸드세이크를 위한 파라미터들
-      };
-    } catch (err) {
-      if ( transport && !transport.closed ) transport.close();
-      throw err;
-    }
-
+    return this.createTransportUsecase.execute(dto);
   };
 
   // 3. transport connect 연결 ( 이때 부터는 이제 sfu와 webrtc 통신이 가능해졌다고 생각하면 된다. )

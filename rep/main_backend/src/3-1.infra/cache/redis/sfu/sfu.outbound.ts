@@ -38,9 +38,9 @@ export class DeleteSfuTransportInfoToRedis extends DeleteDataToCache<RedisClient
   // namespace는 해당 transport_id에 대해서 삭제이다. -> 잘 봐주어야 함
   async deleteNamespace(namespace: string): Promise<boolean> {
     // 문자 검증? 이것도 필요해 보인다. 
-    
+    const transportNamespace : string = `${CACHE_SFU_NAMESPACE_NAME.TRANSPORT_INFO}:${namespace}`;
 
-    await this.cache.del(namespace);
+    await this.cache.del(transportNamespace);
 
     return true;
   }

@@ -22,7 +22,7 @@ body {
 }
 
 button {
-  cursor: pointer;
+  @apply cursor-pointer disabled:cursor-not-allowed;
 }
 
 .flex-center {

@@ -2,7 +2,7 @@
 
 import Editor from '@monaco-editor/react';
 import type * as monaco from 'monaco-editor';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 
@@ -22,6 +22,10 @@ export default function CodeEditor({
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
+  // 자동완성 상태
+  const [isAutoCompleted, setIsAutoCompleted] = useState(autoComplete);
+
+  // editor onMount
   const handleMount = async (editor: monaco.editor.IStandaloneCodeEditor) => {
     editorRef.current = editor;
 
@@ -68,10 +72,50 @@ export default function CodeEditor({
     return () => cleanupRef.current?.();
   }, []);
 
+  // 자동완성 토글
+  const toggleAutoComplete = () => {
+    setIsAutoCompleted((prev) => !prev);
+
+    if (editorRef.current) {
+      const nextValue = !isAutoCompleted;
+
+      editorRef.current.updateOptions({
+        quickSuggestions: {
+          other: nextValue, // 일반 코드
+          comments: nextValue, // 주석 안
+          strings: nextValue, // 문자열 안
+        },
+
+        suggestOnTriggerCharacters: nextValue, // 특정 문자 입력 시 자동완성 트리거
+        parameterHints: { enabled: nextValue }, // 함수 호출 시 파라미터 힌트
+        tabCompletion: nextValue ? 'on' : 'off', // 탭키로 자동완성 선택
+
+        // 자동 완성 목록에 어떤 걸 보여줄지
+        suggest: {
+          showMethods: nextValue,
+          showFunctions: nextValue,
+          showVariables: nextValue,
+          showConstants: nextValue,
+        },
+      });
+    }
+  };
+
   return (
     <div className="flex h-full w-full flex-col">
       {/* 상단 컨트롤 */}
-      <div>...</div>
+      <div className="flex items-center gap-2 border-b border-neutral-700 p-2">
+        <button
+          onClick={toggleAutoComplete}
+          className={`rounded px-3 py-1 text-sm font-bold text-white transition-colors ${
+            isAutoCompleted
+              ? 'bg-green-600 hover:bg-green-500'
+              : 'bg-red-600 hover:bg-red-500'
+          }`}
+        >
+          자동완성 {isAutoCompleted ? 'ON' : 'OFF'}
+        </button>
+      </div>
 
       {/* 코드에디터 */}
       <Editor
@@ -93,6 +137,15 @@ export default function CodeEditor({
           lineNumbers: 'on', // 줄번호 표시
           wordWrap: 'off', // 자동 줄바꿈 비활성화
           minimap: { enabled: minimap }, // 미니맵 활성화 여부
+
+          // 자동완성
+          quickSuggestions: isAutoCompleted,
+          suggestOnTriggerCharacters: isAutoCompleted,
+          acceptSuggestionOnEnter: isAutoCompleted ? 'on' : 'off', // 엔터키 자동완성
+          tabCompletion: isAutoCompleted ? 'on' : 'off', // 탭키 자동완성
+
+          // 문서 안에 있는 “단어들”을 자동완성 후보로 쓸지에 대한 설정
+          wordBasedSuggestions: 'off', // 협업 중엔 끄는 게 깔끔해서 off로 설정
 
           // 기타
           cursorStyle: 'line',

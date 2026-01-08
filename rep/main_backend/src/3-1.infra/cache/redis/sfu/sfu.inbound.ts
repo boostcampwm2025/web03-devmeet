@@ -2,7 +2,7 @@ import { SelectDataFromCache } from "@app/ports/cache/cache.inbound";
 import { Inject, Injectable } from "@nestjs/common";
 import { type RedisClientType } from "redis";
 import { CACHE_SFU_TRANSPORTS_KEY_NAME, REDIS_SERVER } from "../../cache.constants";
-import { RoomTransportInfo } from "@app/room/queries/dto";
+import { RoomTransportInfo } from "@app/sfu/queries/dto";
 
 
 @Injectable()

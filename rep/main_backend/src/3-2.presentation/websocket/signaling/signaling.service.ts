@@ -11,7 +11,7 @@ import { UnthorizedError } from "@error/application/user/user.error";
 import { SfuService } from "@present/webrtc/sfu/sfu.service";
 import { NotConnectSignalling } from "@error/presentation/signalling/signalling.error";
 import { CHANNEL_NAMESPACE } from "@infra/channel/channel.constants";
-import { CreateRoomTransportDto, CreateTransportDto } from "@/2.application/room/commands/dto/create-room-transport.dto";
+import { CreateRoomTransportDto, CreateTransportDto } from "@app/sfu/commands/dto";
 import { ConnectTransportType } from "@/3-2.presentation/webrtc/sfu/sfu.validate";
 
 

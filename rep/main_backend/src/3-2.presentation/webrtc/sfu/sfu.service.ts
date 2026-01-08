@@ -5,10 +5,10 @@ import { SfuError, SfuErrorMessage } from "@error/presentation/sfu/sfu.error";
 import { mediaSoupRouterConfig, listenIps } from "@infra/media/mediasoup/config";
 import { Router, Transport, WebRtcTransport } from "mediasoup/types";
 import { CreateSfuTransportInfoToRedis, DeleteSfuTransportInfoToRedis } from "@infra/cache/redis/sfu/sfu.outbound";
-import { CreateRoomTransportDto, CreateTransportDto } from "@app/room/commands/dto";
+import { CreateRoomTransportDto, CreateTransportDto } from "@app/sfu/commands/dto";
 import { CACHE_SFU_NAMESPACE_NAME } from "@infra/cache/cache.constants";
 import { SelectSfuTransportDataFromRedis } from "@infra/cache/redis/sfu/sfu.inbound";
-import { RoomTransportInfo } from "@/2.application/room/queries/dto";
+import { RoomTransportInfo } from "@app/sfu/queries/dto";
 
 
 @Injectable()

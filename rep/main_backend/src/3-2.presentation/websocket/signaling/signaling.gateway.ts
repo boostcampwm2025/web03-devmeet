@@ -7,7 +7,7 @@ import { TokenDto } from "@app/auth/commands/dto";
 import { PayloadRes } from "@app/auth/queries/dto";
 import { JwtWsGuard } from "../auth/guards/jwt.guard";
 import { WEBSOCKET_AUTH_CLIENT_EVENT_NAME, WEBSOCKET_NAMESPACE, WEBSOCKET_PATH, WEBSOCKET_SIGNALING_CLIENT_EVENT_NAME, WEBSOCKET_SIGNALING_EVENT_NAME } from "../websocket.constants";
-import { JoinRoomValidate, SocketPayload } from "./signaling.validate";
+import { DtlsHandshakeValidate, JoinRoomValidate, NegotiateIceValidate, SocketPayload } from "./signaling.validate";
 import { ConnectResult, ConnectRoomDto } from "@app/room/commands/dto";
 import { CHANNEL_NAMESPACE } from "@infra/channel/channel.constants";
 
@@ -139,14 +139,17 @@ export class SignalingWebsocketGateway implements OnGatewayInit, OnGatewayConnec
 
   // 여기서 추가할 점은 ( send, recv에 역할을 알 수 있는 매개변수가 있다면 좋을것이다 왜냐하면 이걸 이용해서 두개다 협상을 할거니까 )
   @SubscribeMessage(WEBSOCKET_SIGNALING_EVENT_NAME.NEGOTIATE_ICE)
+  @UsePipes(new ValidationPipe({
+    whitelist : true,
+    transform : true
+  }))
   async iceNegotiateGateway(
-    @ConnectedSocket() client : Socket
+    @ConnectedSocket() client : Socket,
+    @MessageBody() validate : NegotiateIceValidate
   ) {
-    const room_id : string = client.data.room_id;
-
     try {
       // 1. sfu 서버에서 ice 협상에 필요한 정보 요구하고 dtls에 필요한 정보도 요구
-      const transportOptions = await this.signalingService.iceNegotiate(room_id);
+      const transportOptions = await this.signalingService.iceNegotiate(client, validate.type);
 
       return { ok : true, transportOptions };
     } catch (err) {
@@ -154,5 +157,26 @@ export class SignalingWebsocketGateway implements OnGatewayInit, OnGatewayConnec
       throw new WsException({ message : err.message ?? "에러 발생", status : err.status ?? 500 });
     };
   };
+
+  // dtls 핸드세이크 과정 -> 사실상 여기에서 webrtc가 준비되었다고 보면 된다. - 보안 검증도 여기서 거쳐야 한다.
+  @SubscribeMessage(WEBSOCKET_SIGNALING_EVENT_NAME.DTLS_HANDSHAKE)
+  @UsePipes(new ValidationPipe({
+    whitelist : true,
+    transform : true
+  }))
+  async dtlsHandshakeGateway(
+    @MessageBody() validate : DtlsHandshakeValidate
+  ) {
+    try {
+      // 1. dtls 핸드세이크를 거칠것이다.
+      await this.signalingService.dtlsHandshake(validate);
+
+      return { ok : true };
+    } catch (err){
+      this.logger.error(err);
+      throw new WsException({ message : err.message ?? "에러 발생", status : err.status ?? 500 });      
+    }
+  };
+
 
 };

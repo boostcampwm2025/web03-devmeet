@@ -18,3 +18,8 @@ export type TransportEntry = {
   iceCandidates: Array<IceCandidate>;
   dtlsParameters: DtlsParameters;
 };
+
+export type ConnectTransportType = {
+  transport_id : string;
+  dtlsParameters: DtlsParameters
+};

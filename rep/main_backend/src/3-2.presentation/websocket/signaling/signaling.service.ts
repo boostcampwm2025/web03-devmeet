@@ -5,11 +5,13 @@ import * as cookie from "cookie";
 import { ConnectResult, ConnectRoomDto, DisconnectRoomDto } from "@app/room/commands/dto";
 import { ConnectRoomUsecase, DisconnectRoomUsecase } from "@app/room/commands/usecase";
 import { v7 as uuidV7 } from "uuid";
-import { SocketPayload } from "./signaling.validate";
+import { DtlsHandshakeValidate, SocketPayload } from "./signaling.validate";
 import { PayloadRes } from "@app/auth/queries/dto";
 import { UnthorizedError } from "@error/application/user/user.error";
 import { SfuService } from "@present/webrtc/sfu/sfu.service";
 import { NotConnectSignalling } from "@error/presentation/signalling/signalling.error";
+import { CHANNEL_NAMESPACE } from "@infra/channel/channel.constants";
+import { CreateRoomTransportDto, CreateTransportDto } from "@/2.application/room/commands/dto/create-room-transport.dto";
 
 
 @Injectable()
@@ -78,6 +80,10 @@ export class SignalingWebsocketService {
     return client.handshake.address;
   };
 
+  makeRoomNamespace(room_id : string) : string {
+    return `${CHANNEL_NAMESPACE.SIGNALING}:${room_id}`
+  }
+
   makeSocketData({ payload, socket } : { payload : PayloadRes | undefined, socket : Socket }) : SocketPayload {
     if ( payload ) return {
       ...payload, ip : this.extractClientIp(socket), socket_id : socket.id, is_guest : false
@@ -110,10 +116,22 @@ export class SignalingWebsocketService {
   };
 
   // ice 협상을 위해 sfu서버에 ice parameter와 후보들을 알려준다 그리고 dtls 핸드세이킹을 위한 파라미터도 전달
-  async iceNegotiate( room_id : string ) {
+  async iceNegotiate( client : Socket, type : "send" | "recv" ) {
+    const room_id : string = client.data.room_id;
+    const payload : SocketPayload = client.data.user;
+    const dto : CreateTransportDto = {
+      room_id,
+      socket_id : payload.socket_id,
+      user_id : payload.user_id,
+      type,};
     if ( !room_id || room_id === "" ) throw new NotConnectSignalling();
-    const transportOptions = await this.sfuServer.createTransPort(room_id);
+    const transportOptions = await this.sfuServer.createTransPort(dto);
     return transportOptions;
   };
+
+  // dtls 핸드 세이크를 위한 
+  async dtlsHandshake( validate : DtlsHandshakeValidate) : Promise<void> {
+    await this.sfuServer.connectTransport(validate);
+  }
 
 };

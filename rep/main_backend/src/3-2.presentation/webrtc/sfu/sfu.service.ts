@@ -1,9 +1,12 @@
 import { MediasoupService } from "@infra/media/mediasoup/media";
 import { Injectable, Logger } from "@nestjs/common";
-import { RoomEntry, TransportEntry } from "./sfu.validate";
+import { ConnectTransportType, RoomEntry, TransportEntry } from "./sfu.validate";
 import { SfuError, SfuErrorMessage } from "@error/presentation/sfu/sfu.error";
 import { mediaSoupRouterConfig, listenIps } from "@infra/media/mediasoup/config";
-import { Router, WebRtcTransport } from "mediasoup/types";
+import { Router, Transport, WebRtcTransport } from "mediasoup/types";
+import { CreateSfuTransportInfoToRedis, DeleteSfuTransportInfoToRedis } from "@infra/cache/redis/sfu/sfu.outbound";
+import { CreateRoomTransportDto, CreateTransportDto } from "@app/room/commands/dto/create-room-transport.dto";
+import { CACHE_SFU_NAMESPACE_NAME } from "@infra/cache/cache.constants";
 
 
 @Injectable()
@@ -21,6 +24,8 @@ export class SfuService {
 
   constructor(
     private readonly mediaSoupService : MediasoupService,
+    private readonly insertTranportInfoToRedis : CreateSfuTransportInfoToRedis,
+    private readonly deleteTransportInfoToRedis : DeleteSfuTransportInfoToRedis
   ) {}
 
   private async createRoomRouting(room_id : string) : Promise<RoomEntry> {
@@ -131,10 +136,10 @@ export class SfuService {
     });
   };
 
-  // 2. transport 부분 생성 
-  async createTransPort(room_id : string) : Promise<TransportEntry> {
+  // 2. transport 부분 생성 ( 나중에 전체적인 부분 usecase로 빼자고 )
+  async createTransPort(dto : CreateTransportDto) : Promise<TransportEntry> {
 
-    const roomEntry = this.roomRouters.get(room_id);
+    const roomEntry = this.roomRouters.get(dto.room_id);
     if ( !roomEntry ) throw new SfuErrorMessage("room_id를 다시 확인해주세요");
     const router : Router = roomEntry.router;
 
@@ -151,7 +156,7 @@ export class SfuService {
       });
 
       // transport 로깅
-      this.transPortLogging(room_id, transport);
+      this.transPortLogging(dto.room_id, transport);
 
       // 최대 전송율 정하기 
       try {
@@ -167,18 +172,29 @@ export class SfuService {
       this.transports.set(transportId, transport);
       
       // router 갱신
-      this.patchRoomEntry(room_id, (entry) => {
+      this.patchRoomEntry(dto.room_id, (entry) => {
         entry.transport_ids.add(transportId);
       });
+
+      // cache에 정보 저장
+      const validate : CreateRoomTransportDto = {
+        ...dto,
+        transport_id : transportId
+      }
+      await this.insertTranportInfoToRedis.insert(validate);
 
       // transport 없어졌을때 이벤트 생성
       transport.observer.on("close", () => {
         this.transports.delete(transportId);
 
         // router 갱신
-        this.patchRoomEntry(room_id, (entry) => {
+        this.patchRoomEntry(dto.room_id, (entry) => {
           entry.transport_ids.delete(transportId);
         });
+
+        // cache에 삭제
+        const namespace : string = `${CACHE_SFU_NAMESPACE_NAME.TRANSPORT_INFO}:${transportId}`;
+        this.deleteTransportInfoToRedis.deleteNamespace(namespace);
       });
       
       return {
@@ -194,5 +210,17 @@ export class SfuService {
 
   };
 
+  // 3. transport connect 연결 ( 이때 부터는 이제 sfu와 webrtc 통신이 가능해졌다고 생각하면 된다. )
+  async connectTransport(dto : ConnectTransportType) : Promise<void> {
+    // 검증하기
+
+
+    // transport 가져오기
+    const transport : Transport | undefined = this.transports.get(dto.transport_id);
+
+    if ( !transport ) throw new SfuErrorMessage("transport_id를 다시 확인해주세요.");
+
+    await transport.connect({ dtlsParameters : dto.dtlsParameters });
+  };
 
 };

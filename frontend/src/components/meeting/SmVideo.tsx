@@ -62,7 +62,7 @@ export default function SmVideo({
           <MoreHoriIcon className="h-4 w-4 text-neutral-50" />
         </button>
         {isDropdownOpen && (
-          <menu className="absolute top-[calc(100%+8px)] right-0 w-40 rounded-sm border border-neutral-500 bg-neutral-600">
+          <menu className="absolute top-[calc(100%+8px)] right-0 z-100 w-40 rounded-sm border border-neutral-500 bg-neutral-600">
             <button className="dropdown-btn">드롭다운 메뉴1</button>
             <button className="dropdown-btn">드롭다운 메뉴2</button>
             <button className="dropdown-btn">드롭다운 메뉴3</button>

@@ -109,3 +109,40 @@ export class InsertMainProducerDataToRedis extends InsertDataToCache<RedisClient
 
   }
 };
+
+@Injectable()
+export class DeleteUserProducerDataToRedis extends DeleteDataToCache<RedisClientType<any, any>> {
+
+  constructor(
+    @Inject(REDIS_SERVER) cache : RedisClientType<any, any>
+  ) { super(cache); };
+
+  // namespace에 keyname 삭제 namespace는 room_id:user_id
+  async deleteKey({ namespace, keyName, }: { namespace: string; keyName: "audio" | "video"; }): Promise<boolean> {
+    
+    const userProducerNamespace : string = `${CACHE_SFU_NAMESPACE_NAME.PRODUCER_INFO}:${namespace}`.trim();
+
+    await this.cache.hDel(userProducerNamespace, keyName);
+
+    return true;
+  };
+};
+
+@Injectable()
+export class DeleteMainProducerDataToRedis extends DeleteDataToCache<RedisClientType<any, any>> {
+
+  constructor(
+    @Inject(REDIS_SERVER) cache : RedisClientType<any, any>
+  ) { super(cache); };
+
+  async deleteKey({ namespace, keyName, }: { namespace: string; keyName: "screen_video" | "screen_audio"; }): Promise<boolean> {
+    
+    const mainNamespace : string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${namespace}:${CACHE_ROOM_SUB_NAMESPACE_NAME.INFO}`.trim();
+
+    const keySub : string = keyName === "screen_audio" ? CACHE_ROOM_INFO_KEY_NAME.SUB_PRODUCER : CACHE_ROOM_INFO_KEY_NAME.MAIN_PRODUCER;
+
+    await this.cache.hDel(mainNamespace, keySub);
+
+    return true;
+  };
+};

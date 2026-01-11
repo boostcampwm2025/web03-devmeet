@@ -1,8 +1,8 @@
 import { DeleteDataToCache, InsertDataToCache } from "@app/ports/cache/cache.outbound";
 import { Inject, Injectable } from "@nestjs/common";
 import { type RedisClientType } from "redis";
-import { CACHE_ROOM_INFO_KEY_NAME, CACHE_ROOM_INFO_PRODUCE_KEY_PROPS_NAME, CACHE_ROOM_NAMESPACE_NAME, CACHE_ROOM_SUB_NAMESPACE_NAME, CACHE_SFU_NAMESPACE_NAME, CACHE_SFU_PRODUCES_KEY_PROPS_NAME, CACHE_SFU_TRANSPORTS_KEY_NAME, REDIS_SERVER } from "../../cache.constants";
-import { CreateRoomTransportDto, InsertProducerDto } from "@app/sfu/commands/dto";
+import { CACHE_ROOM_INFO_KEY_NAME, CACHE_ROOM_INFO_PRODUCE_KEY_PROPS_NAME, CACHE_ROOM_NAMESPACE_NAME, CACHE_ROOM_SUB_NAMESPACE_NAME, CACHE_SFU_CONSUMER_KEY_PROPS_NAME, CACHE_SFU_NAMESPACE_NAME, CACHE_SFU_PRODUCES_KEY_PROPS_NAME, CACHE_SFU_TRANSPORTS_KEY_NAME, REDIS_SERVER } from "../../cache.constants";
+import { CreateRoomTransportDto, InsertConsumerDataDto, InsertProducerDto } from "@app/sfu/commands/dto";
 
 
 @Injectable()
@@ -142,6 +142,48 @@ export class DeleteMainProducerDataToRedis extends DeleteDataToCache<RedisClient
     const keySub : string = keyName === "screen_audio" ? CACHE_ROOM_INFO_KEY_NAME.SUB_PRODUCER : CACHE_ROOM_INFO_KEY_NAME.MAIN_PRODUCER;
 
     await this.cache.hDel(mainNamespace, keySub);
+
+    return true;
+  };
+};
+
+// consumer와 관련된 정보 저장인데 consumer 저장 insert
+@Injectable()
+export class InsertConsumerDataToRedis extends InsertDataToCache<RedisClientType<any, any>> {
+
+  constructor(
+    @Inject(REDIS_SERVER) cache : RedisClientType<any, any>
+  ) { super(cache); };
+
+  async insert(entity: InsertConsumerDataDto): Promise<boolean> {
+    
+    const insertData = {
+      [CACHE_SFU_CONSUMER_KEY_PROPS_NAME.CONSUMER_ID] : entity.consumer_id,
+      [CACHE_SFU_CONSUMER_KEY_PROPS_NAME.PRODUCER_ID] : entity.producer_id,
+      [CACHE_SFU_CONSUMER_KEY_PROPS_NAME.USER_ID] : entity.user_id,
+      [CACHE_SFU_CONSUMER_KEY_PROPS_NAME.STATUS] : entity.status,
+      [CACHE_SFU_CONSUMER_KEY_PROPS_NAME.TRANSPORT_ID] : entity.transport_id
+    };
+    const insertConsumerNamespace : string = `${CACHE_SFU_NAMESPACE_NAME.CONSUMER_INFO}:${entity.room_id}:${entity.user_id}`;
+    const inserted : number = await this.cache.hSet(insertConsumerNamespace, entity.consumer_id, JSON.stringify(insertData));
+
+    return inserted ? true : false;
+  };
+};
+
+// consumer와 관련된 데이터 삭제
+@Injectable()
+export class DeleteConsumerDataToRedis extends DeleteDataToCache<RedisClientType<any, any>> {
+
+  constructor(
+    @Inject(REDIS_SERVER) cache : RedisClientType<any, any>
+  ) { super(cache); };  
+
+  async deleteKey({ namespace, keyName, }: { namespace: string; keyName: string; }): Promise<boolean> | never {
+    
+    const deleteNamespace : string = `${CACHE_SFU_NAMESPACE_NAME.CONSUMER_INFO}:${namespace}`;
+
+    await this.cache.hDel(deleteNamespace, keyName);
 
     return true;
   };

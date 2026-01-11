@@ -9,7 +9,7 @@ import { REDIS_SERVER } from '../cache.constants';
 import { SelectHsetDataFromRedis } from './user/user.inbound';
 import { DeleteRoomDatasToRedis, InsertRoomDatasToRedis, InsertRoomDataToRedis } from './room/room.outbound';
 import { SelectRoomInfoFromRedis } from './room/room.inbound';
-import { CreateSfuTransportInfoToRedis, DeleteMainProducerDataToRedis, DeleteSfuTransportInfoToRedis, DeleteUserProducerDataToRedis, InsertMainProducerDataToRedis, InsertUserProducerDataToRedis,  } from "./sfu/sfu.outbound"
+import { CreateSfuTransportInfoToRedis, DeleteConsumerDataToRedis, DeleteMainProducerDataToRedis, DeleteSfuTransportInfoToRedis, DeleteUserProducerDataToRedis, InsertConsumerDataToRedis, InsertMainProducerDataToRedis, InsertUserProducerDataToRedis,  } from "./sfu/sfu.outbound"
 import { SelectMainProducerDataFromRedis, SelectSfuTransportDataFromRedis, SelectUserProducerDataFromRedis } from './sfu/sfu.inbound';
 
 
@@ -63,6 +63,8 @@ import { SelectMainProducerDataFromRedis, SelectSfuTransportDataFromRedis, Selec
     InsertMainProducerDataToRedis, // main producer 정보를 저장한다.
     DeleteUserProducerDataToRedis, // user producer를 삭제한다.
     DeleteMainProducerDataToRedis, // main producer를 삭제한다. 
+    InsertConsumerDataToRedis, // consumer 정보를 저장한다.
+    DeleteConsumerDataToRedis, // consumer 정보를 삭제한다. 
   ],
   exports: [
     REDIS_SERVER,
@@ -82,6 +84,8 @@ import { SelectMainProducerDataFromRedis, SelectSfuTransportDataFromRedis, Selec
     InsertMainProducerDataToRedis,
     DeleteUserProducerDataToRedis, 
     DeleteMainProducerDataToRedis,
+    InsertConsumerDataToRedis,
+    DeleteConsumerDataToRedis,
   ],
 })
 export class RedisModule {}

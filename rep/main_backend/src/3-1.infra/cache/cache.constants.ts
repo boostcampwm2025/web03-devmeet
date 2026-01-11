@@ -30,7 +30,17 @@ export const CACHE_ROOM_INFO_KEY_NAME = Object.freeze({
   OWNER_ID : "owner_id",
   MAX_PARTICIANTS : "max_particiants",
   CURRENT_PARTICIANTS : "current_particiants",
-  PASSWORD_HASH : "password_hash"
+  PASSWORD_HASH : "password_hash",
+  MAIN_PRODUCE : "main_produce", // 현재 방에서 가장 메인이 되는 produce가 뭔지
+  SUB_PRODUCE : "sub_produce" // main_produce를 도와주는 sub_produce가 뭔지
+} as const);
+
+// produce에 저장되는 정보들 
+export const CACHE_ROOM_INFO_PRODUCE_KEY_PROPS_NAME = Object.freeze({
+  PRODUCE_ID : "produce_id",
+  TYPE : "type",
+  KIND : "kind",
+  USER_ID : "user_id"
 } as const);
 
 // members는 user_id를 기반으로 저장할 예정이기 때문에 ( user_id : { props } )에 props에 들어갈 데이터이다.
@@ -50,7 +60,8 @@ export const CACHE_ROOM_SOCKETS_KEY_PROPS_NAME = Object.freeze({
 
 // sfu와 관련된 cache 정보
 export const CACHE_SFU_NAMESPACE_NAME = Object.freeze({
-  TRANSPORT_INFO : "cache:sfu:transports"
+  TRANSPORT_INFO : "cache:sfu:transports",
+  PRODUCE_INFO : "cache:sfu:produces"
 } as const);
 
 export const CACHE_SFU_TRANSPORTS_KEY_NAME = Object.freeze({
@@ -59,3 +70,11 @@ export const CACHE_SFU_TRANSPORTS_KEY_NAME = Object.freeze({
   TYPE : "type",
   ROOM_ID : "room_id"
 } as const);
+
+// produce에 필요한 key_name 정보 ( namespace는 produce_info:room_id:user_id )
+export const CACHE_SFU_PRODUCES_KEY_NAME = Object.freeze({
+  AUDIO : "audio",
+  VIDEO : "video"
+});
+
+// 

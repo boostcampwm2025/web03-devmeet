@@ -7,7 +7,7 @@ import { TokenDto } from "@app/auth/commands/dto";
 import { PayloadRes } from "@app/auth/queries/dto";
 import { JwtWsGuard } from "../auth/guards/jwt.guard";
 import { WEBSOCKET_AUTH_CLIENT_EVENT_NAME, WEBSOCKET_NAMESPACE, WEBSOCKET_PATH, WEBSOCKET_SIGNALING_CLIENT_EVENT_NAME, WEBSOCKET_SIGNALING_EVENT_NAME } from "../websocket.constants";
-import { DtlsHandshakeValidate, JoinRoomValidate, NegotiateIceValidate, SocketPayload } from "./signaling.validate";
+import { DtlsHandshakeValidate, JoinRoomValidate, NegotiateIceValidate, OnProduceValidate, SocketPayload } from "./signaling.validate";
 import { ConnectResult, ConnectRoomDto } from "@app/room/commands/dto";
 import { CHANNEL_NAMESPACE } from "@infra/channel/channel.constants";
 
@@ -179,5 +179,23 @@ export class SignalingWebsocketGateway implements OnGatewayInit, OnGatewayConnec
     }
   };
 
+  // 유저가 방에 정보를 얻고 나서 다 알리는 방법도 있다. 
+
+
+  // 본격적으로 프론트엔드에서 회의방에 배포하고 싶을때 사용
+  @SubscribeMessage(WEBSOCKET_SIGNALING_EVENT_NAME.PRODUCE)
+  @UsePipes(new ValidationPipe({
+    whitelist : true,
+    transform : true    
+  }))
+  async onProduceGateway(
+    @ConnectedSocket() client : Socket,
+    @MessageBody() validate : OnProduceValidate
+  ) {
+    // 1. producer 등록
+
+    // 2. 알려야 함
+
+  }
 
 };

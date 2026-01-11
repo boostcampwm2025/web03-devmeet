@@ -12,7 +12,7 @@ export class SelectSfuTransportDataFromRedis extends SelectDataFromCache<RedisCl
     @Inject(REDIS_SERVER) cache : RedisClientType<any, any>,
   ) { super(cache); };  
 
-  // namespace 부분만 있고 keyname은 사용 안될 예정이다.
+  // namespace(transport_id) 부분만 있고 keyname은 사용 안될 예정이다.
   async select({ namespace, keyName, }: { namespace: string; keyName: string; }): Promise<RoomTransportInfo | undefined> {
 
     const transportNamespace : string = `${CACHE_SFU_NAMESPACE_NAME.TRANSPORT_INFO}:${namespace}`;

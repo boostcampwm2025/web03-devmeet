@@ -1,5 +1,5 @@
 import { IsIn, IsNotEmpty, IsObject, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
-import { type DtlsParameters } from "mediasoup/types";
+import type { RtpParameters, DtlsParameters } from "mediasoup/types";
 
 
 // socket에서 사용할 
@@ -51,4 +51,25 @@ export class DtlsHandshakeValidate {
   @IsNotEmpty()
   @IsIn([ "send", "recv" ])
   type : "send" | "recv";
+};
+
+export class OnProduceValidate {
+
+  @IsNotEmpty()
+  @IsString()
+  transport_id: string;
+
+  @IsString()
+  @IsIn(["audio", "video"])
+  kind: "audio" | "video";
+
+  // 같은 kind에도 이제 차이를 두어야 한다. ( screen 같은 경우는 main 레벨로 올려야 함 )
+  @IsString()
+  @IsIn(["mic", "cam", "screen_video", "screen_audio"])
+  type : "mic" | "cam" | "screen_video" | "screen_audio"
+
+  @IsNotEmpty()
+  @IsObject()
+  rtpParameters: RtpParameters;
+
 };

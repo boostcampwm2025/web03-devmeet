@@ -140,6 +140,9 @@ export class SignalingWebsocketService {
       user_id : payload.user_id,
     }
     await this.sfuServer.connectTransport(dto);
-  }
+  };
+
+  // produce를 하기 위한 준비 
+  
 
 };

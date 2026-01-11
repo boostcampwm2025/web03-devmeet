@@ -12,12 +12,13 @@ export const WEBSOCKET_AUTH_CLIENT_EVENT_NAME = Object.freeze({
   ERROR : "auth:error"
 } as const);
 
-// 
+// 웹소켓에 시그널링 서버에게 보내는 이벤트 이름
 export const WEBSOCKET_SIGNALING_EVENT_NAME = Object.freeze({
   JOIN_ROOM : "signaling:ws:join_room",
   NEGOTIATE_SDP : "signaling:ws:negotiate_sdp",
   NEGOTIATE_ICE : "signaling:ws:negotiate_ice",
-  DTLS_HANDSHAKE : "signaling:ws:dtls_handshake"
+  DTLS_HANDSHAKE : "signaling:ws:dtls_handshake",
+  PRODUCE : "signaling:ws:produce"
 } as const);
 
 export const WEBSOCKET_SIGNALING_CLIENT_EVENT_NAME = Object.freeze({

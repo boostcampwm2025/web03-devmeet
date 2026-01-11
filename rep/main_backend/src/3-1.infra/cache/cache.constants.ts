@@ -32,10 +32,10 @@ export const CACHE_ROOM_INFO_KEY_NAME = Object.freeze({
   CURRENT_PARTICIANTS : "current_particiants",
   PASSWORD_HASH : "password_hash",
   MAIN_PRODUCER : "main_producer", // 현재 방에서 가장 메인이 되는 produce가 뭔지
-  SUB_PRODUCER : "sub_producer" // main_produce를 도와주는 sub_produce가 뭔지
+  SUB_PRODUCER : "sub_producer" // main_produce를 도와주는 sub_produce가 뭔지 -> audio 같은것이 위치할 예정
 } as const);
 
-// produce에 저장되는 정보들 
+// produce에 저장되는 정보들 room_id 기반이다. 
 export const CACHE_ROOM_INFO_PRODUCE_KEY_PROPS_NAME = Object.freeze({
   PRODUCER_ID : "producer_id",
   TYPE : "type",
@@ -60,8 +60,8 @@ export const CACHE_ROOM_SOCKETS_KEY_PROPS_NAME = Object.freeze({
 
 // sfu와 관련된 cache 정보
 export const CACHE_SFU_NAMESPACE_NAME = Object.freeze({
-  TRANSPORT_INFO : "cache:sfu:transports",
-  PRODUCER_INFO : "cache:sfu:producers"
+  TRANSPORT_INFO : "cache:sfu:transports", // + transport_id
+  PRODUCER_INFO : "cache:sfu:producers" // + room_id:user_id
 } as const);
 
 export const CACHE_SFU_TRANSPORTS_KEY_NAME = Object.freeze({
@@ -71,13 +71,7 @@ export const CACHE_SFU_TRANSPORTS_KEY_NAME = Object.freeze({
   ROOM_ID : "room_id"
 } as const);
 
-// produce에 필요한 key_name 정보 ( namespace는 produce_info:room_id:user_id )
-export const CACHE_SFU_PRODUCES_KEY_NAME = Object.freeze({
-  AUDIO : "audio",
-  VIDEO : "video"
-} as const);
-
-// produce에 key에 저장되는 정보
+// produce에 key에 저장되는 정보 -> room_id:user_id 필요 ( 이유 -> 해당 room에 user 정보가 같이 들어감으로 -> 모든 데이터를 가져와야 한다. )
 export const CACHE_SFU_PRODUCES_KEY_PROPS_NAME = Object.freeze({
   PRODUCER_ID : "producer_id",
   TYPE : "type",

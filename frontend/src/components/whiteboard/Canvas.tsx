@@ -7,7 +7,7 @@ import { Stage, Layer, Rect } from 'react-konva';
 
 import type { WhiteboardItem, TextItem, ArrowItem } from '@/types/whiteboard';
 
-import { useCanvasStore } from '@/store/useCanvasStore';
+import { useCanvasState } from '@/hooks/useCanvasState';
 
 import { useWindowSize } from '@/hooks/useWindowSize';
 import { useCanvasInteraction } from '@/hooks/useCanvasInteraction';
@@ -20,16 +20,18 @@ import ItemTransformer from '@/components/whiteboard/controls/ItemTransformer';
 import ArrowHandles from '@/components/whiteboard/items/arrow/ArrowHandles';
 
 export default function Canvas() {
-  const stageScale = useCanvasStore((state) => state.stageScale);
-  const stagePos = useCanvasStore((state) => state.stagePos);
-  const canvasWidth = useCanvasStore((state) => state.canvasWidth);
-  const canvasHeight = useCanvasStore((state) => state.canvasHeight);
-  const items = useCanvasStore((state) => state.items);
-  const selectedId = useCanvasStore((state) => state.selectedId);
-  const editingTextId = useCanvasStore((state) => state.editingTextId);
-  const selectItem = useCanvasStore((state) => state.selectItem);
-  const updateItem = useCanvasStore((state) => state.updateItem);
-  const setEditingTextId = useCanvasStore((state) => state.setEditingTextId);
+  const {
+    stageScale,
+    stagePos,
+    canvasWidth,
+    canvasHeight,
+    items,
+    selectedId,
+    editingTextId,
+    selectItem,
+    updateItem,
+    setEditingTextId,
+  } = useCanvasState();
 
   const stageRef = useRef<Konva.Stage | null>(null);
   const [isDraggingArrow, setIsDraggingArrow] = useState(false);

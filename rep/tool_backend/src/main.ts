@@ -10,7 +10,7 @@ async function bootstrap() {
   const port: number = config.get<number>('NODE_PORT', 8080);
   const host: string = config.get<string>('NODE_HOST', 'localhost');
 
-  // 
+  // cors 설정
 
   await app.listen(port, host);
 }

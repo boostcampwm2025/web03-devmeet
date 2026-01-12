@@ -61,7 +61,7 @@ export class SignalingWebsocketGateway implements OnGatewayInit, OnGatewayConnec
     });
   };
 
-  // 연결하자 마자 바로 해야 하는 하는 것 정의 가능
+  // 연결하자 마자 바로 해야 하는 하는 것 정의 가능 -> access_token을 보내준다. 
   async handleConnection(client: Socket) {
     const access_token : string = client.data.user.access_token;
     if (access_token) client.emit(WEBSOCKET_AUTH_CLIENT_EVENT_NAME.ACCESS_TOKEN, {access_token});
@@ -96,7 +96,7 @@ export class SignalingWebsocketGateway implements OnGatewayInit, OnGatewayConnec
     // 방에 room_id를 받아온다. 
     const payload : SocketPayload = client.data.user;
     const dto : ConnectRoomDto = {
-      ...inputs, 
+      ...inputs, is_guest : payload.is_guest,
       socket_id : payload.socket_id, user_id : payload.user_id, nickname : payload.nickname !== "" ? payload.nickname : inputs.nickname ?? "", ip : payload.ip
     };
     try {

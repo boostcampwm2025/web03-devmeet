@@ -32,20 +32,23 @@ export class CreateSfuTransportInfoToRedis extends InsertDataToCache<RedisClient
       [CACHE_SFU_TRANSPORTS_KEY_NAME.USER_ID] : entity.user_id
     }) 
 
-    const result = await tx.exec();
+    let result: [number, number] | null;
+    try {
+      result = (await tx.exec()) as unknown as [number, number] | null;
+    } catch (err) {
+      return false;
+    }
     if (!result) return false;
 
-    const [[err1, hsetnxRes], [err2]] = result as any;
-
-    if (err1 || err2) return false;
+    const [hsetnxRes] = result as unknown as [number, number];
 
     // 유저 정보가 저장했는지 확인
     if (hsetnxRes !== 1) {
-      await this.cache.del(infoKey).catch(() => {});
-      return false;
-    }
+    await this.cache.del(infoKey).catch(() => {});
+    return false;
+  }
 
-    return true;
+  return true;
   };
 };  
 

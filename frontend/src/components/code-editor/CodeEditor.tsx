@@ -1,10 +1,12 @@
 'use client';
 
 import Editor from '@monaco-editor/react';
-import type * as monaco from 'monaco-editor';
+import * as monaco from 'monaco-editor';
 import { useEffect, useRef, useState } from 'react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
+import { colorFromClientId, injectCursorStyles } from '@/utils/code-editor';
+import { AwarenessState } from '@/types/code-editor';
 
 type CodeEditorProps = {
   language?: string;
@@ -20,13 +22,22 @@ export default function CodeEditor({
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const providerRef = useRef<WebsocketProvider | null>(null);
+  const remoteDecorationsRef =
+    useRef<monaco.editor.IEditorDecorationsCollection | null>(null);
 
   const [isAutoCompleted, setIsAutoCompleted] = useState<boolean>(autoComplete);
   const [isPresenter, setIsPresenter] = useState<boolean>(false);
   const [hasPresenter, setHasPresenter] = useState<boolean>(false);
 
-  const handleMount = async (editor: monaco.editor.IStandaloneCodeEditor) => {
+  const handleMount = async (
+    editor: monaco.editor.IStandaloneCodeEditor,
+    monaco: typeof import('monaco-editor'),
+  ) => {
     editorRef.current = editor;
+
+    if (!remoteDecorationsRef.current) {
+      remoteDecorationsRef.current = editor.createDecorationsCollection();
+    }
 
     const ydoc = new Y.Doc();
     const { MonacoBinding } = await import('y-monaco');
@@ -41,9 +52,12 @@ export default function CodeEditor({
     // 사용자 정보 동적 설정
     const userName = `User-${Math.floor(Math.random() * 100)}`;
 
-    provider.awareness.setLocalStateField('user', {
-      name: userName,
-      role: 'viewer', // 기본은 viewer
+    provider.awareness.setLocalState({
+      user: {
+        name: userName,
+        role: 'viewer',
+      },
+      cursor: null,
     });
 
     const yText = ydoc.getText('monaco');
@@ -59,33 +73,96 @@ export default function CodeEditor({
       provider.awareness, // 여기서 다른 유저들의 위치 정보를 받아온다.
     );
 
-    // 발표자 상태 변화 감지
-    provider.awareness.on('change', () => {
-      const states = provider.awareness.getStates(); // Map<clientID, state>
+    // 커서 위치 전송
+    let cursorFrame: number | null = null;
 
+    editor.onDidChangeCursorPosition((e) => {
+      if (cursorFrame) return;
+
+      cursorFrame = requestAnimationFrame(() => {
+        provider.awareness.setLocalStateField('cursor', {
+          lineNumber: e.position.lineNumber,
+          column: e.position.column,
+        });
+        cursorFrame = null;
+      });
+    });
+
+    // 커서 렌더링만 담당
+    const updateRemoteDecorations = (states: Map<number, AwarenessState>) => {
+      if (!editorRef.current) return;
+
+      const decorations: monaco.editor.IModelDeltaDecoration[] = [];
+
+      states.forEach((state, clientId) => {
+        if (clientId === provider.awareness.clientID) return;
+        if (!state.cursor) return;
+
+        const { lineNumber, column } = state.cursor;
+
+        const { cursor, lineBg } = colorFromClientId(clientId);
+        injectCursorStyles(clientId, cursor, lineBg);
+
+        decorations.push(
+          {
+            range: new monaco.Range(lineNumber, 1, lineNumber, 1),
+            options: {
+              isWholeLine: true,
+              className: `remote-line-${clientId}`,
+            },
+          },
+          {
+            range: new monaco.Range(lineNumber, column, lineNumber, column + 1),
+            options: {
+              className: `remote-cursor-${clientId}`,
+              stickiness:
+                monaco.editor.TrackedRangeStickiness
+                  .NeverGrowsWhenTypingAtEdges,
+            },
+          },
+        );
+      });
+
+      remoteDecorationsRef.current!.set(decorations);
+    };
+
+    const updatePresenterState = (states: Map<number, AwarenessState>) => {
       // 발표자 찾기
-      const presenterEntry = Array.from(states.entries()).find(
-        ([clientId, state]) => state.user?.role === 'presenter',
+      const presenter = [...states.entries()].find(
+        ([_, state]) => state.user?.role === 'presenter',
       );
 
-      setHasPresenter(Boolean(presenterEntry));
+      const presenterId = presenter?.[0] ?? null;
 
-      // presenter의 clientID
-      const presenterClientId = presenterEntry?.[0];
+      const amIPresenter =
+        presenterId === providerRef.current?.awareness.clientID;
 
-      // 나 자신이 발표자인지
-      const amIPresenter = provider.awareness.clientID === presenterClientId;
+      setHasPresenter(Boolean(presenterId));
       setIsPresenter(amIPresenter);
 
-      // 발표자가 있으면 다른 사람은 read-only
-      const readOnly = presenterClientId != null && !amIPresenter;
-      editor.updateOptions({ readOnly });
+      editorRef.current?.updateOptions({
+        readOnly: presenterId !== null && !amIPresenter,
+      });
+    };
+
+    provider.awareness.on('change', () => {
+      const states = provider.awareness.getStates();
+
+      updateRemoteDecorations(states);
+      updatePresenterState(states);
     });
 
     cleanupRef.current = () => {
       binding.destroy();
       provider.destroy();
       ydoc.destroy();
+
+      remoteDecorationsRef.current?.clear();
+      remoteDecorationsRef.current = null;
+
+      document
+        .querySelectorAll('style[data-client-id]')
+        .forEach((el) => el.remove());
     };
   };
 
@@ -98,18 +175,13 @@ export default function CodeEditor({
 
   // 발표자 되기
   const becomePresenter = () => {
-    if (hasPresenter) {
-      alert('이미 누가 발표중이라니까');
-      //   TODO: toast message 띄워주기
-      return;
-    }
+    if (hasPresenter) return;
     if (!providerRef.current) return;
 
+    const prevUser = providerRef.current.awareness.getLocalState()?.user;
     providerRef.current.awareness.setLocalStateField('user', {
+      ...prevUser,
       role: 'presenter',
-      name:
-        providerRef.current.awareness.getLocalState()?.user?.name ??
-        'anonymous',
     });
   };
 
@@ -117,14 +189,14 @@ export default function CodeEditor({
   const cancelPresenter = () => {
     if (!providerRef.current) return;
 
-    // 역할을 viewer로 돌려놓기
+    const prevUser = providerRef.current.awareness.getLocalState()?.user;
     providerRef.current.awareness.setLocalStateField('user', {
+      ...prevUser,
       role: 'viewer',
-      name:
-        providerRef.current.awareness.getLocalState()?.user?.name ??
-        'anonymous',
     });
   };
+
+  const disabledPresenter = hasPresenter && !isPresenter;
 
   return (
     <div className="flex h-full w-full flex-col">
@@ -144,7 +216,8 @@ export default function CodeEditor({
         {!isPresenter && (
           <button
             onClick={becomePresenter}
-            className="rounded bg-blue-600 px-3 py-1 text-sm text-white"
+            disabled={disabledPresenter}
+            className={`rounded px-3 py-1 text-sm ${disabledPresenter ? 'bg-neutral-100 text-neutral-400' : 'bg-blue-600 text-white'}`}
           >
             발표자 되기
           </button>

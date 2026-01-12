@@ -22,17 +22,24 @@ export default function ItemTransformer({
   const isTextSelected = selectedItem?.type === 'text';
   const isArrowSelected = selectedItem?.type === 'arrow';
 
-  // Transformer 연결 (화살표는 제외)
+  // Transformer 연결
   useEffect(() => {
     if (transformerRef.current && stageRef.current) {
       const stage = stageRef.current;
 
+      // 선택된 아이디
+      // Arrow 아이템 선택 : Transformer 비활성화
+      // Arrow 외 아이템 선택 : Transformer 활성화
       if (selectedId && !isArrowSelected) {
+        // 해당 ID 노드 확인
         const selectedNode = stage.findOne('#' + selectedId);
+        // 노드가 존재하면 Transformer에 연결
         if (selectedNode) {
           transformerRef.current.nodes([selectedNode]);
           transformerRef.current.getLayer()?.batchDraw();
-        } else {
+        }
+        // 노드 존재하지 않으면 Transformer 해제
+        else {
           transformerRef.current.nodes([]);
         }
       } else {
@@ -45,6 +52,8 @@ export default function ItemTransformer({
     <Transformer
       ref={transformerRef}
       enabledAnchors={
+        // Text : 좌우 활성화
+        // Text제외 나머지 : 모든 방향 활성화
         isTextSelected
           ? ['middle-left', 'middle-right']
           : [
@@ -58,32 +67,43 @@ export default function ItemTransformer({
               'middle-right',
             ]
       }
+      // 핸들 스타일
+      // anchorSize : 핸들크기 / anchorCornerRadius : 모서리 둥글기 / anchorStrokeWidth : 테두리 두께
       anchorSize={10}
       anchorCornerRadius={5}
       anchorStrokeWidth={1.5}
+      // anchorStroke : 핸들 테두리 색상 / anchorFill : 핸들 내부 색상
       anchorStroke="#0369A1"
+      anchorFill="#ffffff"
+      // borderStroke : 테두리 색상 / borderStrokeWidth : 테두리 두께
       borderStroke="#0369A1"
       borderStrokeWidth={1.5}
+      // 회전 관련 설정
+      // rotationSnaps : 회전 스냅 각도 / rotationSnapTolerance : 스냅 허용 오차
       rotationSnaps={[0, 90, 180, 270]}
       rotationSnapTolerance={10}
+      // 비율 유지 설정
       keepRatio={false}
+      // 최소 크기 제한
       boundBoxFunc={(_oldBox, newBox) => {
-        newBox.width = Math.max(30, newBox.width);
+        if (newBox.width < 5 || newBox.height < 5) {
+          return _oldBox;
+        }
         return newBox;
       }}
+      // Text 변형 로직
       onTransform={(e) => {
-        // Transform 중에도 스케일 보정
         const node = e.target;
-        const scaleX = node.scaleX();
-        const scaleY = node.scaleY();
 
-        if (scaleX !== 1 || scaleY !== 1) {
-          node.scaleX(1);
-          node.scaleY(1);
+        if (node.getClassName() === 'Text') {
+          const scaleX = node.scaleX();
 
-          if (node.getClassName() === 'Text') {
-            node.width(node.width() * scaleX);
+          // 스케일 변형시 스케일 1로 고정 및 너비 조절
+          if (scaleX !== 1) {
+            node.scaleX(1);
+            node.width(Math.max(30, node.width() * scaleX));
           }
+          return;
         }
       }}
     />

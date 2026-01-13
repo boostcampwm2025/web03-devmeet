@@ -219,7 +219,9 @@ export default function RenderItem({
     return (
       <ShapeItem
         shapeItem={shapeItem}
-        onSelect={() => onSelect(item.id)}
+        isDraggable={isDraggable}
+        isListening={isListening}
+        onSelect={() => isInteractive && !isEraserMode && onSelect(item.id)}
         onChange={onChange}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}

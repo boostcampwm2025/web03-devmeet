@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { SfuService } from "./sfu.service";
 import { MediasoupRouterFactory } from "./sfu.interface";
-import { CreateConsumerUsecase, CreateProduceUsecase, CreateRouterUsecase, CreateTransportUsecase, DisconnectUserUsecase, ResumeConsumerUsecase } from "@app/sfu/commands/usecase";
+import { CreateConsumerUsecase, CreateProduceUsecase, CreateRouterUsecase, CreateTransportUsecase, DisconnectUserUsecase, PauseConsumerUsecase, ResumeConsumerUsecase } from "@app/sfu/commands/usecase";
 import { ConsumerRepository, ProducerRepository, RoomCreateLockRepo, RoomRouterRepository, TransportRepository } from "@infra/memory/sfu";
 import { ConsumerRepositoryPort, ProducerRepositoryPort, RoomCreateLockPort, RoomRouterRepositoryPort, RouterFactoryPort, TransportFactoryPort, TransportRepositoryPort } from "@app/sfu/ports";
 import { CreateSfuTransportInfoToRedis, DeleteConsumerDataToRedis, DeleteMainProducerDataToRedis, DeleteSfuTransportInfoToRedis, DeleteUserProducerDataToRedis, InsertConsumerDataToRedis, InsertMainProducerDataToRedis, InsertUserProducerDataToRedis } from "@infra/cache/redis/sfu/sfu.outbound";
@@ -180,6 +180,24 @@ import { SelectConsumerInfoFromRedis, SelectMainProducerDataFromRedis, SelectSfu
         SelectConsumerInfoFromRedis
       ]
     },
+
+    // consumer를 멈추는 usecase
+    {
+      provide : PauseConsumerUsecase,
+      useFactory : (
+        consumerRepo : ConsumerRepositoryPort,
+        selectConsumerInfoFromCache : SelectConsumerInfoFromRedis        
+      ) => {
+        return new PauseConsumerUsecase(
+          consumerRepo,
+          {selectConsumerInfoFromCache}
+        )
+      },
+      inject : [
+        ConsumerRepository,
+        SelectConsumerInfoFromRedis        
+      ]
+    }
 
   ],
   exports : [

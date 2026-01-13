@@ -208,7 +208,7 @@ export class SignalingWebsocketService {
       room_id,
       ...validate
     };
-    await this.sfuServer.resumeConsumer(dto);
+    await this.sfuServer.pauseConsumer(dto);
   };
 
 };

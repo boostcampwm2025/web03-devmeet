@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { CreateConsumerDto, CreateConsumerResult, CreateProduceResult, CreatePropduceDto, CreateTransportDto, ResumeConsumerDto, RoomEntry, TransportEntry } from "@app/sfu/commands/dto";
-import { CreateConsumerUsecase, CreateProduceUsecase, CreateRouterUsecase, CreateTransportUsecase, DisconnectUserUsecase, ResumeConsumerUsecase } from "@app/sfu/commands/usecase";
+import { CreateConsumerDto, CreateConsumerResult, CreateProduceResult, CreatePropduceDto, CreateTransportDto, PauseConsumerDto, ResumeConsumerDto, RoomEntry, TransportEntry } from "@app/sfu/commands/dto";
+import { CreateConsumerUsecase, CreateProduceUsecase, CreateRouterUsecase, CreateTransportUsecase, DisconnectUserUsecase, PauseConsumerUsecase, ResumeConsumerUsecase } from "@app/sfu/commands/usecase";
 import { RoomRouterRepository, TransportRepository } from "@infra/memory/sfu";
 import { ConnectTransportUsecase } from "@app/sfu/queries/usecase";
 import { ConnectTransportType } from "@app/sfu/queries/dto";
@@ -18,6 +18,7 @@ export class SfuService {
     private readonly createProducerUsecase : CreateProduceUsecase<any>,
     private readonly createConsumerUsecase : CreateConsumerUsecase<any>,
     private readonly resumeConsumerUsecase : ResumeConsumerUsecase<any>,
+    private readonly pauseConsumerUsecase : PauseConsumerUsecase<any>,
     // infra
     private readonly roomRouters : RoomRouterRepository,
     private readonly transports : TransportRepository,
@@ -78,6 +79,11 @@ export class SfuService {
   // 6. consumer 재개
   async resumeConsumer(dto : ResumeConsumerDto) : Promise<void> {
     await this.resumeConsumerUsecase.execute(dto);
+  }
+
+  // 7. consumer 멈춤
+  async pauseConsumer(dto : PauseConsumerDto) : Promise<void> {
+    await this.pauseConsumerUsecase.execute(dto);
   }
 
 };

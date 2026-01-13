@@ -79,13 +79,26 @@ export default function ItemTransformer({
       rotationSnaps={[0, 90, 180, 270]}
       rotationSnapTolerance={10}
       keepRatio={false}
-      boundBoxFunc={(_oldBox, newBox) => {
+      boundBoxFunc={(oldBox, newBox) => {
         // 최소 크기 제한
         const minWidth = 30;
         const minHeight = 30;
 
-        newBox.width = Math.max(minWidth, Math.abs(newBox.width));
-        newBox.height = Math.max(minHeight, Math.abs(newBox.height));
+        // 너비가 최소값보다 작으면 제한하고 위치 보정
+        if (newBox.width < minWidth) {
+          if (newBox.x !== oldBox.x) {
+            newBox.x = oldBox.x + oldBox.width - minWidth;
+          }
+          newBox.width = minWidth;
+        }
+
+        // 높이가 최소값보다 작으면 제한하고 위치 보정
+        if (newBox.height < minHeight) {
+          if (newBox.y !== oldBox.y) {
+            newBox.y = oldBox.y + oldBox.height - minHeight;
+          }
+          newBox.height = minHeight;
+        }
 
         return newBox;
       }}

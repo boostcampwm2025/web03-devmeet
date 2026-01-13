@@ -7,7 +7,6 @@ import { useCursorStyle } from '@/hooks/useCursorStyle';
 import { useItemInteraction } from '@/hooks/useItemInteraction';
 import ShapeItem from '@/components/whiteboard/items/shape/ShapeItem';
 
-
 import type {
   TextItem,
   ArrowItem,
@@ -210,6 +209,22 @@ export default function RenderItem({
             scaleY: 1,
           });
         }}
+      />
+    );
+  }
+
+  // Shape Rendering
+  if (item.type === 'shape') {
+    const shapeItem = item as ShapeItemType;
+    return (
+      <ShapeItem
+        shapeItem={shapeItem}
+        onSelect={() => onSelect(item.id)}
+        onChange={onChange}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
       />
     );
   }

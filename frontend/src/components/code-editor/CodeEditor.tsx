@@ -2,20 +2,20 @@
 
 import Editor from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { colorFromClientId, injectCursorStyles } from '@/utils/code-editor';
 import { AwarenessState } from '@/types/code-editor';
+import CodeEditorToolbar from './CodeEditorToolbar';
+import { EditorLanguage } from '@/constants/code-editor';
 
 type CodeEditorProps = {
-  language?: string;
   autoComplete?: boolean;
   minimap?: boolean;
 };
 
 export default function CodeEditor({
-  language = 'typescript',
   autoComplete = true,
   minimap = true,
 }: CodeEditorProps) {
@@ -24,16 +24,20 @@ export default function CodeEditor({
   const providerRef = useRef<WebsocketProvider | null>(null);
   const remoteDecorationsRef =
     useRef<monaco.editor.IEditorDecorationsCollection | null>(null);
+  const monacoRef = useRef<typeof import('monaco-editor') | null>(null);
 
   const [isAutoCompleted, setIsAutoCompleted] = useState<boolean>(autoComplete);
   const [isPresenter, setIsPresenter] = useState<boolean>(false);
   const [hasPresenter, setHasPresenter] = useState<boolean>(false);
+  const [codeLanguage, setCodeLanguage] =
+    useState<EditorLanguage>('typescript');
 
   const handleMount = async (
     editor: monaco.editor.IStandaloneCodeEditor,
     monaco: typeof import('monaco-editor'),
   ) => {
     editorRef.current = editor;
+    monacoRef.current = monaco;
 
     if (!remoteDecorationsRef.current) {
       remoteDecorationsRef.current = editor.createDecorationsCollection();
@@ -161,7 +165,9 @@ export default function CodeEditor({
   }, []);
 
   // 자동완성 토글
-  const toggleAutoComplete = () => setIsAutoCompleted((prev) => !prev);
+  const toggleAutoComplete = useCallback(() => {
+    setIsAutoCompleted((prev) => !prev);
+  }, []);
 
   // 발표자 되기
   const becomePresenter = () => {
@@ -186,55 +192,37 @@ export default function CodeEditor({
     });
   };
 
-  const disabledPresenter = hasPresenter && !isPresenter;
+  const changeLanguage = useCallback((lang: EditorLanguage) => {
+    setCodeLanguage(lang);
+
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+    const model = editor?.getModel();
+
+    if (!editor || !monaco || !model) return;
+
+    monaco.editor.setModelLanguage(model, lang);
+  }, []);
 
   return (
     <div className="flex h-full w-full flex-col">
-      {/* 상단 컨트롤 */}
-      <div className="flex items-center gap-2 border-b border-neutral-700 p-2">
-        <button
-          onClick={toggleAutoComplete}
-          className={`rounded px-3 py-1 text-sm font-bold text-white transition-colors ${
-            isAutoCompleted
-              ? 'bg-green-600 hover:bg-green-500'
-              : 'bg-red-600 hover:bg-red-500'
-          }`}
-        >
-          자동완성 {isAutoCompleted ? 'ON' : 'OFF'}
-        </button>
-
-        {!isPresenter && (
-          <button
-            onClick={becomePresenter}
-            disabled={disabledPresenter}
-            className={`rounded px-3 py-1 text-sm ${disabledPresenter ? 'bg-neutral-100 text-neutral-400' : 'bg-blue-600 text-white'}`}
-          >
-            스포트라이트
-          </button>
-        )}
-
-        {isPresenter && (
-          <button
-            onClick={cancelPresenter}
-            className="rounded bg-red-600 px-3 py-1 text-sm text-white"
-          >
-            스포트라이트 해제
-          </button>
-        )}
-
-        {hasPresenter && (
-          <span className="text-sm text-neutral-400">
-            {isPresenter ? '편집 가능 (발표자)' : '읽기 전용 (참가자)'}
-          </span>
-        )}
-      </div>
+      <CodeEditorToolbar
+        isAutoCompleted={isAutoCompleted}
+        isPresenter={isPresenter}
+        hasPresenter={hasPresenter}
+        onToggleAutoComplete={toggleAutoComplete}
+        onBecomePresenter={becomePresenter}
+        onCancelPresenter={cancelPresenter}
+        language={codeLanguage}
+        onLanguageChange={changeLanguage}
+      />
 
       {/* 코드에디터 */}
       <Editor
         width="100%"
         height="100%"
         theme="vs-dark"
-        defaultLanguage={language}
+        defaultLanguage={codeLanguage}
         onMount={handleMount}
         options={{
           automaticLayout: true,

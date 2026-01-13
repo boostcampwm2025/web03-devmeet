@@ -1,9 +1,19 @@
 'use client';
 
-import { Text, Arrow } from 'react-konva';
-import { useCanvasStore } from '@/store/useCanvasStore';
-import type { TextItem, ArrowItem, WhiteboardItem } from '@/types/whiteboard';
+import Konva from 'konva';
 
+import { Text, Arrow } from 'react-konva';
+import type {
+  TextItem,
+  ArrowItem,
+  ShapeItem as ShapeItemType,
+  WhiteboardItem,
+} from '@/types/whiteboard';
+import ShapeItem from '@/components/whiteboard/items/shape/ShapeItem';
+
+import { useCanvasStore } from '@/store/useCanvasStore';
+
+// RenderItem Props
 interface RenderItemProps {
   item: WhiteboardItem;
   isSelected: boolean;
@@ -14,6 +24,7 @@ interface RenderItemProps {
   onArrowDblClick?: (id: string) => void;
 }
 
+// RenderItem Component
 export default function RenderItem({
   item,
   onSelect,
@@ -24,7 +35,19 @@ export default function RenderItem({
 }: RenderItemProps) {
   const setEditingTextId = useCanvasStore((state) => state.setEditingTextId);
 
-  // 텍스트 렌더링
+  // Mouse Enter 시 커서 모양 변경
+  const handleMouseEnter = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    const container = e.target.getStage()?.container();
+    if (container) container.style.cursor = 'move';
+  };
+
+  // Mouse Leave 시 커서 모양 기본값으로 변경
+  const handleMouseLeave = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    const container = e.target.getStage()?.container();
+    if (container) container.style.cursor = 'default';
+  };
+
+  // Text Rendering
   if (item.type === 'text') {
     const textItem = item as TextItem;
     return (
@@ -34,35 +57,18 @@ export default function RenderItem({
         draggable
         onMouseDown={() => onSelect(item.id)}
         onTouchStart={() => onSelect(item.id)}
-        onMouseEnter={(e) => {
-          const container = e.target.getStage()?.container();
-          if (container) {
-            container.style.cursor = 'move';
-          }
-        }}
-        onMouseLeave={(e) => {
-          const container = e.target.getStage()?.container();
-          if (container) {
-            container.style.cursor = 'default';
-          }
-        }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         onDblClick={() => {
           setEditingTextId(item.id);
           onSelect(item.id);
         }}
-        onDragEnd={(e) => {
-          onChange({
-            x: e.target.x(),
-            y: e.target.y(),
-          });
-        }}
+        onDragEnd={(e) => onChange({ x: e.target.x(), y: e.target.y() })}
         onTransformEnd={(e) => {
           const node = e.target;
           const scaleX = node.scaleX();
-
           node.scaleX(1);
           node.scaleY(1);
-
           onChange({
             x: node.x(),
             y: node.y(),
@@ -74,7 +80,7 @@ export default function RenderItem({
     );
   }
 
-  // 화살표 렌더링
+  // Arrow Rendering
   if (item.type === 'arrow') {
     const arrowItem = item as ArrowItem;
     return (
@@ -84,38 +90,35 @@ export default function RenderItem({
         draggable
         hitStrokeWidth={30}
         onMouseDown={() => onSelect(item.id)}
-        onMouseEnter={(e) => {
-          const container = e.target.getStage()?.container();
-          if (container) {
-            container.style.cursor = 'move';
-          }
-        }}
-        onMouseLeave={(e) => {
-          const container = e.target.getStage()?.container();
-          if (container) {
-            container.style.cursor = 'default';
-          }
-        }}
-        onDblClick={() => {
-          onArrowDblClick?.(item.id);
-        }}
-        onDragStart={() => {
-          onDragStart?.();
-        }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onDblClick={() => onArrowDblClick?.(item.id)}
+        onDragStart={onDragStart}
         onDragEnd={(e) => {
           const pos = e.target.position();
           const newPoints = arrowItem.points.map((p, i) =>
             i % 2 === 0 ? p + pos.x : p + pos.y,
           );
-
           e.target.position({ x: 0, y: 0 });
-
-          onChange({
-            points: newPoints,
-          });
-
+          onChange({ points: newPoints });
           onDragEnd?.();
         }}
+      />
+    );
+  }
+
+  // Shape Rendering
+  if (item.type === 'shape') {
+    const shapeItem = item as ShapeItemType;
+    return (
+      <ShapeItem
+        shapeItem={shapeItem}
+        onSelect={() => onSelect(item.id)}
+        onChange={onChange}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
       />
     );
   }

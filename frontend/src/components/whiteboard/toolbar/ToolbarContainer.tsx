@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+import { useCanvasStore } from '@/store/useCanvasStore';
+
 import NavButton from '@/components/whiteboard/common/NavButton';
 
 // Panel import
@@ -44,6 +46,9 @@ export default function ToolbarContainer() {
   // 상태 관리 로직
   const [activeTool, setActiveTool] = useState<ToolType>('select');
   const [activePanel, setActivePanel] = useState<PanelType>(null);
+
+  const drawingMode = useCanvasStore((state) => state.drawingMode);
+  const setDrawingMode = useCanvasStore((state) => state.setDrawingMode);
 
   // 핸들러 로직
   // 하위 패널에서 구체적인 도구 선택
@@ -102,8 +107,16 @@ export default function ToolbarContainer() {
         <NavButton
           icon={PenIcon}
           label="그리기"
-          isActive={activeTool === 'draw'}
-          onClick={() => handleToolSelect('draw')}
+          isActive={drawingMode}
+          onClick={() => {
+            setDrawingMode(!drawingMode);
+            if (!drawingMode) {
+              setActiveTool('draw');
+              setActivePanel(null);
+            } else {
+              setActiveTool('select');
+            }
+          }}
           bgColor="bg-white"
           activeBgColor="bg-sky-100 text-sky-600"
         />

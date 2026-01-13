@@ -3,7 +3,7 @@
 import { useRef, useState, useMemo } from 'react';
 
 import Konva from 'konva';
-import { Stage, Layer, Rect } from 'react-konva';
+import { Stage, Layer, Rect, Line } from 'react-konva';
 
 import type { WhiteboardItem, TextItem, ArrowItem } from '@/types/whiteboard';
 
@@ -13,6 +13,7 @@ import { useWindowSize } from '@/hooks/useWindowSize';
 import { useCanvasInteraction } from '@/hooks/useCanvasInteraction';
 import { useCanvasShortcuts } from '@/hooks/useCanvasShortcuts';
 import { useArrowHandles } from '@/hooks/useArrowHandles';
+import { useDrawing } from '@/hooks/useDrawing';
 
 import RenderItem from '@/components/whiteboard/items/RenderItem';
 import TextArea from '@/components/whiteboard/items/text/TextArea';
@@ -30,6 +31,7 @@ export default function Canvas() {
   const selectItem = useCanvasStore((state) => state.selectItem);
   const updateItem = useCanvasStore((state) => state.updateItem);
   const setEditingTextId = useCanvasStore((state) => state.setEditingTextId);
+  const drawingMode = useCanvasStore((state) => state.drawingMode);
 
   const stageRef = useRef<Konva.Stage | null>(null);
   const [isDraggingArrow, setIsDraggingArrow] = useState(false);
@@ -68,6 +70,13 @@ export default function Canvas() {
     updateItem,
   });
 
+  const {
+    handleDrawingMouseDown,
+    handleDrawingMouseMove,
+    handleDrawingMouseUp,
+    currentDrawing,
+  } = useDrawing({ drawingMode });
+
   useCanvasShortcuts({
     isArrowSelected,
     selectedHandleIndex,
@@ -88,6 +97,22 @@ export default function Canvas() {
     }
   };
 
+  const handleMouseDown = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (drawingMode) {
+      handleDrawingMouseDown(e);
+    } else {
+      handleCheckDeselect(e);
+    }
+  };
+
+  const handleMouseMove = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    handleDrawingMouseMove(e);
+  };
+
+  const handleMouseUp = () => {
+    handleDrawingMouseUp();
+  };
+
   const handleItemChange = (
     id: string,
     newAttributes: Partial<WhiteboardItem>,
@@ -103,7 +128,7 @@ export default function Canvas() {
         ref={stageRef}
         width={size.width}
         height={size.height}
-        draggable
+        draggable={!drawingMode}
         x={stagePos.x}
         y={stagePos.y}
         scaleX={stageScale}
@@ -111,7 +136,10 @@ export default function Canvas() {
         onWheel={handleWheel}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
-        onMouseDown={handleCheckDeselect}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
         onTouchStart={handleCheckDeselect}
       >
         <Layer
@@ -163,6 +191,17 @@ export default function Canvas() {
               onStartDrag={handleArrowStartDrag}
               onControlPointDrag={handleArrowControlPointDrag}
               onEndDrag={handleArrowEndDrag}
+            />
+          )}
+
+          {currentDrawing && (
+            <Line
+              points={currentDrawing.points}
+              stroke={currentDrawing.stroke}
+              strokeWidth={currentDrawing.strokeWidth}
+              tension={0.5}
+              lineCap="round"
+              lineJoin="round"
             />
           )}
 

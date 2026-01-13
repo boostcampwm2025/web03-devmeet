@@ -21,6 +21,7 @@ export default function ItemTransformer({
   const selectedItem = items.find((item) => item.id === selectedId);
   const isTextSelected = selectedItem?.type === 'text';
   const isArrowSelected = selectedItem?.type === 'arrow';
+  const isDrawingSelected = selectedItem?.type === 'drawing';
 
   // Transformer 연결 (화살표는 제외)
   useEffect(() => {
@@ -45,19 +46,22 @@ export default function ItemTransformer({
     <Transformer
       ref={transformerRef}
       enabledAnchors={
-        isTextSelected
-          ? ['middle-left', 'middle-right']
-          : [
-              'top-left',
-              'top-right',
-              'bottom-left',
-              'bottom-right',
-              'top-center',
-              'bottom-center',
-              'middle-left',
-              'middle-right',
-            ]
+        isDrawingSelected
+          ? []
+          : isTextSelected
+            ? ['middle-left', 'middle-right']
+            : [
+                'top-left',
+                'top-right',
+                'bottom-left',
+                'bottom-right',
+                'top-center',
+                'bottom-center',
+                'middle-left',
+                'middle-right',
+              ]
       }
+      rotateEnabled={!isDrawingSelected}
       anchorSize={10}
       anchorCornerRadius={5}
       anchorStrokeWidth={1.5}

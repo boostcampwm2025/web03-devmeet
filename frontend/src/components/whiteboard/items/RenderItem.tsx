@@ -1,8 +1,13 @@
 'use client';
 
-import { Text, Arrow } from 'react-konva';
+import { Text, Arrow, Line } from 'react-konva';
 import { useCanvasStore } from '@/store/useCanvasStore';
-import type { TextItem, ArrowItem, WhiteboardItem } from '@/types/whiteboard';
+import type {
+  TextItem,
+  ArrowItem,
+  WhiteboardItem,
+  DrawingItem,
+} from '@/types/whiteboard';
 
 interface RenderItemProps {
   item: WhiteboardItem;
@@ -115,6 +120,48 @@ export default function RenderItem({
           });
 
           onDragEnd?.();
+        }}
+      />
+    );
+  }
+
+  // 그리기 렌더링
+  if (item.type === 'drawing') {
+    const drawingItem = item as DrawingItem;
+    return (
+      <Line
+        {...drawingItem}
+        id={item.id}
+        draggable
+        hitStrokeWidth={30}
+        tension={0.4}
+        lineCap="round"
+        lineJoin="round"
+        listening={true}
+        onMouseDown={() => onSelect(item.id)}
+        onMouseEnter={(e) => {
+          const container = e.target.getStage()?.container();
+          if (container) {
+            container.style.cursor = 'move';
+          }
+        }}
+        onMouseLeave={(e) => {
+          const container = e.target.getStage()?.container();
+          if (container) {
+            container.style.cursor = 'default';
+          }
+        }}
+        onDragEnd={(e) => {
+          const pos = e.target.position();
+          const newPoints = drawingItem.points.map((p, i) =>
+            i % 2 === 0 ? p + pos.x : p + pos.y,
+          );
+
+          e.target.position({ x: 0, y: 0 });
+
+          onChange({
+            points: newPoints,
+          });
         }}
       />
     );

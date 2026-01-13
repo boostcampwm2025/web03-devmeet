@@ -42,3 +42,18 @@ export interface ShapeItem extends BaseItem {
   strokeWidth: number;
   rotation: number;
 }
+
+// Image Item
+export interface ImageItem extends BaseItem {
+  type: 'image';
+  src: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  stroke?: string;
+  strokeWidth?: number;
+  cornerRadius?: number;
+  opacity?: number;
+}

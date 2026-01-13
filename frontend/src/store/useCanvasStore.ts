@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
+
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
@@ -9,25 +10,42 @@ import type {
   ArrowItem,
   WhiteboardItem,
   DrawingItem,
+  ShapeItem,
+  ShapeType,
   CursorMode,
 } from '@/types/whiteboard';
 
 interface CanvasState {
+  // viewport State
   stageScale: number;
   stagePos: { x: number; y: number };
+
+  // Canvas State
   canvasWidth: number;
   canvasHeight: number;
+
+  // Whiteboard Items
   items: WhiteboardItem[];
-  editingTextId: string | null;
+
+  // Select
+  selectedId: string | null;
   selectItem: (id: string | null) => void;
 
-  selectedId: string | null;
+  // Stage Transform
   setStageScale: (scale: number) => void;
   setStagePos: (pos: { x: number; y: number }) => void;
+
+  // Text Editing
+  editingTextId: string | null;
   setEditingTextId: (id: string | null) => void;
 
+  // Item Actions
   addText: (text?: Partial<Omit<TextItem, 'id' | 'type'>>) => string;
   addArrow: (payload?: Partial<Omit<ArrowItem, 'id' | 'type'>>) => void;
+  addShape: (
+    type: ShapeType,
+    payload?: Partial<Omit<ShapeItem, 'id' | 'type' | 'shapeType'>>,
+  ) => void;
 
   // 커서 모드
   cursorMode: CursorMode;
@@ -48,6 +66,8 @@ interface CanvasState {
 }
 
 export const useCanvasStore = create<CanvasState>((set, get) => ({
+  // Stage State 초기값
+  // StageScale : 줌 배율 / stagePos : 카메라 위치,중앙 정렬
   stageScale: 1,
   stagePos:
     typeof window !== 'undefined'
@@ -56,12 +76,18 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
           y: (window.innerHeight - CANVAS_HEIGHT) / 2,
         }
       : { x: 0, y: 0 },
+
+  // Canvas State 초기값
+  // Canvas Width / Height : 캔버스 크기
   canvasWidth: CANVAS_WIDTH,
   canvasHeight: CANVAS_HEIGHT,
+
+  // Whiteboard Items 초기값
   items: [],
   editingTextId: null,
   selectedId: null,
 
+  // Stage Transform
   setStageScale: (scale) => set({ stageScale: scale }),
   setStagePos: (pos) => set({ stagePos: pos }),
   selectItem: (id) => set({ selectedId: id }),
@@ -174,6 +200,31 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       set({ currentDrawing: null });
     }
   },
+
+  // 도형 추가
+  addShape: (type, payload) =>
+    set((state) => {
+      const id = uuidv4();
+      const newShape: ShapeItem = {
+        id,
+        type: 'shape',
+        shapeType: type,
+        x: payload?.x ?? state.canvasWidth / 2 - 50,
+        y: payload?.y ?? state.canvasHeight / 2 - 50,
+        width: payload?.width ?? 100,
+        height: payload?.height ?? 100,
+        fill: payload?.fill ?? '#ffffff',
+        stroke: payload?.stroke ?? '#000000',
+        strokeWidth: payload?.strokeWidth ?? 2,
+        rotation: payload?.rotation ?? 0,
+      };
+
+      return {
+        items: [...state.items, newShape],
+        selectedId: id,
+      };
+    }),
+
 
   // 아이템 업데이트
   updateItem: (id, payload) =>

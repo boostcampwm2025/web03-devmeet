@@ -5,14 +5,18 @@ import { Text, Arrow, Line } from 'react-konva';
 import { useCanvasStore } from '@/store/useCanvasStore';
 import { useCursorStyle } from '@/hooks/useCursorStyle';
 import { useItemInteraction } from '@/hooks/useItemInteraction';
+import ShapeItem from '@/components/whiteboard/items/shape/ShapeItem';
+
 
 import type {
   TextItem,
   ArrowItem,
   WhiteboardItem,
+  ShapeItem as ShapeItemType,
   DrawingItem,
 } from '@/types/whiteboard';
 
+// RenderItem Props
 interface RenderItemProps {
   item: WhiteboardItem;
   isSelected: boolean;
@@ -23,6 +27,7 @@ interface RenderItemProps {
   onArrowDblClick?: (id: string) => void;
 }
 
+// RenderItem Component
 export default function RenderItem({
   item,
   onSelect,
@@ -82,10 +87,8 @@ export default function RenderItem({
           if (!isInteractive || isEraserMode) return;
           const node = e.target;
           const scaleX = node.scaleX();
-
           node.scaleX(1);
           node.scaleY(1);
-
           onChange({
             x: node.x(),
             y: node.y(),
@@ -97,7 +100,7 @@ export default function RenderItem({
     );
   }
 
-  // 화살표 렌더링
+  // Arrow Rendering
   if (item.type === 'arrow') {
     const arrowItem = item as ArrowItem;
     return (
@@ -127,13 +130,8 @@ export default function RenderItem({
           const newPoints = arrowItem.points.map((p, i) =>
             i % 2 === 0 ? p + pos.x : p + pos.y,
           );
-
           e.target.position({ x: 0, y: 0 });
-
-          onChange({
-            points: newPoints,
-          });
-
+          onChange({ points: newPoints });
           onDragEnd?.();
         }}
       />

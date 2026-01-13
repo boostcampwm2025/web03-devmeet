@@ -23,17 +23,24 @@ export default function ItemTransformer({
   const isArrowSelected = selectedItem?.type === 'arrow';
   const isDrawingSelected = selectedItem?.type === 'drawing';
 
-  // Transformer 연결 (화살표는 제외)
+  // Transformer 연결
   useEffect(() => {
     if (transformerRef.current && stageRef.current) {
       const stage = stageRef.current;
 
+      // 선택된 아이디
+      // Arrow 아이템 선택 : Transformer 비활성화
+      // Arrow 외 아이템 선택 : Transformer 활성화
       if (selectedId && !isArrowSelected) {
+        // 해당 ID 노드 확인
         const selectedNode = stage.findOne('#' + selectedId);
+        // 노드가 존재하면 Transformer에 연결
         if (selectedNode) {
           transformerRef.current.nodes([selectedNode]);
           transformerRef.current.getLayer()?.batchDraw();
-        } else {
+        }
+        // 노드 존재하지 않으면 Transformer 해제
+        else {
           transformerRef.current.nodes([]);
         }
       } else {
@@ -46,6 +53,8 @@ export default function ItemTransformer({
     <Transformer
       ref={transformerRef}
       enabledAnchors={
+        // Text : 좌우 활성화
+        // Text제외 나머지 : 모든 방향 활성화
         isTextSelected
           ? ['middle-left', 'middle-right']
           : [
@@ -64,6 +73,7 @@ export default function ItemTransformer({
       anchorCornerRadius={5}
       anchorStrokeWidth={1.5}
       anchorStroke="#0369A1"
+      anchorFill="#ffffff"
       borderStroke="#0369A1"
       borderStrokeWidth={1.5}
       rotationSnaps={[0, 90, 180, 270]}

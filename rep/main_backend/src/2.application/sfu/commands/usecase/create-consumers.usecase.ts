@@ -5,7 +5,7 @@ import { RoomTransportInfo } from "../../queries/dto";
 import { SfuError, SfuErrorMessage } from "@error/application/sfu/sfu.error";
 import type { ConsumerRepositoryPort, RoomRouterRepositoryPort, TransportRepositoryPort } from "../../ports";
 import { Consumer } from "mediasoup/types";
-import { DeleteDatasToCache, DeleteDataToCache, InsertDataToCache } from "@app/ports/cache/cache.outbound";
+import { DeleteDataToCache, InsertDataToCache } from "@app/ports/cache/cache.outbound";
 
 
 type CreateConsumersUsecaseProps<T> = {

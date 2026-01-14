@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { CreateConsumerDto, CreateConsumerResult, CreateProduceResult, CreatePropduceDto, CreateTransportDto, RoomEntry, TransportEntry } from "@app/sfu/commands/dto";
-import { CreateConsumerUsecase, CreateProduceUsecase, CreateRouterUsecase, CreateTransportUsecase, DisconnectUserUsecase } from "@app/sfu/commands/usecase";
+import { CreateConsumerDto, CreateConsumerResult, CreateConsumerResults, CreateConsumersDto, CreateProduceResult, CreatePropduceDto, CreateTransportDto, RoomEntry, TransportEntry } from "@app/sfu/commands/dto";
+import { CreateConsumersUsecase, CreateConsumerUsecase, CreateProduceUsecase, CreateRouterUsecase, CreateTransportUsecase, DisconnectUserUsecase } from "@app/sfu/commands/usecase";
 import { RoomRouterRepository, TransportRepository } from "@infra/memory/sfu";
 import { ConnectTransportUsecase,  PauseConsumerUsecase, ResumeConsumerUsecase } from "@app/sfu/queries/usecase";
 import { ConnectTransportType, PauseConsumerDto, ResumeConsumerDto, } from "@app/sfu/queries/dto";
@@ -19,6 +19,7 @@ export class SfuService {
     private readonly createConsumerUsecase : CreateConsumerUsecase<any>,
     private readonly resumeConsumerUsecase : ResumeConsumerUsecase<any>,
     private readonly pauseConsumerUsecase : PauseConsumerUsecase<any>,
+    private readonly createConsumersUsecase : CreateConsumersUsecase<any>,
     // infra
     private readonly roomRouters : RoomRouterRepository,
     private readonly transports : TransportRepository,
@@ -74,16 +75,21 @@ export class SfuService {
   // 5. consumer 생성
   async createConsumer(dto : CreateConsumerDto) : Promise<CreateConsumerResult> {
     return this.createConsumerUsecase.execute(dto);
-  }
+  };
 
   // 6. consumer 재개
   async resumeConsumer(dto : ResumeConsumerDto) : Promise<void> {
     await this.resumeConsumerUsecase.execute(dto);
-  }
+  };
 
   // 7. consumer 멈춤
   async pauseConsumer(dto : PauseConsumerDto) : Promise<void> {
     await this.pauseConsumerUsecase.execute(dto);
-  }
+  };
+
+  // 8. 여러개의 consumer를 만듬
+  async createConsumers(dto : CreateConsumersDto) : Promise<CreateConsumerResults> {
+    return this.createConsumersUsecase.execute(dto);
+  };
 
 };

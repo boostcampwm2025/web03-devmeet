@@ -1,10 +1,10 @@
 import { Module } from "@nestjs/common";
 import { SfuService } from "./sfu.service";
 import { MediasoupRouterFactory } from "./sfu.interface";
-import { CreateConsumerUsecase, CreateProduceUsecase, CreateRouterUsecase, CreateTransportUsecase, DisconnectUserUsecase } from "@app/sfu/commands/usecase";
+import { CreateConsumersUsecase, CreateConsumerUsecase, CreateProduceUsecase, CreateRouterUsecase, CreateTransportUsecase, DisconnectUserUsecase } from "@app/sfu/commands/usecase";
 import { ConsumerRepository, ProducerRepository, RoomCreateLockRepo, RoomRouterRepository, TransportRepository } from "@infra/memory/sfu";
 import { ConsumerRepositoryPort, ProducerRepositoryPort, RoomCreateLockPort, RoomRouterRepositoryPort, RouterFactoryPort, TransportFactoryPort, TransportRepositoryPort } from "@app/sfu/ports";
-import { CreateSfuTransportInfoToRedis, DeleteConsumerDataToRedis, DeleteMainProducerDataToRedis, DeleteSfuTransportInfoToRedis, DeleteUserProducerDataToRedis, InsertConsumerDataToRedis, InsertMainProducerDataToRedis, InsertUserProducerDataToRedis } from "@infra/cache/redis/sfu/sfu.outbound";
+import { CreateSfuTransportInfoToRedis, DeleteConsumerDataToRedis, DeleteMainProducerDataToRedis, DeleteSfuTransportInfoToRedis, DeleteUserProducerDataToRedis, InsertConsumerDatasToRedis, InsertConsumerDataToRedis, InsertMainProducerDataToRedis, InsertUserProducerDataToRedis } from "@infra/cache/redis/sfu/sfu.outbound";
 import { MediasoupTransportFactory } from "@infra/media/mediasoup/sfu/sfu.outbound";
 import { ConnectTransportUsecase, PauseConsumerUsecase, ResumeConsumerUsecase } from "@app/sfu/queries/usecase";
 import { SelectConsumerInfoFromRedis, SelectMainProducerDataFromRedis, SelectSfuTransportDataFromRedis, SelectUserProducerDataFromRedis, SelectUserTransportFromRedis } from "@infra/cache/redis/sfu/sfu.inbound";
@@ -196,6 +196,36 @@ import { SelectConsumerInfoFromRedis, SelectMainProducerDataFromRedis, SelectSfu
       inject : [
         ConsumerRepository,
         SelectConsumerInfoFromRedis        
+      ]
+    },
+
+    // 여러개의 consumer들을 만드는 usecase
+    {
+      provide : CreateConsumersUsecase,
+      useFactory : (
+        routerRepo : RoomRouterRepositoryPort,
+        transportRepo : TransportRepositoryPort,
+        consumerRepo : ConsumerRepositoryPort,
+        selectTransportDataFromCache : SelectSfuTransportDataFromRedis, 
+        insertConsumerDatasToCache : InsertConsumerDatasToRedis, 
+        deleteConsumerDataToCache : DeleteConsumerDataToRedis        
+      ) => {
+        return new CreateConsumersUsecase(          
+          routerRepo,
+          transportRepo,
+          consumerRepo, 
+          { 
+            selectTransportDataFromCache, insertConsumerDatasToCache, deleteConsumerDataToCache
+          }
+        );
+      },
+      inject : [
+        RoomRouterRepository,
+        TransportRepository,
+        ConsumerRepository,
+        SelectSfuTransportDataFromRedis, 
+        InsertConsumerDatasToRedis, 
+        DeleteConsumerDataToRedis
       ]
     }
 

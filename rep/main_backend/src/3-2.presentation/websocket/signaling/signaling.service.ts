@@ -5,12 +5,12 @@ import * as cookie from "cookie";
 import { ConnectResult, ConnectRoomDto, DisconnectRoomDto } from "@app/room/commands/dto";
 import { ConnectRoomUsecase, DisconnectRoomUsecase } from "@app/room/commands/usecase";
 import { v7 as uuidV7 } from "uuid";
-import { DtlsHandshakeValidate, OnConsumeValidate, OnProduceValidate, pauseConsumersValidate, ResumeConsumersValidate, SocketPayload } from "./signaling.validate";
+import { DtlsHandshakeValidate, OnConsumesValidate, OnConsumeValidate, OnProduceValidate, pauseConsumersValidate, ResumeConsumersValidate, SocketPayload } from "./signaling.validate";
 import { PayloadRes } from "@app/auth/queries/dto";
 import { SfuService } from "@present/webrtc/sfu/sfu.service";
 import { NotConnectSignalling } from "@error/presentation/signalling/signalling.error";
 import { CHANNEL_NAMESPACE } from "@infra/channel/channel.constants";
-import { CreateConsumerDto, CreateConsumerResult, CreateProduceResult, CreatePropduceDto, CreateTransportDto } from "@app/sfu/commands/dto";
+import { CreateConsumerDto, CreateConsumerResult, CreateConsumerResults, CreateConsumersDto, CreateProduceResult, CreatePropduceDto, CreateTransportDto } from "@app/sfu/commands/dto";
 import { ConnectTransportType, ResumeConsumerDto } from "@app/sfu/queries/dto";
 import { GetRoomMembersResult, MembersInfo } from "@app/room/queries/dto";
 import { GetRoomMembersUsecase } from "@app/room/queries/usecase";
@@ -211,4 +211,14 @@ export class SignalingWebsocketService {
     await this.sfuServer.pauseConsumer(dto);
   };
 
+  async onConsumes( client : Socket, validate : OnConsumesValidate ) : Promise<CreateConsumerResults> {
+    const room_id : string = client.data.room_id;
+    const payload : SocketPayload = client.data.user;
+    const dto : CreateConsumersDto = {
+      ...validate,
+      room_id,
+      ...payload
+    };
+    return this.sfuServer.createConsumers(dto);
+  };
 };

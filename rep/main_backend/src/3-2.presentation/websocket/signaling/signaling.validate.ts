@@ -1,4 +1,5 @@
-import { IsIn, IsNotEmpty, IsObject, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
+import { Type } from "class-transformer";
+import { ArrayMinSize, IsIn, IsNotEmpty, IsObject, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from "class-validator";
 import type { RtpParameters, DtlsParameters, RtpCapabilities } from "mediasoup/types";
 
 
@@ -116,3 +117,28 @@ export class pauseConsumersValidate {
   consumer_id : string;
 
 };
+
+// 여러개를 구독할때 사용
+export class ProducerInfoValidate {
+  @IsNotEmpty()
+  @IsString()
+  producer_id: string;
+
+  @IsNotEmpty()
+  @IsObject()
+  rtpCapabilities: RtpCapabilities;
+
+  @IsNotEmpty()
+  @IsIn(["user", "main"])
+  status: "user" | "main";
+}
+export class OnConsumesValidate {
+  @IsNotEmpty()
+  @IsString()
+  transport_id: string;
+
+  @ArrayMinSize(1) // 최소 1개는 받겠다
+  @ValidateNested({ each: true })
+  @Type(() => ProducerInfoValidate) 
+  producer_infos: ProducerInfoValidate[];
+}

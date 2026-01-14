@@ -7,7 +7,7 @@ import { TokenDto } from "@app/auth/commands/dto";
 import { PayloadRes } from "@app/auth/queries/dto";
 import { JwtWsGuard } from "../auth/guards/jwt.guard";
 import { WEBSOCKET_AUTH_CLIENT_EVENT_NAME, WEBSOCKET_NAMESPACE, WEBSOCKET_PATH, WEBSOCKET_SIGNALING_CLIENT_EVENT_NAME, WEBSOCKET_SIGNALING_EVENT_NAME } from "../websocket.constants";
-import { DtlsHandshakeValidate, JoinRoomValidate, NegotiateIceValidate, OnConsumeValidate, OnProduceValidate, pauseConsumersValidate, ResumeConsumersValidate, SocketPayload } from "./signaling.validate";
+import { DtlsHandshakeValidate, JoinRoomValidate, NegotiateIceValidate, OnConsumesValidate, OnConsumeValidate, OnProduceValidate, pauseConsumersValidate, ResumeConsumersValidate, SocketPayload } from "./signaling.validate";
 import { ConnectResult, ConnectRoomDto } from "@app/room/commands/dto";
 import { CHANNEL_NAMESPACE } from "@infra/channel/channel.constants";
 import { GetRoomMembersResult } from "@app/room/queries/dto";
@@ -288,6 +288,27 @@ export class SignalingWebsocketGateway implements OnGatewayInit, OnGatewayConnec
   };
 
   // 여러개의 producer_id를 한번에 구독하겠다는 로직도 넣고 한번에 재개 + 한번에 paused도 좋아보인다.
+  @SubscribeMessage(WEBSOCKET_SIGNALING_EVENT_NAME.CONSUMES)
+  @UsePipes(new ValidationPipe({
+    whitelist : true,
+    transform : true
+  }))
+  async onConsumesGateway(
+    @ConnectedSocket() client : Socket,
+    @MessageBody() validate : OnConsumesValidate
+  ) {
+    try {
+      // 1. 여러개의 consumer 등록
+      const consumerInfos = await this.signalingService.onConsumes(client, validate);
+
+      // 2. 받아와야 한다. ( 아직 packet받는거 허용은 안함 )
+      return { consumerInfos };
+    } catch (err) {
+      this.logger.error(err);
+      throw new WsException({ message : err.message ?? "에러 발생", status : err.status ?? 500 });      
+    };
+  };
+
   
 
   // producer가 이제 더이상 데이터를 보내지 않겠다고 이야기하는 이벤트

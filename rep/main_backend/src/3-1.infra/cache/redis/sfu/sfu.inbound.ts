@@ -1,4 +1,4 @@
-import { SelectDataFromCache } from "@app/ports/cache/cache.inbound";
+import { SelectDataFromCache, SelectDatasFromCache } from "@app/ports/cache/cache.inbound";
 import { Inject, Injectable } from "@nestjs/common";
 import { type RedisClientType } from "redis";
 import { CACHE_ROOM_INFO_KEY_NAME, CACHE_ROOM_NAMESPACE_NAME, CACHE_ROOM_SUB_NAMESPACE_NAME, CACHE_SFU_NAMESPACE_NAME, CACHE_SFU_TRANSPORTS_KEY_NAME, CACHE_SFU_USER_KEY_NAME, REDIS_SERVER } from "../../cache.constants";
@@ -125,4 +125,29 @@ export class SelectConsumerInfoFromRedis extends SelectDataFromCache<RedisClient
     
     return data ? true : false;
   };
+};
+
+// consumers의 정보들을 보여주는 로직
+@Injectable()
+export class SelectConsumerInfosFromRedis extends SelectDatasFromCache<RedisClientType<any, any>> {
+
+  constructor(
+    @Inject(REDIS_SERVER) cache : RedisClientType<any, any>
+  ) { super(cache); };  
+
+  // namespace는 room_id:user_id이고 keyNames은 consumer_ids 이다. 
+  async selectKeys({ namespace, keyNames }: { namespace: string; keyNames: Array<string>; }): Promise<Array<string>> {
+
+    // consumer의 namespace 이름
+    const consumerNamespace: string = `${CACHE_SFU_NAMESPACE_NAME.CONSUMER_INFO}:${namespace}`;
+
+    // cache에 해당 keynames가 존재하는지 확인
+    const values = await this.cache.hmGet(consumerNamespace, keyNames);
+
+    const consumerExisted: Array<string> = [];
+    for (let i = 0; i < keyNames.length; i++) {
+      if (values[i]) consumerExisted.push(keyNames[i]); // 값이 있으면 있고 없으면 null이기 때문에 이런식으로 처리
+    }
+    return consumerExisted;
+  }
 };

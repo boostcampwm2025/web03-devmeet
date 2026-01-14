@@ -1,4 +1,5 @@
 import Button from '@/components/common/button';
+import StartMeetingButton from '@/components/landing/StartMeetingButton';
 
 export default function LandingPage() {
   return (
@@ -14,7 +15,7 @@ export default function LandingPage() {
           >
             새 회의 시작
           </h2>
-          <Button>시작하기</Button>
+          <StartMeetingButton />
         </section>
 
         {/* 구분선 */}
@@ -46,7 +47,7 @@ export default function LandingPage() {
             <input
               id="meeting-code"
               placeholder="코드 또는 링크를 입력해주세요"
-              className="w-full rounded-sm border border-neutral-300 px-2 py-3 text-base outline-none focus:border-sky-600"
+              className="input-default input-light"
             />
 
             <Button type="submit">참여하기</Button>

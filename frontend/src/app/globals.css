@@ -38,6 +38,18 @@ button {
   @apply text-2xl font-bold text-neutral-900;
 }
 
+.input-default {
+  @apply w-full rounded-sm px-2 py-3 text-base text-neutral-900;
+}
+
+.input-sm {
+  @apply w-full rounded-sm px-2 py-2.5 text-sm text-neutral-900;
+}
+
+.input-light {
+  @apply border border-neutral-300 outline-none focus:border-sky-600;
+}
+
 /* 미팅 관련 커스텀 클래스 */
 .dropdown-btn {
   @apply w-full px-3 py-2.5 text-left text-sm text-neutral-50 hover:bg-neutral-500;

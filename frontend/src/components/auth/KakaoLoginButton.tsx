@@ -9,7 +9,9 @@ interface KakaoAuthUrlResponse {
 
 export default function KakaoLoginButton() {
   const getOAuthURL = async () => {
-    const { url } = await api.get<KakaoAuthUrlResponse>('/auth/kakao/url');
+    const { url } = await api.get<KakaoAuthUrlResponse>('/auth/kakao/url', {
+      credentials: 'include',
+    });
     window.location.href = url;
   };
 

@@ -23,6 +23,7 @@
     "@nestjs/platform-socket.io": "^11.1.11",
     "@nestjs/websockets": "^11.1.11",
     "@socket.io/redis-adapter": "^8.3.0",
+    "mysql2": "^3.16.0",
     "redis": "^5.10.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",

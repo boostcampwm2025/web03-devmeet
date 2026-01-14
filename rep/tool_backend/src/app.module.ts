@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { HealthModule } from './health/health.module';
 import { RedisCacheModule } from '@infra/cache/redis/cache';
 import { RedisChannelModule } from '@infra/channel/redis/channel';
+import { MysqlModule } from '@infra/db/mysql/db';
 
 
 @Module({
@@ -12,6 +13,7 @@ import { RedisChannelModule } from '@infra/channel/redis/channel';
     // infra 모듈
     RedisCacheModule,
     RedisChannelModule,
+    MysqlModule,
 
     // 추가 모듈
     HealthModule,

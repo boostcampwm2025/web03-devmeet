@@ -117,7 +117,7 @@ export class SignalingWebsocketGateway implements OnGatewayInit, OnGatewayConnec
       client.emit(WEBSOCKET_SIGNALING_CLIENT_EVENT_NAME.JOINED, { ok : true });
     } catch (err) {
       this.logger.error(err);
-      client.disconnect(true);
+      throw new WsException({ message : err.message ?? "에러 발생", status : err.status ?? 500 });
     };
   };
 

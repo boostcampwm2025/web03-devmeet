@@ -3,31 +3,18 @@ import localFont from 'next/font/local';
 import './globals.css';
 
 const suit = localFont({
-  src: './fonts/SUIT-Variable.woff2',
+  src: '../assets/fonts/SUIT-Variable.woff2',
   display: 'swap',
   variable: '--font-suit',
   weight: '100 900',
 });
 
-const cafe24 = localFont({
-  src: [
-    { path: './fonts/Cafe24PROSlimAir.woff2', weight: '400' },
-    { path: './fonts/Cafe24PROSlimAir.woff', weight: '400' },
-  ],
-  display: 'swap',
-  variable: '--font-cafe24',
-});
-
 const roboto = localFont({
-  src: [
-    {
-      path: './fonts/Roboto-Medium.ttf',
-      weight: '500',
-      style: 'normal',
-    },
-    // 필요한 다른 두께가 있다면 추가
-  ],
+  src: '../assets/fonts/Roboto-Medium.ttf',
+  display: 'swap',
   variable: '--font-roboto',
+  weight: '500',
+  style: 'normal',
 });
 
 export const metadata: Metadata = {
@@ -42,9 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body
-        className={`${suit.variable} ${cafe24.variable} ${roboto.variable} antialiased`}
-      >
+      <body className={`${suit.variable} ${roboto.variable} antialiased`}>
         {children}
 
         <div id="modal-root" />

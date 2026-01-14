@@ -35,14 +35,21 @@ export default function Sidebar() {
   );
 
   // 선택된 아이템의 타입 결정
-  const selectionType: SelectionType =
-    selectedItem?.type === 'shape'
-      ? 'shape'
-      : selectedItem?.type === 'arrow'
-        ? 'arrow'
-        : selectedItem?.type === 'line'
-          ? 'line'
-          : null;
+  const getSelectionType = (item: typeof selectedItem): SelectionType => {
+    if (!item) return null;
+    switch (item.type) {
+      case 'shape':
+        return 'shape';
+      case 'arrow':
+        return 'arrow';
+      case 'line':
+        return 'line';
+      default:
+        return null;
+    }
+  };
+
+  const selectionType = getSelectionType(selectedItem);
 
   // 선택 타입에 따른 표시될 헤더 제목
   const getHeaderTitle = () => {

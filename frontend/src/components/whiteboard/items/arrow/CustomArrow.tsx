@@ -1,6 +1,5 @@
 'use client';
 
-import Konva from 'konva';
 import { Group, Line } from 'react-konva';
 import type { ArrowItem, WhiteboardItem } from '@/types/whiteboard';
 import CustomArrowHead from './CustomArrowHead';
@@ -53,6 +52,7 @@ export default function CustomArrow({
   return (
     <Group
       id={item.id}
+      name="arrow-group"
       draggable={isDraggable}
       listening={isListening}
       onMouseDown={() => isInteractive && !isEraserMode && onSelect(item.id)}

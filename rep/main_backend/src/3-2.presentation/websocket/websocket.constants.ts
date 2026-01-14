@@ -23,7 +23,8 @@ export const WEBSOCKET_SIGNALING_EVENT_NAME = Object.freeze({
   RESUME : "signaling:ws:resume", // 여러가지로 요긴하게 쓸수 있을것 같다. ( consume을 다시 재개 당연히 stop도 있으면 좋을것 같다. )
   PAUSE : "signaling:ws:pause",
   ROOM_MEMBERS : "signaling:ws:room_members",
-  CONSUMES : "signaling:ws:consumes"
+  CONSUMES : "signaling:ws:consumes",
+  RESUMES : "signaling:ws:resumes",
 } as const);
 
 export const WEBSOCKET_SIGNALING_CLIENT_EVENT_NAME = Object.freeze({

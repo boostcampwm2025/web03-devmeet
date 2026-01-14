@@ -309,9 +309,10 @@ export class SignalingWebsocketGateway implements OnGatewayInit, OnGatewayConnec
     };
   };
 
+  // 여러개의 consumers를 다시 재개하겠다. 
   
 
-  // producer가 이제 더이상 데이터를 보내지 않겠다고 이야기하는 이벤트
+  // 여러개의 consumers를 다시 멈추겠다. 
   
 
 };

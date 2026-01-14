@@ -40,4 +40,13 @@ export class SelectDatasFromCache<T> extends InboundBaseCache<T> {
   }) : Promise<Array<any> | any | undefined>  | never {
     throw new NullInterfaceError();
   }
+
+  public async selectKeys({
+    namespace, keyNames
+  } : {
+    namespace : string,
+    keyNames : Array<string>
+  }) : Promise<Array<any> | any | undefined>  | never {
+    throw new NullInterfaceError();
+  }
 };

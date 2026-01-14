@@ -20,7 +20,8 @@ export default function ItemTransformer({
 
   const selectedItem = items.find((item) => item.id === selectedId);
   const isTextSelected = selectedItem?.type === 'text';
-  const isArrowSelected = selectedItem?.type === 'arrow';
+  const isArrowOrLineSelected =
+    selectedItem?.type === 'arrow' || selectedItem?.type === 'line';
   const isDrawingSelected = selectedItem?.type === 'drawing';
 
   // Transformer 연결
@@ -28,10 +29,7 @@ export default function ItemTransformer({
     if (transformerRef.current && stageRef.current) {
       const stage = stageRef.current;
 
-      // 선택된 아이디
-      // Arrow 아이템 선택 : Transformer 비활성화
-      // Arrow 외 아이템 선택 : Transformer 활성화
-      if (selectedId && !isArrowSelected) {
+      if (selectedId && !isArrowOrLineSelected) {
         // 해당 ID 노드 확인
         const selectedNode = stage.findOne('#' + selectedId);
         // 노드가 존재하면 Transformer에 연결
@@ -47,7 +45,7 @@ export default function ItemTransformer({
         transformerRef.current.nodes([]);
       }
     }
-  }, [selectedId, items, stageRef, isArrowSelected]);
+  }, [selectedId, items, stageRef, isArrowOrLineSelected]);
 
   return (
     <Transformer

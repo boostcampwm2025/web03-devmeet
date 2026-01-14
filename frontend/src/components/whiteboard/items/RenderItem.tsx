@@ -10,6 +10,7 @@ import ShapeItem from '@/components/whiteboard/items/shape/ShapeItem';
 import type {
   TextItem,
   ArrowItem,
+  LineItem,
   WhiteboardItem,
   ShapeItem as ShapeItemType,
   DrawingItem,
@@ -44,7 +45,6 @@ export default function RenderItem({
   // 커서 스타일 훅
   const { handleMouseEnter, handleMouseLeave } = useCursorStyle('move');
 
-  // 텍스트 렌더링
   if (item.type === 'text') {
     const textItem = item as TextItem;
     return (
@@ -99,7 +99,6 @@ export default function RenderItem({
     );
   }
 
-  // Arrow Rendering
   if (item.type === 'arrow') {
     const arrowItem = item as ArrowItem;
     return (
@@ -136,7 +135,42 @@ export default function RenderItem({
     );
   }
 
-  // 그리기 렌더링
+  if (item.type === 'line') {
+    const lineItem = item as LineItem;
+    return (
+      <Line
+        {...lineItem}
+        id={item.id}
+        draggable={isDraggable}
+        listening={isListening}
+        hitStrokeWidth={30}
+        lineCap="round"
+        lineJoin="round"
+        onMouseDown={() => isInteractive && !isEraserMode && onSelect(item.id)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onDblClick={() => {
+          if (!isInteractive || isEraserMode) return;
+          onArrowDblClick?.(item.id);
+        }}
+        onDragStart={() => {
+          if (!isInteractive || isEraserMode) return;
+          onDragStart?.();
+        }}
+        onDragEnd={(e) => {
+          if (!isInteractive || isEraserMode) return;
+          const pos = e.target.position();
+          const newPoints = lineItem.points.map((p, i) =>
+            i % 2 === 0 ? p + pos.x : p + pos.y,
+          );
+          e.target.position({ x: 0, y: 0 });
+          onChange({ points: newPoints });
+          onDragEnd?.();
+        }}
+      />
+    );
+  }
+
   if (item.type === 'drawing') {
     const drawingItem = item as DrawingItem;
     return (
@@ -212,7 +246,6 @@ export default function RenderItem({
     );
   }
 
-  // Shape Rendering
   if (item.type === 'shape') {
     const shapeItem = item as ShapeItemType;
     return (

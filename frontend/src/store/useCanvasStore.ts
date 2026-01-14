@@ -8,6 +8,7 @@ import {
 import type {
   TextItem,
   ArrowItem,
+  LineItem,
   WhiteboardItem,
   DrawingItem,
   ShapeItem,
@@ -42,6 +43,7 @@ interface CanvasState {
   // Item Actions
   addText: (text?: Partial<Omit<TextItem, 'id' | 'type'>>) => string;
   addArrow: (payload?: Partial<Omit<ArrowItem, 'id' | 'type'>>) => void;
+  addLine: (payload?: Partial<Omit<LineItem, 'id' | 'type'>>) => void;
   addShape: (
     type: ShapeType,
     payload?: Partial<Omit<ShapeItem, 'id' | 'type' | 'shapeType'>>,
@@ -147,6 +149,29 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       };
     }),
 
+  // 선 추가
+  addLine: (payload) =>
+    set((state) => {
+      const id = uuidv4();
+      const newLine: LineItem = {
+        id,
+        type: 'line',
+        points: payload?.points ?? [
+          state.canvasWidth / 2 - 100,
+          state.canvasHeight / 2,
+          state.canvasWidth / 2 + 100,
+          state.canvasHeight / 2,
+        ],
+        stroke: payload?.stroke ?? '#111827',
+        strokeWidth: payload?.strokeWidth ?? 3,
+        tension: payload?.tension ?? 0.6,
+      };
+
+      return {
+        items: [...state.items, newLine],
+      };
+    }),
+
   cursorMode: 'select',
   setCursorMode: (mode) => set({ cursorMode: mode }),
 
@@ -224,7 +249,6 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         selectedId: id,
       };
     }),
-
 
   // 아이템 업데이트
   updateItem: (id, payload) =>

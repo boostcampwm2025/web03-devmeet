@@ -3,12 +3,13 @@ import { getCenterWorldPos } from '@/utils/coordinate';
 import { ShapeType } from '@/types/whiteboard';
 
 export const useAddWhiteboardItem = () => {
-  // Canvas Store Actions
+  // Canvas Store 액션
   const addText = useCanvasStore((state) => state.addText);
   const addArrow = useCanvasStore((state) => state.addArrow);
+  const addLine = useCanvasStore((state) => state.addLine);
   const addShape = useCanvasStore((state) => state.addShape);
 
-  // Canvas Store States
+  // Canvas Store 상태
   const selectItem = useCanvasStore((state) => state.selectItem);
   const stagePos = useCanvasStore((state) => state.stagePos);
   const stageScale = useCanvasStore((state) => state.stageScale);
@@ -24,6 +25,14 @@ export const useAddWhiteboardItem = () => {
   const handleAddArrow = () => {
     const worldPos = getCenterWorldPos(stagePos, stageScale);
     addArrow({
+      points: [worldPos.x - 100, worldPos.y, worldPos.x + 100, worldPos.y],
+    });
+  };
+
+  // Line Item 추가 핸들러
+  const handleAddLine = () => {
+    const worldPos = getCenterWorldPos(stagePos, stageScale);
+    addLine({
       points: [worldPos.x - 100, worldPos.y, worldPos.x + 100, worldPos.y],
     });
   };
@@ -46,6 +55,7 @@ export const useAddWhiteboardItem = () => {
   return {
     handleAddText,
     handleAddArrow,
+    handleAddLine,
     handleAddShape,
   };
 };

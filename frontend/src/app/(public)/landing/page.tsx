@@ -1,4 +1,4 @@
-import Button from '@/components/common/button';
+import ParticipateMeetingForm from '@/components/landing/ParticipateMeetingForm';
 import StartMeetingButton from '@/components/landing/StartMeetingButton';
 
 export default function LandingPage() {
@@ -39,19 +39,7 @@ export default function LandingPage() {
             회의 참여하기
           </h2>
 
-          <form className="flex w-full flex-col gap-6">
-            <label htmlFor="meeting-code" className="sr-only">
-              회의 코드 또는 링크
-            </label>
-
-            <input
-              id="meeting-code"
-              placeholder="코드 또는 링크를 입력해주세요"
-              className="input-default input-light"
-            />
-
-            <Button type="submit">참여하기</Button>
-          </form>
+          <ParticipateMeetingForm />
         </section>
       </div>
     </main>

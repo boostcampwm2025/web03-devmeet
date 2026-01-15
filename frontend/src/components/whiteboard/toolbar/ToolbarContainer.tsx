@@ -8,7 +8,6 @@ import { useToolbarMode } from '@/hooks/useToolbarMode';
 import NavButton from '@/components/whiteboard/common/NavButton';
 
 // Panel import
-import CursorPanel from '@/components/whiteboard/toolbar/panels/CursorPanel';
 import ShapePanel from '@/components/whiteboard/toolbar/panels/ShapePanel';
 import LinePanel from '@/components/whiteboard/toolbar/panels/LinePanel';
 import ArrowPanel from '@/components/whiteboard/toolbar/panels/ArrowPanel';
@@ -21,6 +20,7 @@ import StackPanel from '@/components/whiteboard/toolbar/panels/StackPanel';
 import { ImageIcon } from '@/assets/icons/common';
 import {
   CursorIcon,
+  HandIcon,
   TriangleIcon,
   LineIcon,
   ArrowIcon,
@@ -34,7 +34,6 @@ import { ToolType, PanelType } from '@/types/whiteboard/whiteboardUI';
 
 // Constants import
 import {
-  CURSOR_TOOLS,
   SHAPE_TOOLS,
   LINE_TOOLS,
   ARROW_TOOLS,
@@ -75,13 +74,20 @@ export default function ToolbarContainer() {
       <div className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-white p-2 shadow-sm">
         <NavButton
           icon={CursorIcon}
-          label="마우스 도구"
-          isActive={
-            CURSOR_TOOLS.includes(activeTool) || activePanel === 'cursor'
-          }
-          onClick={() => togglePanel('cursor')}
+          label="선택"
+          isActive={activeTool === 'select'}
+          onClick={() => handleToolSelect('select')}
           bgColor="bg-white"
-          activeBgColor="bg-sky-100 text-sky-600"
+          activeBgColor="bg-sky-100"
+        />
+
+        <NavButton
+          icon={HandIcon}
+          label="화면 이동"
+          isActive={activeTool === 'move'}
+          onClick={() => handleToolSelect('move')}
+          bgColor="bg-white"
+          activeBgColor="bg-sky-100"
         />
 
         <NavButton
@@ -99,7 +105,7 @@ export default function ToolbarContainer() {
             }
           }}
           bgColor="bg-white"
-          activeBgColor="bg-sky-100 text-sky-600"
+          activeBgColor="bg-sky-100"
         />
 
         <div className="h-8 w-px bg-neutral-200" />
@@ -119,7 +125,7 @@ export default function ToolbarContainer() {
             }
           }}
           bgColor="bg-white"
-          activeBgColor="bg-sky-100 text-sky-600"
+          activeBgColor="bg-sky-100"
         />
 
         <NavButton
@@ -128,7 +134,7 @@ export default function ToolbarContainer() {
           isActive={TEXT_TOOLS.includes(activeTool) || activePanel === 'text'}
           onClick={() => togglePanel('text')}
           bgColor="bg-white"
-          activeBgColor="bg-sky-100 text-sky-600"
+          activeBgColor="bg-sky-100"
         />
 
         <NavButton
@@ -137,7 +143,7 @@ export default function ToolbarContainer() {
           isActive={SHAPE_TOOLS.includes(activeTool) || activePanel === 'shape'}
           onClick={() => togglePanel('shape')}
           bgColor="bg-white"
-          activeBgColor="bg-sky-100 text-sky-600"
+          activeBgColor="bg-sky-100"
         />
 
         <NavButton
@@ -146,7 +152,7 @@ export default function ToolbarContainer() {
           isActive={LINE_TOOLS.includes(activeTool) || activePanel === 'line'}
           onClick={() => togglePanel('line')}
           bgColor="bg-white"
-          activeBgColor="bg-sky-100 text-sky-600"
+          activeBgColor="bg-sky-100"
         />
 
         <NavButton
@@ -155,7 +161,7 @@ export default function ToolbarContainer() {
           isActive={ARROW_TOOLS.includes(activeTool) || activePanel === 'arrow'}
           onClick={() => togglePanel('arrow')}
           bgColor="bg-white"
-          activeBgColor="bg-sky-100 text-sky-600"
+          activeBgColor="bg-sky-100"
         />
 
         <NavButton
@@ -164,7 +170,7 @@ export default function ToolbarContainer() {
           isActive={MEDIA_TOOLS.includes(activeTool) || activePanel === 'media'}
           onClick={() => togglePanel('media')}
           bgColor="bg-white"
-          activeBgColor="bg-sky-100 text-sky-600"
+          activeBgColor="bg-sky-100"
         />
 
         {/* <NavButton
@@ -176,12 +182,6 @@ export default function ToolbarContainer() {
           activeBgColor="bg-sky-100 text-sky-600"
         /> */}
       </div>
-
-      {activePanel === 'cursor' && (
-        <div className="absolute top-full mt-2">
-          <CursorPanel selectedTool={activeTool} onSelect={handleToolSelect} />
-        </div>
-      )}
 
       {activePanel === 'shape' && (
         <div className="absolute top-full mt-2">

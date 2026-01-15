@@ -2,7 +2,6 @@ import Modal from '@/components/common/Modal';
 import Button from '../common/button';
 import Header from '@/components/layout/Header';
 import MediaSettingSection from '@/components/meeting/media/MediaSettingSection';
-import TempMeetingLobby from '@/components/meeting/TempMeetingLobby';
 import { useMeetingSocketStore } from '@/store/useMeetingSocketStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useRef, useState } from 'react';
@@ -38,7 +37,6 @@ export default function MeetingLobby({
   };
 
   return (
-    // <TempMeetingLobby />
     <main className="box-border flex min-h-screen items-center justify-center gap-20 px-6 py-4">
       <Header />
 

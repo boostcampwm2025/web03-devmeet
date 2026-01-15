@@ -1,9 +1,8 @@
-import { useMediaDevices } from '@/hooks/useMediaDevices';
 import Button from '../common/button';
-import { DeviceDropdown } from './DeviceDropdown';
-import { MediaPreview } from './media/MediaPreview';
-import { CamOnIcon, MicOnIcon, VolumnIcon } from '@/assets/icons/meeting';
 import Header from '@/components/layout/Header';
+import MediaSettingSection from '@/components/meeting/media/MediaSettingSection';
+import TempMeetingLobby from '@/components/meeting/TempMeetingLobby';
+import { useSocketStore } from '@/store/useSocketStore';
 
 export default function MeetingLobby({
   meetingId,
@@ -15,55 +14,15 @@ export default function MeetingLobby({
   const meetingLeader = 'Tony';
   const meetingMemberCnt = 9;
 
-  const {
-    microphones,
-    cameras,
-    speakers,
-    micId,
-    cameraId,
-    speakerId,
-    setMicId,
-    setCameraId,
-    setSpeakerId,
-  } = useMediaDevices();
+  const { socket } = useSocketStore();
 
   return (
+    // <TempMeetingLobby />
     <main className="box-border flex min-h-screen items-center justify-center gap-20 px-6 py-4">
       <Header />
 
       {/* 영상, 마이크 설정 부분 */}
-      <section className="flex w-full max-w-160 flex-col gap-6">
-        <MediaPreview />
-
-        <div className="flex w-full items-center gap-4 text-sm">
-          <DeviceDropdown
-            label="스피커"
-            devices={speakers}
-            icon={VolumnIcon}
-            selectedId={speakerId}
-            onSelect={setSpeakerId}
-            className="flex-1"
-          />
-
-          <DeviceDropdown
-            label="마이크"
-            devices={microphones}
-            icon={MicOnIcon}
-            selectedId={micId}
-            onSelect={setMicId}
-            className="flex-1"
-          />
-
-          <DeviceDropdown
-            label="카메라"
-            devices={cameras}
-            icon={CamOnIcon}
-            selectedId={cameraId}
-            onSelect={setCameraId}
-            className="flex-1"
-          />
-        </div>
-      </section>
+      <MediaSettingSection />
 
       {/* 회의 참여 부분 */}
       <section className="flex w-full max-w-60 flex-col items-center justify-center">
@@ -74,8 +33,8 @@ export default function MeetingLobby({
           현재 참여자: {meetingMemberCnt}명
         </span>
 
-        <Button className="mt-6" onClick={onJoin}>
-          회의 참여하기
+        <Button className="mt-6" onClick={onJoin} disabled={!socket}>
+          {socket ? '회의 참여하기' : '연결 준비 중...'}
         </Button>
       </section>
     </main>

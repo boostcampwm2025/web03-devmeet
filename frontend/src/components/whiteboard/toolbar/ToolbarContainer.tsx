@@ -11,7 +11,6 @@ import NavButton from '@/components/whiteboard/common/NavButton';
 // Panel import
 import ShapePanel from '@/components/whiteboard/toolbar/panels/ShapePanel';
 import MediaPanel from '@/components/whiteboard/toolbar/panels/MediaPanel';
-import StackPanel from '@/components/whiteboard/toolbar/panels/StackPanel';
 
 // Icon import
 // TODO : 필요한 아이콘 추가 : 화살표 / 기술 스택 아이콘 / line 아이콘
@@ -37,6 +36,7 @@ export default function ToolbarContainer() {
   // 상태 관리 로직
   const [activeTool, setActiveTool] = useState<ToolType>('select');
   const [activePanel, setActivePanel] = useState<PanelType>(null);
+  const [panelLeft, setPanelLeft] = useState<number>(0);
 
   // 커서 모드 상태
   const cursorMode = useCanvasStore((state) => state.cursorMode);
@@ -58,7 +58,20 @@ export default function ToolbarContainer() {
   };
 
   // 메인 툴바 버튼을 눌렀을 때 (패널 토글/즉시 선택)
-  const togglePanel = (panel: PanelType) => {
+  const togglePanel = (
+    panel: PanelType,
+    e: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    // 패널 위치 계산 (버튼 중앙 기준)
+    const buttonRect = e.currentTarget.getBoundingClientRect();
+    const toolbarContainer = e.currentTarget.parentElement;
+
+    if (toolbarContainer) {
+      const toolbarRect = toolbarContainer.getBoundingClientRect();
+      const centerX = buttonRect.left + buttonRect.width / 2 - toolbarRect.left;
+      setPanelLeft(centerX);
+    }
+
     setActivePanel((prev) => (prev === panel ? null : panel));
     updateModeForPanel(panel);
   };
@@ -97,7 +110,6 @@ export default function ToolbarContainer() {
             } else {
               setCursorMode('eraser');
               setActiveTool('eraser');
-              setActivePanel(null);
             }
           }}
           bgColor="bg-white"
@@ -118,7 +130,6 @@ export default function ToolbarContainer() {
             } else {
               setCursorMode('draw');
               setActiveTool('draw');
-              setActivePanel(null);
             }
           }}
           bgColor="bg-white"
@@ -143,7 +154,11 @@ export default function ToolbarContainer() {
           icon={TriangleIcon}
           label="도형"
           isActive={SHAPE_TOOLS.includes(activeTool) || activePanel === 'shape'}
-          onClick={() => togglePanel('shape')}
+          onClick={(e) => {
+            togglePanel('shape', e);
+            setCursorMode('select');
+            setActiveTool('select');
+          }}
           bgColor="bg-white"
           hvColor="bg-neutral-100"
           activeBgColor="bg-neutral-100"
@@ -178,7 +193,11 @@ export default function ToolbarContainer() {
           icon={ImageIcon}
           label="미디어"
           isActive={MEDIA_TOOLS.includes(activeTool) || activePanel === 'media'}
-          onClick={() => togglePanel('media')}
+          onClick={(e) => {
+            togglePanel('media', e);
+            setCursorMode('select');
+            setActiveTool('select');
+          }}
           bgColor="bg-white"
           hvColor="bg-neutral-100"
           activeBgColor="bg-neutral-100"
@@ -195,13 +214,19 @@ export default function ToolbarContainer() {
       </div>
 
       {activePanel === 'shape' && (
-        <div className="absolute top-full mt-2">
+        <div
+          className="absolute top-full mt-2"
+          style={{ left: `${panelLeft}px`, transform: 'translateX(-50%)' }}
+        >
           <ShapePanel selectedTool={activeTool} onSelect={handleToolSelect} />
         </div>
       )}
 
       {activePanel === 'media' && (
-        <div className="absolute top-full mt-2">
+        <div
+          className="absolute top-full mt-2"
+          style={{ left: `${panelLeft}px`, transform: 'translateX(-50%)' }}
+        >
           <MediaPanel selectedTool={activeTool} onSelect={handleToolSelect} />
         </div>
       )}

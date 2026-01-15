@@ -80,9 +80,10 @@ export const useCanvasInteraction = (
       // shift키 있으면 좌우 스크롤
       const currentPos = stage.position();
       const currentScale = stage.scaleX();
+      const deltaX = e.evt.deltaX !== 0 ? e.evt.deltaX : e.evt.deltaY;
 
       const newPos = {
-        x: currentPos.x - e.evt.deltaY, // 좌우로 이동
+        x: currentPos.x - deltaX, // 좌우로 이동
         y: currentPos.y,
       };
 

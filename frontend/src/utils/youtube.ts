@@ -7,7 +7,12 @@ export const extractYoutubeId = (url: string): string | null => {
 };
 
 // 썸네일 URL 생성 함수
-export const getYoutubeThumbnailUrl = (videoId: string) => {
-  // hqdefault : 거의 모든 유튜브 영상에 존재
+// maxresdefault : 고화질
+export const getMaxResThumbnailUrl = (videoId: string): string => {
+  return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+};
+
+// hqdefault : 거의 모든 유튜브 영상에 존재
+export const getHqThumbnailUrl = (videoId: string): string => {
   return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 };

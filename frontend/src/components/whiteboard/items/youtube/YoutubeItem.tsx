@@ -1,12 +1,13 @@
 'use client';
 
+import { useMemo, useState, useEffect } from 'react';
+
 import Konva from 'konva';
 import { Image as KonvaImage, Group, Rect } from 'react-konva';
 import useImage from 'use-image';
 
 import { YoutubeItem as YoutubeItemType } from '@/types/whiteboard';
-
-import { getYoutubeThumbnailUrl } from '@/utils/youtube';
+import { getMaxResThumbnailUrl, getHqThumbnailUrl } from '@/utils/youtube';
 
 interface YoutubeItemProps {
   youtubeItem: YoutubeItemType;
@@ -27,13 +28,94 @@ export default function YoutubeItem({
   onDragStart,
   onDragEnd,
 }: YoutubeItemProps) {
-  // 유튜브 썸네일 URL 생성
-  const thumbnailUrl = getYoutubeThumbnailUrl(youtubeItem.videoId);
-  // 썸네일 이미지 로드
-  const [thumbnailBitmap] = useImage(thumbnailUrl, 'anonymous');
+  // 유튜브 썸네일 이미지 로딩 상태 관리
+  const [thumbnailImage, setThumbnailImage] = useState<HTMLImageElement | null>(
+    null,
+  );
 
   // 재생 아이콘 가져오기
   const [playIconBitmap] = useImage('/icons/youtubeIcon.svg');
+
+  // 이미지 로딩 및 Fallback 처리 로직
+  useEffect(() => {
+    // 마운트 상태 추적
+    let isMounted = true;
+    // 썸네일 URL
+    // maxResUrl : 고화질
+    // hqUrl : 중화질 (고화질 없을 때 대비)
+    const maxResUrl = getMaxResThumbnailUrl(youtubeItem.videoId);
+    const hqUrl = getHqThumbnailUrl(youtubeItem.videoId);
+
+    // 이미지 객체 생성
+    const img = new Image();
+    img.src = maxResUrl;
+    img.crossOrigin = 'anonymous';
+
+    // 고화질 로드 성공 시
+    img.onload = () => {
+      if (isMounted) setThumbnailImage(img);
+    };
+
+    // 고화질 로드 실패 시 -> 중화질 시도 (Fallback)
+    img.onerror = () => {
+      // 실패했으므로 중화질 URL로 이미지 생성
+      const fallbackImg = new Image();
+      fallbackImg.src = hqUrl;
+      fallbackImg.crossOrigin = 'anonymous';
+
+      fallbackImg.onload = () => {
+        if (isMounted) setThumbnailImage(fallbackImg);
+      };
+
+      fallbackImg.onerror = () => {
+        // 중화질도 실패하면 그냥 null 상태 유지 (회색 배경 보임)
+        console.warn('유튜브 썸네일 이미지 로드 실패');
+      };
+    };
+
+    return () => {
+      isMounted = false;
+    };
+  }, [youtubeItem.videoId]);
+
+  // 비율 유지 크롭 (thumbnailImage가 있을 때만 계산)
+  const cropConfig = useMemo(() => {
+    if (!thumbnailImage) return null;
+
+    // 이미지 크기
+    const imageWidth = thumbnailImage.width;
+    const imageHeight = thumbnailImage.height;
+
+    // 컨테이너 크기
+    const containerWidth = youtubeItem.width;
+    const containerHeight = youtubeItem.height;
+
+    // 이미지와 컨테이너 비율 계산
+    const imageRatio = imageWidth / imageHeight;
+    const containerRatio = containerWidth / containerHeight;
+
+    // 크롭 영역 계산
+    let cropX = 0;
+    let cropY = 0;
+    let cropWidth = imageWidth;
+    let cropHeight = imageHeight;
+
+    // 컨테이너 비율에 맞게 크롭
+    if (containerRatio > imageRatio) {
+      cropHeight = imageWidth / containerRatio;
+      cropY = (imageHeight - cropHeight) / 2;
+    } else {
+      cropWidth = imageHeight * containerRatio;
+      cropX = (imageWidth - cropWidth) / 2;
+    }
+
+    return {
+      x: cropX,
+      y: cropY,
+      width: cropWidth,
+      height: cropHeight,
+    };
+  }, [thumbnailImage, youtubeItem.width, youtubeItem.height]);
 
   // 링크 이동 핸들러
   // _blank : 새탭에서 열기
@@ -99,11 +181,12 @@ export default function YoutubeItem({
       />
 
       {/* 썸네일 이미지 */}
-      {thumbnailBitmap && (
+      {thumbnailImage && cropConfig && (
         <KonvaImage
-          image={thumbnailBitmap}
+          image={thumbnailImage}
           width={youtubeItem.width}
           height={youtubeItem.height}
+          crop={cropConfig}
           cornerRadius={youtubeItem.cornerRadius}
           opacity={youtubeItem.opacity}
           stroke={youtubeItem.stroke}

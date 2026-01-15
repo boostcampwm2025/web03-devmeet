@@ -72,6 +72,7 @@ export default function ToolbarContainer() {
           isActive={activeTool === 'select'}
           onClick={() => handleToolSelect('select')}
           bgColor="bg-white"
+          hvColor="bg-neutral-100"
           activeBgColor="bg-sky-100"
         />
 
@@ -81,6 +82,7 @@ export default function ToolbarContainer() {
           isActive={activeTool === 'move'}
           onClick={() => handleToolSelect('move')}
           bgColor="bg-white"
+          hvColor="bg-neutral-100"
           activeBgColor="bg-sky-100"
         />
 
@@ -99,6 +101,7 @@ export default function ToolbarContainer() {
             }
           }}
           bgColor="bg-white"
+          hvColor="bg-neutral-100"
           activeBgColor="bg-sky-100"
         />
 
@@ -119,6 +122,7 @@ export default function ToolbarContainer() {
             }
           }}
           bgColor="bg-white"
+          hvColor="bg-neutral-100"
           activeBgColor="bg-sky-100"
         />
 
@@ -131,6 +135,7 @@ export default function ToolbarContainer() {
             setActiveTool('select');
           }}
           bgColor="bg-white"
+          hvColor="bg-neutral-100"
           activeBgColor="bg-sky-100"
         />
 
@@ -140,6 +145,7 @@ export default function ToolbarContainer() {
           isActive={SHAPE_TOOLS.includes(activeTool) || activePanel === 'shape'}
           onClick={() => togglePanel('shape')}
           bgColor="bg-white"
+          hvColor="bg-neutral-100"
           activeBgColor="bg-neutral-100"
         />
 
@@ -151,6 +157,7 @@ export default function ToolbarContainer() {
             setActiveTool('select');
           }}
           bgColor="bg-white"
+          hvColor="bg-neutral-100"
           activeBgColor="bg-sky-100"
         />
 
@@ -163,6 +170,7 @@ export default function ToolbarContainer() {
             setActiveTool('select');
           }}
           bgColor="bg-white"
+          hvColor="bg-neutral-100"
           activeBgColor="bg-sky-100"
         />
 
@@ -172,6 +180,7 @@ export default function ToolbarContainer() {
           isActive={MEDIA_TOOLS.includes(activeTool) || activePanel === 'media'}
           onClick={() => togglePanel('media')}
           bgColor="bg-white"
+          hvColor="bg-neutral-100"
           activeBgColor="bg-neutral-100"
         />
 

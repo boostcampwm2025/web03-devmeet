@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 
+import { useCanvasStore } from '@/store/useCanvasStore';
+import { useToolbarMode } from '@/hooks/useToolbarMode';
+
 import NavButton from '@/components/whiteboard/common/NavButton';
 
 // Panel import
@@ -45,17 +48,26 @@ export default function ToolbarContainer() {
   const [activeTool, setActiveTool] = useState<ToolType>('select');
   const [activePanel, setActivePanel] = useState<PanelType>(null);
 
+  // 커서 모드 상태
+  const cursorMode = useCanvasStore((state) => state.cursorMode);
+  const setCursorMode = useCanvasStore((state) => state.setCursorMode);
+
+  // 툴바 모드 전환 훅
+  const { updateModeForTool, updateModeForPanel } = useToolbarMode();
+
   // 핸들러 로직
   // 하위 패널에서 구체적인 도구 선택
   const handleToolSelect = (tool: ToolType) => {
     setActiveTool(tool);
     setActivePanel(null);
+    updateModeForTool(tool);
     // TODO: useWorkspaceStore.getState().setTool(tool);
   };
 
   // 메인 툴바 버튼을 눌렀을 때 (패널 토글/즉시 선택)
   const togglePanel = (panel: PanelType) => {
     setActivePanel((prev) => (prev === panel ? null : panel));
+    updateModeForPanel(panel);
   };
 
   return (
@@ -102,8 +114,17 @@ export default function ToolbarContainer() {
         <NavButton
           icon={PenIcon}
           label="그리기"
-          isActive={activeTool === 'draw'}
-          onClick={() => handleToolSelect('draw')}
+          isActive={cursorMode === 'draw'}
+          onClick={() => {
+            if (cursorMode === 'draw') {
+              setCursorMode('select');
+              setActiveTool('select');
+            } else {
+              setCursorMode('draw');
+              setActiveTool('draw');
+              setActivePanel(null);
+            }
+          }}
           bgColor="bg-white"
           activeBgColor="bg-sky-100 text-sky-600"
         />
@@ -138,8 +159,17 @@ export default function ToolbarContainer() {
         <NavButton
           icon={EraserIcon}
           label="지우개"
-          isActive={activeTool === 'eraser'}
-          onClick={() => handleToolSelect('eraser')}
+          isActive={cursorMode === 'eraser'}
+          onClick={() => {
+            if (cursorMode === 'eraser') {
+              setCursorMode('select');
+              setActiveTool('select');
+            } else {
+              setCursorMode('eraser');
+              setActiveTool('eraser');
+              setActivePanel(null);
+            }
+          }}
           bgColor="bg-white"
           activeBgColor="bg-sky-100 text-sky-600"
         />

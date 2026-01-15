@@ -7,14 +7,16 @@ import {
 } from '@/components/whiteboard/constants/canvas';
 
 import type {
+  WhiteboardItem,
   TextItem,
   ArrowItem,
+  DrawingItem,
   ShapeItem,
   ShapeType,
   ImageItem,
   VideoItem,
   YoutubeItem,
-  WhiteboardItem,
+  CursorMode,
 } from '@/types/whiteboard';
 
 import { extractYoutubeId } from '@/utils/youtube';
@@ -66,7 +68,16 @@ interface CanvasState {
   }) => void;
   addYoutube: (url: string) => void;
 
-  // Item Modification
+  // 커서 모드
+  cursorMode: CursorMode;
+  setCursorMode: (mode: CursorMode) => void;
+
+  // 자유 그리기
+  currentDrawing: DrawingItem | null;
+  startDrawing: (x: number, y: number) => void;
+  continueDrawing: (x: number, y: number) => void;
+  finishDrawing: () => void;
+
   updateItem: (id: string, payload: Partial<WhiteboardItem>) => void;
   deleteItem: (id: string) => void;
   bringToFront: (id: string) => void;
@@ -75,7 +86,7 @@ interface CanvasState {
   sendBackward: (id: string) => void;
 }
 
-export const useCanvasStore = create<CanvasState>((set) => ({
+export const useCanvasStore = create<CanvasState>((set, get) => ({
   // Stage State 초기값
   // StageScale : 줌 배율 / stagePos : 카메라 위치,중앙 정렬
   stageScale: 1,
@@ -156,6 +167,60 @@ export const useCanvasStore = create<CanvasState>((set) => ({
         items: [...state.items, newArrow],
       };
     }),
+
+  cursorMode: 'select',
+  setCursorMode: (mode) => set({ cursorMode: mode }),
+
+  currentDrawing: null,
+
+  // 그리기
+  startDrawing: (x, y) => {
+    const newDrawing: DrawingItem = {
+      id: uuidv4(),
+      type: 'drawing',
+      points: [x, y],
+      stroke: '#111827',
+      strokeWidth: 10,
+      scaleX: 1,
+      scaleY: 1,
+      rotation: 0,
+    };
+    set({ currentDrawing: newDrawing });
+  },
+
+  continueDrawing: (x, y) => {
+    const state = get();
+    if (!state.currentDrawing) return;
+
+    const points = state.currentDrawing.points;
+    const lastX = points[points.length - 2];
+    const lastY = points[points.length - 1];
+
+    const distance = Math.sqrt(Math.pow(x - lastX, 2) + Math.pow(y - lastY, 2));
+
+    if (distance < 2) return;
+
+    const updatedDrawing = {
+      ...state.currentDrawing,
+      points: [...points, x, y],
+    };
+
+    set({ currentDrawing: updatedDrawing });
+  },
+
+  finishDrawing: () => {
+    const state = get();
+    if (!state.currentDrawing) return;
+
+    if (state.currentDrawing.points.length >= 4) {
+      set((state) => ({
+        items: [...state.items, state.currentDrawing!],
+        currentDrawing: null,
+      }));
+    } else {
+      set({ currentDrawing: null });
+    }
+  },
 
   // 도형 추가
   addShape: (type, payload) =>

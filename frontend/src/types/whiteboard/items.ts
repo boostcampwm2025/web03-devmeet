@@ -27,6 +27,15 @@ export interface ArrowItem extends BaseItem {
   tension: number;
 }
 
+export interface DrawingItem extends BaseItem {
+  type: 'drawing';
+  points: number[];
+  stroke: string;
+  strokeWidth: number;
+  scaleX?: number;
+  scaleY?: number;
+  rotation?: number;
+}
 // Shape Item
 export type ShapeType = 'rect' | 'circle' | 'triangle' | 'diamond' | 'pentagon';
 

@@ -4,6 +4,7 @@ export * from '@/types/whiteboard/items';
 import {
   TextItem,
   ArrowItem,
+  DrawingItem,
   ShapeItem,
   ImageItem,
   VideoItem,
@@ -13,6 +14,7 @@ import {
 export type WhiteboardItem =
   | TextItem
   | ArrowItem
+  | DrawingItem
   | ShapeItem
   | ImageItem
   | VideoItem

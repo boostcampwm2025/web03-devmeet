@@ -13,8 +13,11 @@ import type {
   ShapeType,
   ImageItem,
   VideoItem,
+  YoutubeItem,
   WhiteboardItem,
 } from '@/types/whiteboard';
+
+import { extractYoutubeId } from '@/utils/youtube';
 
 interface CanvasState {
   // viewport State
@@ -61,6 +64,7 @@ interface CanvasState {
     width?: number;
     height?: number;
   }) => void;
+  addYoutube: (url: string) => void;
 
   // Item Modification
   updateItem: (id: string, payload: Partial<WhiteboardItem>) => void;
@@ -223,6 +227,43 @@ export const useCanvasStore = create<CanvasState>((set) => ({
 
       return {
         items: [...state.items, newVideo],
+        selectedId: id,
+      };
+    }),
+
+  // 유튜브 Item 추가
+  addYoutube: (url) =>
+    set((state) => {
+      const videoId = extractYoutubeId(url);
+
+      // 유효하지 않은 URL 입력시 alert 띄우고 중단
+      if (!videoId) {
+        alert('올바른 유튜브 URL이 아닙니다.');
+        return state;
+      }
+
+      const id = uuidv4();
+      const width = 640;
+      const height = 360;
+
+      const newYoutube: YoutubeItem = {
+        id,
+        type: 'youtube',
+        url,
+        videoId,
+        x: state.canvasWidth / 2 - width / 2,
+        y: state.canvasHeight / 2 - height / 2,
+        width,
+        height,
+        rotation: 0,
+        stroke: undefined,
+        strokeWidth: 0,
+        cornerRadius: 10,
+        opacity: 1,
+      };
+
+      return {
+        items: [...state.items, newYoutube],
         selectedId: id,
       };
     }),

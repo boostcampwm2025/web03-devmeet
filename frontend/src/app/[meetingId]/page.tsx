@@ -5,6 +5,7 @@ import Modal from '@/components/common/Modal';
 import MeetingLobby from '@/components/meeting/MeetingLobby';
 import MeetingRoom from '@/components/meeting/MeetingRoom';
 import { useMeetingSocket } from '@/hooks/useMeetingSocket';
+import { initMediasoupTransports } from '@/utils/initMediasoupTransports';
 import { useParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
@@ -55,7 +56,9 @@ export default function MeetingPage() {
 
   // 회의실 참여 로직
   const handleJoin = (password?: string) => {
-    socket?.emit('signaling:ws:join_room', {
+    if (!socket) return;
+
+    socket.emitWithAck('signaling:ws:join_room', {
       code: meetingId,
       password,
       nickname,
@@ -64,10 +67,14 @@ export default function MeetingPage() {
 
   useEffect(() => {
     if (!socket) return;
-    const onRoomJoined = ({ ok }: { ok: boolean }) => {
-      // SDP / ICE / DTLS 진행
 
+    const onRoomJoined = async ({ ok }: { ok: boolean }) => {
       if (ok) {
+        // SDP / ICE / DTLS 진행
+        // 전역 변수로 저장 필요
+        const { device, sendTransport, recvTransport } =
+          await initMediasoupTransports(socket);
+
         setIsPasswordModalOpen(false);
         setIsJoined(true);
       } else {

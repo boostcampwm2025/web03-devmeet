@@ -19,6 +19,7 @@ import { SignalingWebsocketModule  } from "@present/websocket/signaling/signalin
 import { MediaModule } from "@infra/media/media.module";
 import { SfuModule } from "@present/webrtc/sfu/sfu.module";
 import { MemoryModule } from "@infra/memory/memory.module";
+import { KafkaModule } from "@infra/event-stream/kafka/event-stream";
 
 
 @Module({
@@ -34,6 +35,7 @@ import { MemoryModule } from "@infra/memory/memory.module";
     RedisChannelModule, // redis를 활용한 pub sub을 이용하기 위한 모듈
     MediaModule, // media를 다루기 위한 모듈
     MemoryModule, // in-memory를 사용하기 위해 필요한 모듈
+    KafkaModule, // kafka를 사용하기 위한 모듈
 
     // 우리가 집적 만든 모듈
     SettingModule, // 헬스 체크를 위한 모듈

@@ -43,7 +43,7 @@ async function bootstrap() {
         ...(sasl ? { sasl } : {}),
       },
       consumer: { groupId },
-      subscribe: { fromBeginning: false }, // 현재 시점 이후에만 읽겠다는 뜻이다. 
+      subscribe: { fromBeginning: config.get<string>("NODE_ENV", "deployment") === "deployment" }, // 현재 시점 이후에만 읽겠다는 뜻이다. ( 개발에서는 그래도 된다. )
     },
   });
   await app.startAllMicroservices(); // 실제 실행 

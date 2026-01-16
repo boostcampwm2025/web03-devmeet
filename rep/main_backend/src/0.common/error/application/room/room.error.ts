@@ -98,3 +98,12 @@ export class NotInsertRoomTicketData extends BaseError {
     });
   }
 }
+
+export class NotAllowRoomMemberOne extends BaseError {
+  constructor() {
+    super({
+      message: "현재 방에 위치에 있지 않거나 main producer가 다릅니다.",
+      status: 500,
+    });
+  }
+}

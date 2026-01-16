@@ -65,3 +65,49 @@ export class SelectRoomDataFromMysql extends SelectDataFromDb<Pool> {
     return roomData;
   };
 };
+
+// room_id 정보 가져오기
+interface RoomIdPacket extends RowDataPacket {
+  [DB_ROOMS_ATTRIBUTE_NAME.ROOM_ID] : string;
+}
+@Injectable()
+export class SelectRoomIdFromMysql extends SelectDataFromDb<Pool> {
+
+  constructor(
+    @Inject(MYSQL_DB) db : Pool,
+  ) { super(db); };
+
+  async selectData({
+    db, tableName, code
+  } : {
+    db : Pool, tableName : string, code : string
+  }) : Promise<string | undefined> {
+
+    const sql : string = `
+    SELECT
+    BIN_TO_UUID(\`${DB_ROOMS_ATTRIBUTE_NAME.ROOM_ID}\`, true) AS ${DB_ROOMS_ATTRIBUTE_NAME.ROOM_ID}
+    FROM \`${tableName}\`
+    WHERE 
+      \`${DB_ROOMS_ATTRIBUTE_NAME.CODE}\` = ? AND
+      \`${DB_ROOMS_ATTRIBUTE_NAME.STATUS}\` = 'open' AND 
+      \`${DB_ROOMS_ATTRIBUTE_NAME.DELETED_AT}\` IS NULL
+    LIMIT 1 
+    `;
+
+    const [ result ] = await db.query<Array<RoomIdPacket>>(sql, [ code ]);
+
+    return result[0] ? result[0][DB_ROOMS_ATTRIBUTE_NAME.ROOM_ID] : undefined;
+  };
+
+  // attributeValue는 code 이다.
+  async select({ attributeName, attributeValue, }: { attributeName: string; attributeValue: string; }): Promise<string | undefined> {
+    
+    const db : Pool = this.db;
+    const tableName : string = DB_TABLE_NAME.ROOMS;
+    const code : string = attributeValue;
+
+    const room_id : string | undefined = await this.selectData({ db, tableName, code });
+
+    return room_id;
+  }
+};

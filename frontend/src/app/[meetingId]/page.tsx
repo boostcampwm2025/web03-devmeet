@@ -6,6 +6,7 @@ import MeetingLobby from '@/components/meeting/MeetingLobby';
 import MeetingRoom from '@/components/meeting/MeetingRoom';
 import { useMeetingSocket } from '@/hooks/useMeetingSocket';
 import { useMeetingSocketStore } from '@/store/useMeetingSocketStore';
+import { useMeetingStore } from '@/store/useMeetingStore';
 import { createProducers } from '@/utils/createProducers';
 import { initMediasoupTransports } from '@/utils/initMediasoupTransports';
 import { useParams } from 'next/navigation';
@@ -18,7 +19,7 @@ interface JoinError {
 
 export default function MeetingPage() {
   const { socket } = useMeetingSocket();
-  const { setMediasoupTransports, setProducers } = useMeetingSocketStore();
+  const { setMediasoupTransports, setProducer } = useMeetingSocketStore();
 
   // 이후 실제 회의 정보 API 호출로 수정 필요
   const { password } = DUMMY_MEETING_INFO;
@@ -75,15 +76,33 @@ export default function MeetingPage() {
       if (ok) {
         // SDP / ICE / DTLS 초기화 진행
         const transports = await initMediasoupTransports(socket);
-        setMediasoupTransports(transports);
+        setMediasoupTransports(socket, transports);
 
         // Produce 설정
-        const producers = createProducers({
-          socket,
-          sendTransport: transports.sendTransport,
-        });
-        setProducers(producers);
+        const { sendTransport } = transports;
+        const producers = createProducers(sendTransport);
 
+        // 초기 입장 시, 로비에서 설정한 미디어 Produce
+        const { produceMic, produceCam } = producers;
+        const { audioOn, videoOn } = useMeetingStore.getState().media;
+        if (audioOn || videoOn) {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: audioOn,
+            video: videoOn,
+          });
+          if (audioOn) {
+            const audioTrack = stream.getAudioTracks()[0];
+            const audioProducer = await produceMic(audioTrack);
+            setProducer('audioProducer', audioProducer);
+          }
+          if (videoOn) {
+            const videoTrack = stream.getVideoTracks()[0];
+            const videoProducer = await produceCam(videoTrack);
+            setProducer('videoProducer', videoProducer);
+          }
+        }
+
+        // 회의실로 이동
         setIsPasswordModalOpen(false);
         setIsJoined(true);
       } else {

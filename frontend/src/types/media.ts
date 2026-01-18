@@ -8,16 +8,11 @@ export interface MediaState {
   cameraPermission: MediaPermission;
   micPermission: MediaPermission;
 }
-
-type ProducerPromise = (
-  track: MediaStreamTrack,
-) => Promise<Producer<{ type: string }>>;
-
 export interface Producers {
-  produceMic: ProducerPromise | null;
-  produceCam: ProducerPromise | null;
-  produceScreenVideo: ProducerPromise | null;
-  produceScreenAudio: ProducerPromise | null;
+  audioProducer: Producer | null;
+  videoProducer: Producer | null;
+  screenAudioProducer: Producer | null;
+  screenVideoProducer: Producer | null;
 }
 
 export interface MediasoupTransports {

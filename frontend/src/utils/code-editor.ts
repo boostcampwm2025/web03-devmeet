@@ -48,7 +48,7 @@ export function injectCursorStyles(
       color: #fff;
       white-space: nowrap;
       pointer-events: none;
-      opacity: 0.95;
+      opacity: 0.85;
       z-index: 2;
     }
   `;

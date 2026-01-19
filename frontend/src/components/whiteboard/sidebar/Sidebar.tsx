@@ -165,12 +165,16 @@ export default function Sidebar() {
             fill={(selectedItem as TextItem).fill}
             size={getTextSize(selectedItem as TextItem)}
             align={(selectedItem as TextItem).align}
+            fontStyle={(selectedItem as TextItem).fontStyle ?? 'normal'}
             onChangeFill={(color) => updateItem(selectedId!, { fill: color })}
             onChangeSize={(size) => {
               const preset = TEXT_SIZE_PRESETS[size];
               updateItem(selectedId!, { fontSize: preset.fontSize });
             }}
             onChangeAlign={(align) => updateItem(selectedId!, { align })}
+            onChangeFontStyle={(fontStyle) =>
+              updateItem(selectedId!, { fontStyle })
+            }
           />
         )}
       </div>

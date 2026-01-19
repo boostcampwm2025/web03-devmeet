@@ -22,10 +22,12 @@ import {
   ARROW_STYLE_PRESETS,
 } from '@/components/whiteboard/sidebar/panels/arrowPresets';
 import { TEXT_SIZE_PRESETS } from '@/components/whiteboard/sidebar/panels/textPresets';
+import { DRAWING_SIZE_PRESETS } from '@/components/whiteboard/sidebar/panels/drawingPresets';
 import {
   getArrowSize,
   getLineSize,
   getTextSize,
+  getDrawingSize,
   getItemStyle,
 } from '@/utils/sidebarStyleHelpers';
 
@@ -39,7 +41,9 @@ export default function Sidebar() {
   const updateItem = useCanvasStore((state) => state.updateItem);
   const cursorMode = useCanvasStore((state) => state.cursorMode);
   const drawingStroke = useCanvasStore((state) => state.drawingStroke);
+  const drawingSize = useCanvasStore((state) => state.drawingSize);
   const setDrawingStroke = useCanvasStore((state) => state.setDrawingStroke);
+  const setDrawingSize = useCanvasStore((state) => state.setDrawingSize);
 
   // 선택된 아이템 찾기
   const selectedItem = useMemo(
@@ -200,11 +204,24 @@ export default function Sidebar() {
                 ? (selectedItem as DrawingItem).stroke
                 : drawingStroke
             }
+            size={
+              selectedItem && selectionType === 'drawing'
+                ? getDrawingSize(selectedItem as DrawingItem)
+                : drawingSize
+            }
             onChangeStroke={(color) => {
               if (selectedItem && selectionType === 'drawing') {
                 updateItem(selectedId!, { stroke: color });
               } else {
                 setDrawingStroke(color);
+              }
+            }}
+            onChangeSize={(size) => {
+              if (selectedItem && selectionType === 'drawing') {
+                const preset = DRAWING_SIZE_PRESETS[size];
+                updateItem(selectedId!, { strokeWidth: preset.strokeWidth });
+              } else {
+                setDrawingSize(size);
               }
             }}
           />

@@ -475,6 +475,18 @@ export class SignalingWebsocketGateway
   };
 
   // 화면공유를 내릴때 사용한다. -> 화면 공유가 되어있는 상태여야 한다. 
+  @SubscribeMessage(WEBSOCKET_SIGNALING_EVENT_NAME.SCREEN_STOP)
+  async stopScreenGateway(
+    @ConnectedSocket() client: Socket
+  ) {
+    try {
 
+      // 모두에게 알림 - 화면공유가 꺼졌다고 방에 인원에게 알린다. 
+
+    } catch (err) {
+      this.logger.error(err);
+      throw new WsException({ message: err.message ?? '에러 발생', status: err.status ?? 500 });        
+    };
+  };
 
 }

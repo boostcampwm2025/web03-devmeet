@@ -364,4 +364,9 @@ export class SignalingWebsocketService {
     };
   };
 
+  // 화면공유를 끄겠다는 것 
+  async stopScreen(client : Socket) {
+
+  };
+
 }

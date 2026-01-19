@@ -100,10 +100,16 @@ export default function Canvas() {
     }
   };
 
-  // 외부 클릭 시 선택 해제 (툴바, 사이드바 등)
+  // 외부 클릭 시 선택 해제
   useClickOutside(
     containerRef,
-    () => {
+    (e) => {
+      const target = e.target as HTMLElement;
+      // 사이드바 클릭은 무시
+      if (target.closest('aside')) {
+        return;
+      }
+
       if (selectedId) {
         selectItem(null);
         setSelectedHandleIndex(null);

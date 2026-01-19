@@ -1,7 +1,7 @@
 import { ArrowDownIcon } from '@/assets/icons/common';
 import { EditorLanguage, LANGUAGE_OPTIONS } from '@/constants/code-editor';
 import React from 'react';
-import Toggle from '../common/toggle';
+import Toggle from '@/components/common/toggle';
 
 type CodeEditorToolbarProps = {
   isAutoCompleted: boolean;

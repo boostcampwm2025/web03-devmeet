@@ -21,7 +21,7 @@ import {
   ARROW_SIZE_PRESETS,
   ARROW_STYLE_PRESETS,
 } from '@/components/whiteboard/sidebar/panels/arrowPresets';
-import { TEXT_SIZE_PRESETS } from '@/components/whiteboard/sidebar/panels/textPresets';
+import { TEXT_SIZE_PRESETS } from '@/constants/textPresets';
 import { DRAWING_SIZE_PRESETS } from '@/constants/drawingPresets';
 import {
   getArrowSize,

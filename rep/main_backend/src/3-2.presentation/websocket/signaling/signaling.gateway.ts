@@ -480,9 +480,14 @@ export class SignalingWebsocketGateway
     @ConnectedSocket() client: Socket
   ) {
     try {
+      const result = await this.signalingService.stopScreen(client);
 
       // 모두에게 알림 - 화면공유가 꺼졌다고 방에 인원에게 알린다. 
+      const room_id: string = client.data.room_id;
+      const namespace: string = `${CHANNEL_NAMESPACE.SIGNALING}:${room_id}`;
+      client.to(namespace).emit(WEBSOCKET_SIGNALING_CLIENT_EVENT_NAME.ALERT_PRODUCED, result);
 
+      return result;
     } catch (err) {
       this.logger.error(err);
       throw new WsException({ message: err.message ?? '에러 발생', status: err.status ?? 500 });        

@@ -38,6 +38,8 @@ import {
   CreateProduceResult,
   CreatePropduceDto,
   CreateTransportDto,
+  StopScreenProducerDto,
+  StopScreenProducerResult,
 } from '@app/sfu/commands/dto';
 import {
   ConnectTransportType,
@@ -365,8 +367,13 @@ export class SignalingWebsocketService {
   };
 
   // 화면공유를 끄겠다는 것 
-  async stopScreen(client : Socket) {
-
+  async stopScreen(client : Socket) : Promise<StopScreenProducerResult> {
+    const room_id: string = client.data.room_id;
+    const payload: SocketPayload = client.data.user;
+    const dto : StopScreenProducerDto = {
+      room_id, user_id : payload.user_id
+    };
+    return this.sfuServer.stopScreen(dto);
   };
 
 }

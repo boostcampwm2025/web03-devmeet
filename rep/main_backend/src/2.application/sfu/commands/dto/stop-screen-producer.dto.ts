@@ -10,3 +10,8 @@ export type StopScreenProducerCacheInfoResult = {
   main_producer_id : string | null;
   sub_producer_id : string | null;
 };
+
+export type StopScreenProducerResult = {
+  main : boolean;
+  sub : boolean
+};

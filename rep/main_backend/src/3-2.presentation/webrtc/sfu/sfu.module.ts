@@ -8,6 +8,7 @@ import {
   CreateRouterUsecase,
   CreateTransportUsecase,
   DisconnectUserUsecase,
+  StopScreenProducerUsecase,
 } from '@app/sfu/commands/usecase';
 import {
   ConsumerRepository,
@@ -50,6 +51,7 @@ import {
   SelectConsumerInfoFromRedis,
   SelectConsumerInfosFromRedis,
   SelectMainProducerDataFromRedis,
+  SelectRoomProducerDataFromRedis,
   SelectSfuTransportDataFromRedis,
   SelectUserProducerDataFromRedis,
   SelectUserProducerInfoDataFromRedis,
@@ -292,7 +294,27 @@ import {
         DeleteUserProducerDataToRedis,
         UpdateProducerStatusToRedis
       ]
-    }
+    },
+
+    // screen을 끄는 usecase 
+    {
+      provide : StopScreenProducerUsecase,
+      useFactory : (
+        produceRepo: ProducerRepositoryPort,
+        selectMainAndSubProducerFromCache : SelectRoomProducerDataFromRedis, // producer를 찾는다. 
+        deleteProducerInfoToCache : DeleteMainProducerDataToRedis // 불량 producer는 삭제한다. 
+      ) => {
+        return new StopScreenProducerUsecase(
+          produceRepo,
+          { selectMainAndSubProducerFromCache, deleteProducerInfoToCache }
+        )
+      },
+      inject : [
+        ProducerRepository,
+        SelectRoomProducerDataFromRedis,
+        DeleteMainProducerDataToRedis
+      ]
+    },
 
   ],
   exports: [SfuService],

@@ -1,7 +1,7 @@
 // 해당 user에 대한 screen과 관련된 데이터를 끈다. 
 import { SelectDataFromCache } from "@app/ports/cache/cache.inbound";
 import { Injectable } from "@nestjs/common";
-import { StopScreenProducerCacheInfoResult, StopScreenProducerDto } from "../dto";
+import { StopScreenProducerCacheInfoResult, StopScreenProducerDto, StopScreenProducerResult } from "../dto";
 import { SfuErrorMessage } from "@error/application/sfu/sfu.error";
 import type { ProducerRepositoryPort } from "../../ports";
 import { DeleteDataToCache } from "@app/ports/cache/cache.outbound";
@@ -27,7 +27,7 @@ export class StopScreenProducerUsecase<T> {
     this.deleteProducerInfoToCache = deleteProducerInfoToCache;
   }
 
-  async execute(dto : StopScreenProducerDto) : Promise<void> {
+  async execute(dto : StopScreenProducerDto) : Promise<StopScreenProducerResult> {
 
     // 1. screen이 유저가 한게 맞는지 확인하는 로직 
     const producerInfo : StopScreenProducerCacheInfoResult = await this.selectMainAndSubProducerFromCache.select({ namespace : dto.room_id, keyName : dto.user_id });
@@ -37,6 +37,10 @@ export class StopScreenProducerUsecase<T> {
     if ( producerInfo.main_producer_id ) await this.deleteProducer(dto, producerInfo.main_producer_id, "screen_video");
     if ( producerInfo.sub_producer_id ) await this.deleteProducer(dto, producerInfo.sub_producer_id, "screen_audio");
 
+    return {
+      main : producerInfo.main_producer_id ? true : false,
+      sub : producerInfo.sub_producer_id ? true : false
+    };
   };
 
   private async deleteProducer(dto : StopScreenProducerDto, producer_id : string, status : 'screen_video' | 'screen_audio') : Promise<void> {

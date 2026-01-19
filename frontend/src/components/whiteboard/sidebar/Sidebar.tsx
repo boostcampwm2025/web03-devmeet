@@ -164,11 +164,13 @@ export default function Sidebar() {
           <TextPanel
             fill={(selectedItem as TextItem).fill}
             size={getTextSize(selectedItem as TextItem)}
+            align={(selectedItem as TextItem).align}
             onChangeFill={(color) => updateItem(selectedId!, { fill: color })}
             onChangeSize={(size) => {
               const preset = TEXT_SIZE_PRESETS[size];
               updateItem(selectedId!, { fontSize: preset.fontSize });
             }}
+            onChangeAlign={(align) => updateItem(selectedId!, { align })}
           />
         )}
       </div>

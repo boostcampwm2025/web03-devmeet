@@ -92,10 +92,8 @@ export default function Canvas() {
       onDeselect: handleCheckDeselect,
     });
 
-  // 캔버스 드래그 가능 여부 (그리기/지우개 모드에서는 비활성화)
-  const isDraggable = useCanvasStore(
-    (state) => state.cursorMode !== 'draw' && state.cursorMode !== 'eraser',
-  );
+  // 캔버스 드래그 가능 여부
+  const isDraggable = useCanvasStore((state) => state.cursorMode === 'move');
 
   useCanvasShortcuts({
     isArrowOrLineSelected,

@@ -46,8 +46,7 @@ export default function RenderItem({
   const setEditingTextId = useCanvasStore((state) => state.setEditingTextId);
 
   // 아이템 인터랙션 상태
-  const { isInteractive, isEraserMode, isDraggable, isListening } =
-    useItemInteraction();
+  const { isInteractive, isDraggable, isListening } = useItemInteraction();
 
   // 커서 스타일 훅
   const { handleMouseEnter, handleMouseLeave } = useCursorStyle('move');
@@ -60,24 +59,24 @@ export default function RenderItem({
         id={item.id}
         draggable={isDraggable}
         listening={isListening}
-        onMouseDown={() => isInteractive && !isEraserMode && onSelect(item.id)}
-        onTouchStart={() => isInteractive && !isEraserMode && onSelect(item.id)}
+        onMouseDown={() => isInteractive && onSelect(item.id)}
+        onTouchStart={() => isInteractive && onSelect(item.id)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onDblClick={() => {
-          if (!isInteractive || isEraserMode) return;
+          if (!isInteractive) return;
           setEditingTextId(item.id);
           onSelect(item.id);
         }}
         onDragEnd={(e) => {
-          if (!isInteractive || isEraserMode) return;
+          if (!isInteractive) return;
           onChange({
             x: e.target.x(),
             y: e.target.y(),
           });
         }}
         onTransform={(e) => {
-          if (!isInteractive || isEraserMode) return;
+          if (!isInteractive) return;
           const node = e.target;
           const scaleX = node.scaleX();
           const scaleY = node.scaleY();
@@ -90,7 +89,7 @@ export default function RenderItem({
           }
         }}
         onTransformEnd={(e) => {
-          if (!isInteractive || isEraserMode) return;
+          if (!isInteractive) return;
           const node = e.target;
           const scaleX = node.scaleX();
           node.scaleX(1);
@@ -132,19 +131,19 @@ export default function RenderItem({
         hitStrokeWidth={30}
         lineCap="round"
         lineJoin="round"
-        onMouseDown={() => isInteractive && !isEraserMode && onSelect(item.id)}
+        onMouseDown={() => isInteractive && onSelect(item.id)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onDblClick={() => {
-          if (!isInteractive || isEraserMode) return;
+          if (!isInteractive) return;
           onArrowDblClick?.(item.id);
         }}
         onDragStart={() => {
-          if (!isInteractive || isEraserMode) return;
+          if (!isInteractive) return;
           onDragStart?.();
         }}
         onDragEnd={(e) => {
-          if (!isInteractive || isEraserMode) return;
+          if (!isInteractive) return;
           const pos = e.target.position();
           const newPoints = lineItem.points.map((p, i) =>
             i % 2 === 0 ? p + pos.x : p + pos.y,
@@ -170,11 +169,11 @@ export default function RenderItem({
         lineCap="round"
         lineJoin="round"
         strokeScaleEnabled={true}
-        onMouseDown={() => isInteractive && !isEraserMode && onSelect(item.id)}
+        onMouseDown={() => isInteractive && onSelect(item.id)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onDragEnd={(e) => {
-          if (!isInteractive || isEraserMode) return;
+          if (!isInteractive) return;
           const pos = e.target.position();
           const newPoints = drawingItem.points.map((p, i) =>
             i % 2 === 0 ? p + pos.x : p + pos.y,
@@ -187,7 +186,7 @@ export default function RenderItem({
           });
         }}
         onTransform={(e) => {
-          if (!isInteractive || isEraserMode) return;
+          if (!isInteractive) return;
           const node = e.target;
 
           if (node.getClassName() !== 'Line') return;
@@ -207,7 +206,7 @@ export default function RenderItem({
           lineNode.scaleY(1);
         }}
         onTransformEnd={(e) => {
-          if (!isInteractive || isEraserMode) return;
+          if (!isInteractive) return;
           const node = e.target;
 
           if (node.getClassName() !== 'Line') return;
@@ -231,7 +230,7 @@ export default function RenderItem({
         shapeItem={shapeItem}
         isDraggable={isDraggable}
         isListening={isListening}
-        onSelect={() => isInteractive && !isEraserMode && onSelect(item.id)}
+        onSelect={() => isInteractive && onSelect(item.id)}
         onChange={onChange}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}

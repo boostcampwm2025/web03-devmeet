@@ -20,3 +20,18 @@ export const formatTimestamp = (timestamp: string) => {
     hour12: true,
   }).format(date);
 };
+
+export const parseRoomPath = (input: string): string => {
+  const trimmedInput = input.trim();
+
+  // 마지막 '/'의 위치를 찾음
+  const lastSlashIndex = trimmedInput.lastIndexOf('/');
+
+  // '/'가 존재하면 그 이후의 문자열을 코드라고 판단, 없으면 전체를 코드로 판단
+  const code =
+    lastSlashIndex !== -1
+      ? trimmedInput.substring(lastSlashIndex + 1)
+      : trimmedInput;
+
+  return `/${code}`;
+};

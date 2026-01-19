@@ -15,16 +15,28 @@ export const useAddWhiteboardItem = () => {
   // Canvas Store 상태
   const stagePos = useCanvasStore((state) => state.stagePos);
   const stageScale = useCanvasStore((state) => state.stageScale);
+  const viewportWidth = useCanvasStore((state) => state.viewportWidth);
+  const viewportHeight = useCanvasStore((state) => state.viewportHeight);
 
   // Text Item 추가 핸들러
   const handleAddText = () => {
-    const worldPos = getCenterWorldPos(stagePos, stageScale);
+    const worldPos = getCenterWorldPos(
+      stagePos,
+      stageScale,
+      viewportWidth,
+      viewportHeight,
+    );
     addText({ x: worldPos.x, y: worldPos.y });
   };
 
   // Arrow Item 추가 핸들러
   const handleAddArrow = () => {
-    const worldPos = getCenterWorldPos(stagePos, stageScale);
+    const worldPos = getCenterWorldPos(
+      stagePos,
+      stageScale,
+      viewportWidth,
+      viewportHeight,
+    );
     addArrow({
       points: [worldPos.x - 100, worldPos.y, worldPos.x + 100, worldPos.y],
     });
@@ -32,7 +44,12 @@ export const useAddWhiteboardItem = () => {
 
   // Line Item 추가 핸들러
   const handleAddLine = () => {
-    const worldPos = getCenterWorldPos(stagePos, stageScale);
+    const worldPos = getCenterWorldPos(
+      stagePos,
+      stageScale,
+      viewportWidth,
+      viewportHeight,
+    );
     addLine({
       points: [worldPos.x - 100, worldPos.y, worldPos.x + 100, worldPos.y],
     });
@@ -40,7 +57,12 @@ export const useAddWhiteboardItem = () => {
 
   // Shape Item 추가 핸들러
   const handleAddShape = (type: ShapeType) => {
-    const worldPos = getCenterWorldPos(stagePos, stageScale);
+    const worldPos = getCenterWorldPos(
+      stagePos,
+      stageScale,
+      viewportWidth,
+      viewportHeight,
+    );
 
     const width = 100;
     const height = 100;
@@ -163,7 +185,12 @@ export const useAddWhiteboardItem = () => {
         }
 
         // 중앙 좌표 계산
-        const worldPos = getCenterWorldPos(stagePos, stageScale);
+        const worldPos = getCenterWorldPos(
+          stagePos,
+          stageScale,
+          viewportWidth,
+          viewportHeight,
+        );
 
         addVideo({
           src: videoSrc,

@@ -155,6 +155,12 @@ export default function TextArea({
     };
 
     const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+
+      if (target.closest('aside')) {
+        return;
+      }
+
       if (e.target !== textarea) {
         onChange(textarea.value);
         onClose();

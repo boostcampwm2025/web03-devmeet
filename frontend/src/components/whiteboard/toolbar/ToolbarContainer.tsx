@@ -11,7 +11,7 @@ import NavButton from '@/components/whiteboard/common/NavButton';
 // Panel import
 import ShapePanel from '@/components/whiteboard/toolbar/panels/ShapePanel';
 import MediaPanel from '@/components/whiteboard/toolbar/panels/MediaPanel';
-import StackPanel from '@/components/whiteboard/toolbar/panels/StackPanel';
+//import StackPanel from '@/components/whiteboard/toolbar/panels/StackPanel';
 
 // Icon import
 // TODO : 필요한 아이콘 추가 : 화살표 / 기술 스택 아이콘 / line 아이콘
@@ -47,7 +47,8 @@ export default function ToolbarContainer() {
   const setCursorMode = useCanvasStore((state) => state.setCursorMode);
 
   // 아이템 추가 훅
-  const { handleAddText, handleAddArrow } = useAddWhiteboardItem();
+  const { handleAddText, handleAddArrow, handleAddLine } =
+    useAddWhiteboardItem();
 
   // 외부 클릭 시 패널 닫기
   useClickOutside(toolbarRef, () => setActivePanel(null), !!activePanel);
@@ -146,7 +147,7 @@ export default function ToolbarContainer() {
         <NavButton
           icon={LineIcon}
           label="선"
-          onClick={() => toggleCursorMode('select')}
+          onClick={() => handleAddItem(handleAddLine)}
           bgColor="bg-white"
           hvColor="bg-neutral-100"
           activeBgColor="bg-sky-100"

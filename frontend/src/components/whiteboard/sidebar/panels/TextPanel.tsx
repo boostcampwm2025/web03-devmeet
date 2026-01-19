@@ -4,8 +4,7 @@ import StrokeColorSection from '@/components/whiteboard/sidebar/sections/StrokeC
 import TextSizeSection from '@/components/whiteboard/sidebar/sections/text/TextSizeSection';
 import TextAlignSection from '@/components/whiteboard/sidebar/sections/text/TextAlignSection';
 import TextFormatSection from '@/components/whiteboard/sidebar/sections/text/TextFormatSection';
-import Section from '@/components/whiteboard/sidebar/ui/Section';
-import type { TextSize } from './textPresets';
+import type { TextSize } from '@/constants/textPresets';
 import type { TextAlignment } from '@/types/whiteboard/base';
 
 // TextPanel 컴포넌트
@@ -44,21 +43,19 @@ export default function TextPanel({
         allowTransparent={false}
       />
 
-      <Section title="Style">
-        {/* 텍스트 크기 설정 섹션 */}
-        <TextSizeSection size={size} onChangeSize={onChangeSize} />
+      {/* 텍스트 크기 설정 섹션 */}
+      <TextSizeSection size={size} onChangeSize={onChangeSize} />
 
-        {/* 텍스트 정렬 설정 섹션 */}
-        <TextAlignSection align={align} onChangeAlign={onChangeAlign} />
+      {/* 텍스트 정렬 설정 섹션 */}
+      <TextAlignSection align={align} onChangeAlign={onChangeAlign} />
 
-        {/* 텍스트 스타일 설정 섹션 */}
-        <TextFormatSection
-          fontStyle={fontStyle}
-          textDecoration={textDecoration}
-          onChangeFontStyle={onChangeFontStyle}
-          onChangeTextDecoration={onChangeTextDecoration}
-        />
-      </Section>
+      {/* 텍스트 스타일 설정 섹션 */}
+      <TextFormatSection
+        fontStyle={fontStyle}
+        textDecoration={textDecoration}
+        onChangeFontStyle={onChangeFontStyle}
+        onChangeTextDecoration={onChangeTextDecoration}
+      />
     </div>
   );
 }

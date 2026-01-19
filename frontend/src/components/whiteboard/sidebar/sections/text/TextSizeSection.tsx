@@ -1,7 +1,7 @@
 'use client';
 
 import ButtonGroup from '@/components/whiteboard/sidebar/ui/ButtonGroup';
-import type { TextSize } from '../../panels/textPresets';
+import type { TextSize } from '@/constants/textPresets';
 
 // Text 크기 설정 section
 interface TextSizeSectionProps {
@@ -15,7 +15,7 @@ export default function TextSizeSection({
 }: TextSizeSectionProps) {
   return (
     <ButtonGroup
-      label="Font Size"
+      label="Size"
       options={[
         { value: 'S', label: 'S' },
         { value: 'M', label: 'M' },

@@ -87,6 +87,7 @@ export interface ImageItem extends BaseItem {
   strokeWidth?: number;
   cornerRadius?: number;
   opacity?: number;
+  dash?: number[];
 }
 
 // Video Item
@@ -102,6 +103,7 @@ export interface VideoItem extends BaseItem {
   strokeWidth?: number;
   cornerRadius?: number;
   opacity?: number;
+  dash?: number[];
 }
 
 export interface YoutubeItem extends BaseItem {
@@ -119,4 +121,5 @@ export interface YoutubeItem extends BaseItem {
   strokeWidth?: number;
   cornerRadius?: number;
   opacity?: number;
+  dash?: number[];
 }

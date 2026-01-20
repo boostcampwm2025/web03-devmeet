@@ -1,6 +1,7 @@
 import {
   CheckUploadDataFromDisk,
   CheckUploadDatasFromDisk,
+  GetDownloadUrlFromDisk,
   GetMultiPartUploadUrlFromDisk,
   GetMultiPartVerCompleteGroupIdFromDisk,
   GetMultiPartVerGroupIdFromDisk,
@@ -479,3 +480,37 @@ export class GetPresingendUrlsFromAwsS3 extends GetUploadUrlsFromDisk<S3Client> 
     return results;
   }
 }
+
+// 실제 다운로드용 url은 여기서 받는다
+@Injectable()
+export class GetDownloadUrlFromS3Client extends GetDownloadUrlFromDisk<S3Client> {
+
+  constructor(
+    @Inject(S3_DISK) disk: S3Client,
+    private readonly config: ConfigService,
+  ) {
+    super(disk);
+  }
+
+
+  async getUrl({ pathName, }: { pathName: Array<string>; }): Promise<string> {
+    const Bucket: string = this.config.get<string>('NODE_APP_AWS_BUCKET_NAME', 'bucket');
+    const key_name: string = path.posix.join(...pathName);
+    const expiresIn: number = this.config.get<number>(
+      'NODE_APP_AWS_PRESIGNED_URL_EXPIRES_SEC',
+      180,
+    );  
+    
+    // 다운로드용 url을 받는다. 
+    const command = new GetObjectCommand({
+      Bucket,
+      Key: key_name,
+    });
+
+    const downloadUrl = await getSignedUrl(this.disk, command, {
+      expiresIn,
+    });
+
+    return downloadUrl;
+  }
+};

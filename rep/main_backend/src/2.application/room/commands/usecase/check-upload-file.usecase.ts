@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { CheckUploadFileDto, CheckUploadFileDtoValidateResult, CheckUploadFileResult } from "../dto";
 import { SelectDataFromCache } from "@app/ports/cache/cache.inbound";
 import { NotAllowRoomFileData, NotAllowRoomMemberFile, NotAllowUpdateFileData } from "@error/application/room/room.error";
-import { CheckUploadDataFromDisk, CheckUploadDatasFromDisk, GetUploadUrlFromDisk  } from "@app/ports/disk/disk.inbound";
+import { CheckUploadDataFromDisk, CheckUploadDatasFromDisk, GetDownloadUrlFromDisk } from "@app/ports/disk/disk.inbound";
 import { CompleteUploadFileToDisk } from "@app/ports/disk/disk.outbound";
 import { InsertDataToCache } from "@app/ports/cache/cache.outbound";
 
@@ -13,7 +13,7 @@ type CheckUploadFileUsecaseProps<T, ST> = {
   checkUploadsFromDisk : CheckUploadDatasFromDisk<ST>; // upload가 제대로 되는지 disk로 확인
   completeUploadToDisk : CompleteUploadFileToDisk<ST>; // file을 최종적으로 upload 확인
   updateFileInfoToCache : InsertDataToCache<T>; // 데이터를 업데이트 하는 로직
-  getUploadUrlFromDisk : GetUploadUrlFromDisk<ST> // upload_url을 가져오는 로직 ( thumnail_url이 필요한 경우 )
+  getUploadUrlFromDisk : GetDownloadUrlFromDisk<ST> // upload_url을 가져오는 로직 ( thumnail_url이 필요한 경우 )
 };
 
 @Injectable()
@@ -74,7 +74,7 @@ export class CheckUploadFileUsecase<T, ST> {
 
     // image나 video인경우 thumnail을 가져온다. 
     if ( checkResult.category === "image" || checkResult.category === "video" ) thumnail_url = await this.getUploadUrlFromDisk.getUrl({ 
-    pathName : [ dto.room_id, dto.file_id ], mime_type : checkResult.mime_type });
+    pathName : [ dto.room_id, dto.file_id ] });
 
     if ( checkResult.status !== "completed" ) {
       // 2. 데이터 저장 

@@ -1,4 +1,4 @@
-import { GetUploadUrlFromDisk } from "@app/ports/disk/disk.inbound";
+import { GetDownloadUrlFromDisk, GetUploadUrlFromDisk } from "@app/ports/disk/disk.inbound";
 import { SelectDataFromCache } from "@app/ports/cache/cache.inbound";
 import { Injectable } from "@nestjs/common";
 import { DownLoadFileDto } from "../dto";
@@ -7,7 +7,7 @@ import { NotAllowRoomMemberFile } from "@error/application/room/room.error";
 
 type DownLaodFileUsecaseProps<T, ST> = {
   checkRoomMemberFromCache : SelectDataFromCache<T>; // 현재 방에 있는 유저인지 확인하는 로직
-  getUploadUrlFromDisk : GetUploadUrlFromDisk<ST> // disk에서 upload_url을 가져오는 로직 
+  getUploadUrlFromDisk : GetDownloadUrlFromDisk<ST> // disk에서 upload_url을 가져오는 로직 
 };
 
 @Injectable()
@@ -30,7 +30,7 @@ export class DownLoadFileUsecase<T, ST> {
     if ( !mime_type ) throw new NotAllowRoomMemberFile();
 
     // 2. 다운로드 url 발급
-    const upload_url : string = await this.getUploadUrlFromDisk.getUrl({ pathName : [ dto.room_id, dto.file_id ], mime_type });
+    const upload_url : string = await this.getUploadUrlFromDisk.getUrl({ pathName : [ dto.room_id, dto.file_id ] });
 
     return upload_url; 
   };

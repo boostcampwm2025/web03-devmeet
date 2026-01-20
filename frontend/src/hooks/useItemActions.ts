@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 
-import { useSharedStore } from '@/store/useSharedStore';
+import { useWhiteboardSharedStore } from '@/store/useWhiteboardSharedStore';
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -42,8 +42,8 @@ export function useItemActions() {
     };
 
     // TODO: Yjs Doc에 추가
-    const items = useSharedStore.getState().items;
-    useSharedStore.setState({ items: [...items, newText] });
+    const items = useWhiteboardSharedStore.getState().items;
+    useWhiteboardSharedStore.setState({ items: [...items, newText] });
 
     return id;
   };
@@ -68,8 +68,8 @@ export function useItemActions() {
     };
 
     // TODO: Yjs Doc에 추가
-    const items = useSharedStore.getState().items;
-    useSharedStore.setState({ items: [...items, newArrow] });
+    const items = useWhiteboardSharedStore.getState().items;
+    useWhiteboardSharedStore.setState({ items: [...items, newArrow] });
   };
 
   // 선 추가
@@ -90,8 +90,8 @@ export function useItemActions() {
     };
 
     // TODO: Yjs Doc에 추가
-    const items = useSharedStore.getState().items;
-    useSharedStore.setState({ items: [...items, newLine] });
+    const items = useWhiteboardSharedStore.getState().items;
+    useWhiteboardSharedStore.setState({ items: [...items, newLine] });
   };
 
   // 도형 추가
@@ -115,8 +115,8 @@ export function useItemActions() {
     };
 
     // TODO: Yjs Doc에 추가
-    const items = useSharedStore.getState().items;
-    useSharedStore.setState({ items: [...items, newShape] });
+    const items = useWhiteboardSharedStore.getState().items;
+    useWhiteboardSharedStore.setState({ items: [...items, newShape] });
   };
 
   // 이미지 추가
@@ -144,8 +144,8 @@ export function useItemActions() {
     };
 
     // TODO: Yjs Doc에 추가
-    const items = useSharedStore.getState().items;
-    useSharedStore.setState({ items: [...items, newImage] });
+    const items = useWhiteboardSharedStore.getState().items;
+    useWhiteboardSharedStore.setState({ items: [...items, newImage] });
   };
 
   // 비디오 추가
@@ -173,8 +173,8 @@ export function useItemActions() {
     };
 
     // TODO: Yjs Doc에 추가
-    const items = useSharedStore.getState().items;
-    useSharedStore.setState({ items: [...items, newVideo] });
+    const items = useWhiteboardSharedStore.getState().items;
+    useWhiteboardSharedStore.setState({ items: [...items, newVideo] });
   };
 
   // 유튜브 추가
@@ -208,38 +208,38 @@ export function useItemActions() {
     };
 
     // TODO: Yjs Doc에 추가
-    const items = useSharedStore.getState().items;
-    useSharedStore.setState({ items: [...items, newYoutube] });
+    const items = useWhiteboardSharedStore.getState().items;
+    useWhiteboardSharedStore.setState({ items: [...items, newYoutube] });
   };
 
   // 그리기 완료 후 추가
   const addDrawing = (drawing: WhiteboardItem) => {
     // TODO: Yjs Doc에 추가
-    const items = useSharedStore.getState().items;
-    useSharedStore.setState({ items: [...items, drawing] });
+    const items = useWhiteboardSharedStore.getState().items;
+    useWhiteboardSharedStore.setState({ items: [...items, drawing] });
   };
 
   // 아이템 업데이트
   const updateItem = (id: string, changes: Partial<WhiteboardItem>) => {
     // TODO: Yjs Doc 수정
-    const items = useSharedStore.getState().items;
+    const items = useWhiteboardSharedStore.getState().items;
     const newItems = items.map((item) =>
       item.id === id ? ({ ...item, ...changes } as WhiteboardItem) : item,
     );
-    useSharedStore.setState({ items: newItems });
+    useWhiteboardSharedStore.setState({ items: newItems });
   };
 
   // 아이템 삭제
   const deleteItem = (id: string) => {
     // TODO: Yjs Doc에서 삭제
-    const items = useSharedStore.getState().items;
+    const items = useWhiteboardSharedStore.getState().items;
     const newItems = items.filter((item) => item.id !== id);
-    useSharedStore.setState({ items: newItems });
+    useWhiteboardSharedStore.setState({ items: newItems });
   };
 
   // 맨 앞으로
   const bringToFront = (id: string) => {
-    const items = useSharedStore.getState().items;
+    const items = useWhiteboardSharedStore.getState().items;
     const index = items.findIndex((item) => item.id === id);
     if (index === -1 || index === items.length - 1) return;
 
@@ -248,12 +248,12 @@ export function useItemActions() {
     newItems.push(item);
 
     // TODO: Yjs Doc 수정
-    useSharedStore.setState({ items: newItems });
+    useWhiteboardSharedStore.setState({ items: newItems });
   };
 
   // 맨 뒤로
   const sendToBack = (id: string) => {
-    const items = useSharedStore.getState().items;
+    const items = useWhiteboardSharedStore.getState().items;
     const index = items.findIndex((item) => item.id === id);
     if (index === -1 || index === 0) return;
 
@@ -262,12 +262,12 @@ export function useItemActions() {
     newItems.unshift(item);
 
     // TODO: Yjs Doc 수정
-    useSharedStore.setState({ items: newItems });
+    useWhiteboardSharedStore.setState({ items: newItems });
   };
 
   // 한 단계 앞으로
   const bringForward = (id: string) => {
-    const items = useSharedStore.getState().items;
+    const items = useWhiteboardSharedStore.getState().items;
     const currentIndex = items.findIndex((item) => item.id === id);
     if (currentIndex === -1 || currentIndex === items.length - 1) return;
 
@@ -278,12 +278,12 @@ export function useItemActions() {
     ];
 
     // TODO: Yjs Doc 수정
-    useSharedStore.setState({ items: newItems });
+    useWhiteboardSharedStore.setState({ items: newItems });
   };
 
   // 한 단계 뒤로
   const sendBackward = (id: string) => {
-    const items = useSharedStore.getState().items;
+    const items = useWhiteboardSharedStore.getState().items;
     const currentIndex = items.findIndex((item) => item.id === id);
     if (currentIndex <= 0) return;
 
@@ -294,7 +294,7 @@ export function useItemActions() {
     ];
 
     // TODO: Yjs Doc 수정
-    useSharedStore.setState({ items: newItems });
+    useWhiteboardSharedStore.setState({ items: newItems });
   };
 
   return {

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useLocalStore } from '@/store/useLocalStore';
+import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
 import { useItemActions } from '@/hooks/useItemActions';
 
 interface UseCanvasShortcutsProps {
@@ -13,8 +13,8 @@ export const useCanvasShortcuts = ({
   selectedHandleIndex,
   deleteControlPoint,
 }: UseCanvasShortcutsProps) => {
-  const selectedId = useLocalStore((state) => state.selectedId);
-  const editingTextId = useLocalStore((state) => state.editingTextId);
+  const selectedId = useWhiteboardLocalStore((state) => state.selectedId);
+  const editingTextId = useWhiteboardLocalStore((state) => state.editingTextId);
   const { deleteItem } = useItemActions();
 
   useEffect(() => {

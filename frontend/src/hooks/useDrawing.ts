@@ -1,14 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import Konva from 'konva';
-import { useLocalStore } from '@/store/useLocalStore';
+import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
 import { useItemActions } from '@/hooks/useItemActions';
 import { getWorldPointerPosition } from '@/utils/coordinate';
 
 export function useDrawing() {
-  const currentDrawing = useLocalStore((state) => state.currentDrawing);
-  const startDrawing = useLocalStore((state) => state.startDrawing);
-  const continueDrawing = useLocalStore((state) => state.continueDrawing);
-  const finishDrawing = useLocalStore((state) => state.finishDrawing);
+  const currentDrawing = useWhiteboardLocalStore(
+    (state) => state.currentDrawing,
+  );
+  const startDrawing = useWhiteboardLocalStore((state) => state.startDrawing);
+  const continueDrawing = useWhiteboardLocalStore(
+    (state) => state.continueDrawing,
+  );
+  const finishDrawing = useWhiteboardLocalStore((state) => state.finishDrawing);
   const { addDrawing } = useItemActions();
 
   const [isDrawing, setIsDrawing] = useState(false);
@@ -51,7 +55,7 @@ export function useDrawing() {
       setIsDrawing(false);
 
       // 그리기 완료 시 아이템 추가
-      const drawing = useLocalStore.getState().currentDrawing;
+      const drawing = useWhiteboardLocalStore.getState().currentDrawing;
       if (drawing && drawing.points.length >= 4) {
         addDrawing(drawing);
       }

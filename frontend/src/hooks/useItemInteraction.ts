@@ -1,7 +1,7 @@
-import { useLocalStore } from '@/store/useLocalStore';
+import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
 
 export function useItemInteraction() {
-  const cursorMode = useLocalStore((state) => state.cursorMode);
+  const cursorMode = useWhiteboardLocalStore((state) => state.cursorMode);
 
   return {
     // 아이템 조작 가능 여부

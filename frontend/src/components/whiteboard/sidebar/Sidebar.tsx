@@ -9,8 +9,8 @@ import LinePanel from '@/components/whiteboard/sidebar/panels/LinePanel';
 import TextPanel from '@/components/whiteboard/sidebar/panels/TextPanel';
 import DrawingPanel from '@/components/whiteboard/sidebar/panels/DrawingPanel';
 
-import { useSharedStore } from '@/store/useSharedStore';
-import { useLocalStore } from '@/store/useLocalStore';
+import { useWhiteboardSharedStore } from '@/store/useWhiteboardSharedStore';
+import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
 import { useItemActions } from '@/hooks/useItemActions';
 import type {
   ArrowItem,
@@ -38,14 +38,18 @@ type SelectionType = 'shape' | 'arrow' | 'line' | 'text' | 'drawing' | null;
 
 export default function Sidebar() {
   // 스토어에서 선택된 아이템 정보 가져오기
-  const selectedId = useLocalStore((state) => state.selectedId);
-  const items = useSharedStore((state) => state.items);
+  const selectedId = useWhiteboardLocalStore((state) => state.selectedId);
+  const items = useWhiteboardSharedStore((state) => state.items);
   const { updateItem } = useItemActions();
-  const cursorMode = useLocalStore((state) => state.cursorMode);
-  const drawingStroke = useLocalStore((state) => state.drawingStroke);
-  const drawingSize = useLocalStore((state) => state.drawingSize);
-  const setDrawingStroke = useLocalStore((state) => state.setDrawingStroke);
-  const setDrawingSize = useLocalStore((state) => state.setDrawingSize);
+  const cursorMode = useWhiteboardLocalStore((state) => state.cursorMode);
+  const drawingStroke = useWhiteboardLocalStore((state) => state.drawingStroke);
+  const drawingSize = useWhiteboardLocalStore((state) => state.drawingSize);
+  const setDrawingStroke = useWhiteboardLocalStore(
+    (state) => state.setDrawingStroke,
+  );
+  const setDrawingSize = useWhiteboardLocalStore(
+    (state) => state.setDrawingSize,
+  );
 
   // 선택된 아이템 찾기
   const selectedItem = useMemo(

@@ -1,4 +1,4 @@
-import { useLocalStore } from '@/store/useLocalStore';
+import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
 import { useItemActions } from '@/hooks/useItemActions';
 import { getCenterWorldPos } from '@/utils/coordinate';
 import { ShapeType } from '@/types/whiteboard';
@@ -15,8 +15,8 @@ export const useAddWhiteboardItem = () => {
   } = useItemActions();
 
   // Local Store 상태
-  const stagePos = useLocalStore((state) => state.stagePos);
-  const stageScale = useLocalStore((state) => state.stageScale);
+  const stagePos = useWhiteboardLocalStore((state) => state.stagePos);
+  const stageScale = useWhiteboardLocalStore((state) => state.stageScale);
 
   // Text Item 추가 핸들러
   const handleAddText = () => {

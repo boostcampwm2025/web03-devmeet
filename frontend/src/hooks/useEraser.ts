@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Konva from 'konva';
-import { useLocalStore } from '@/store/useLocalStore';
+import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
 import { useItemActions } from '@/hooks/useItemActions';
 
 // Group 내부 요소를 클릭한 경우 id가 있는 최상위 아이템 찾기
@@ -14,7 +14,7 @@ const findTopLevelItem = (node: Konva.Node): Konva.Node => {
 };
 
 export function useEraser() {
-  const cursorMode = useLocalStore((state) => state.cursorMode);
+  const cursorMode = useWhiteboardLocalStore((state) => state.cursorMode);
   const { deleteItem } = useItemActions();
 
   const [isErasing, setIsErasing] = useState(false);

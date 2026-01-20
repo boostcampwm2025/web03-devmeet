@@ -6,7 +6,7 @@ import NavButton from '@/components/whiteboard/common/NavButton';
 import {
   layerBringToFrontIcon,
   layerSendToBackIcon,
-} from '@/assets/icons/whiteboard/common'; // index.ts에서 export 했다고 가정
+} from '@/assets/icons/whiteboard/common';
 
 interface LayerSectionProps {
   onChangeLayer: (direction: 'front' | 'back') => void;

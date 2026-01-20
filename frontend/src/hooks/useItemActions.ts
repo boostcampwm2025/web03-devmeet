@@ -178,8 +178,8 @@ export function useItemActions() {
   };
 
   // 유튜브 추가
-  const addYoutube = (url: string) => {
-    const videoId = extractYoutubeId(url);
+  const addYoutube = (payload: { url: string; x?: number; y?: number }) => {
+    const videoId = extractYoutubeId(payload.url);
 
     // 유효하지 않은 URL 입력시 alert 띄우고 중단
     if (!videoId) {
@@ -194,10 +194,10 @@ export function useItemActions() {
     const newYoutube: YoutubeItem = {
       id,
       type: 'youtube',
-      url,
+      url: payload.url,
       videoId,
-      x: CANVAS_WIDTH / 2 - width / 2,
-      y: CANVAS_HEIGHT / 2 - height / 2,
+      x: payload.x ?? CANVAS_WIDTH / 2 - width / 2,
+      y: payload.y ?? CANVAS_HEIGHT / 2 - height / 2,
       width,
       height,
       rotation: 0,

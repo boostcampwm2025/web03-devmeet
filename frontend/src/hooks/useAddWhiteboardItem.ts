@@ -17,10 +17,23 @@ export const useAddWhiteboardItem = () => {
   // Local Store 상태
   const stagePos = useWhiteboardLocalStore((state) => state.stagePos);
   const stageScale = useWhiteboardLocalStore((state) => state.stageScale);
+  const viewportWidth = useWhiteboardLocalStore((state) => state.viewportWidth);
+  const viewportHeight = useWhiteboardLocalStore(
+    (state) => state.viewportHeight,
+  );
+
+  const getViewportCenter = () => {
+    return getCenterWorldPos(
+      stagePos,
+      stageScale,
+      viewportWidth,
+      viewportHeight,
+    );
+  };
 
   // Text Item 추가 핸들러
   const handleAddText = () => {
-    const worldPos = getCenterWorldPos(stagePos, stageScale);
+    const worldPos = getViewportCenter();
 
     const defaultWidth = 200;
     const defaultFontSize = 32;
@@ -33,7 +46,7 @@ export const useAddWhiteboardItem = () => {
 
   // Arrow Item 추가 핸들러
   const handleAddArrow = () => {
-    const worldPos = getCenterWorldPos(stagePos, stageScale);
+    const worldPos = getViewportCenter();
     addArrow({
       points: [worldPos.x - 100, worldPos.y, worldPos.x + 100, worldPos.y],
     });
@@ -41,7 +54,7 @@ export const useAddWhiteboardItem = () => {
 
   // Line Item 추가 핸들러
   const handleAddLine = () => {
-    const worldPos = getCenterWorldPos(stagePos, stageScale);
+    const worldPos = getViewportCenter();
     addLine({
       points: [worldPos.x - 100, worldPos.y, worldPos.x + 100, worldPos.y],
     });
@@ -49,7 +62,7 @@ export const useAddWhiteboardItem = () => {
 
   // Shape Item 추가 핸들러
   const handleAddShape = (type: ShapeType) => {
-    const worldPos = getCenterWorldPos(stagePos, stageScale);
+    const worldPos = getViewportCenter();
 
     const width = 100;
     const height = 100;
@@ -108,7 +121,7 @@ export const useAddWhiteboardItem = () => {
             }
           }
 
-          const worldPos = getCenterWorldPos(stagePos, stageScale);
+          const worldPos = getViewportCenter();
 
           // store 저장
           addImage({
@@ -176,7 +189,7 @@ export const useAddWhiteboardItem = () => {
         }
 
         // 뷰포트 중앙 좌표 계산
-        const worldPos = getCenterWorldPos(stagePos, stageScale);
+        const worldPos = getViewportCenter();
 
         addVideo({
           src: videoSrc,
@@ -196,7 +209,15 @@ export const useAddWhiteboardItem = () => {
     const targetUrl = url ?? prompt('유튜브 URL을 입력하세요');
     if (!targetUrl) return;
 
-    addYoutube(targetUrl);
+    const worldPos = getViewportCenter();
+    const width = 640;
+    const height = 360;
+
+    addYoutube({
+      url: targetUrl,
+      x: worldPos.x - width / 2,
+      y: worldPos.y - height / 2,
+    });
   };
 
   return {

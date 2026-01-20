@@ -71,7 +71,7 @@ interface CanvasState {
     width?: number;
     height?: number;
   }) => void;
-  addYoutube: (url: string) => void;
+  addYoutube: (url: string, worldPos?: { x: number; y: number }) => void;
 
   // 커서 모드
   cursorMode: CursorMode;
@@ -332,7 +332,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     }),
 
   // 유튜브 Item 추가
-  addYoutube: (url) =>
+  addYoutube: (url, worldPos) =>
     set((state) => {
       const videoId = extractYoutubeId(url);
 
@@ -351,8 +351,12 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         type: 'youtube',
         url,
         videoId,
-        x: state.canvasWidth / 2 - width / 2,
-        y: state.canvasHeight / 2 - height / 2,
+        x: worldPos
+          ? worldPos.x - width / 2
+          : state.canvasWidth / 2 - width / 2,
+        y: worldPos
+          ? worldPos.y - height / 2
+          : state.canvasHeight / 2 - height / 2,
         width,
         height,
         rotation: 0,

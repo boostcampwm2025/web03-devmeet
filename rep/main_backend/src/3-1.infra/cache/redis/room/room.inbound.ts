@@ -2,8 +2,10 @@ import { SelectDataFromCache } from '@app/ports/cache/cache.inbound';
 import { Inject, Injectable } from '@nestjs/common';
 import { type RedisClientType } from 'redis';
 import {
+  CACHE_ROOM_FILES_KEY_PROPS_NAME,
   CACHE_ROOM_INFO_KEY_NAME,
   CACHE_ROOM_INFO_PRODUCE_KEY_PROPS_NAME,
+  CACHE_ROOM_MEMBER_SUB_NAMESPACE_NAME,
   CACHE_ROOM_MEMBERS_KEY_PROPS_NAME,
   CACHE_ROOM_NAMESPACE_NAME,
   CACHE_ROOM_SUB_NAMESPACE_NAME,
@@ -22,7 +24,8 @@ import {
   ProviderInfo,
   ProviderToolInfo,
 } from '@app/room/queries/dto';
-import { NotAllowToolPayload, NotAllowToolTicket } from '@error/infra/infra.error';
+import { CacheError, NotAllowToolPayload, NotAllowToolTicket } from '@error/infra/infra.error';
+import { FindUploadFileInfo } from '@/2.application/room/commands/dto';
 
 @Injectable()
 export class SelectRoomInfoFromRedis extends SelectDataFromCache<RedisClientType<any, any>> {
@@ -469,3 +472,47 @@ export class SelectRoomInfoDataFromRedis extends SelectDataFromCache<RedisClient
     };
   }
 }
+
+// 유저가 실제로 방에 위치한 유저가 맞는지 확인하고 upload_id에 상태에 대해서 확인한다. ( 일단 상태까지 모두 )
+@Injectable()
+export class CheckUserAndSelectPrevFileInfoFromRedis extends SelectDataFromCache<RedisClientType<any, any>> {
+
+  constructor(@Inject(REDIS_SERVER) cache: RedisClientType<any, any>) {
+    super(cache);
+  };
+
+  // namespace는 room_id:user_id 이고 keyname은 filename:mime_type:size 이다.
+  async select({ namespace, keyName, }: { namespace: string; keyName: string; }): Promise<FindUploadFileInfo | undefined> {
+    
+    // 1. user가 방에 있는 사람인지 확인 
+    const [ room_id, user_id ] = namespace.split(":");
+    if ( !room_id || !user_id ) throw new CacheError("room_id, user_id가 없습니다 다시 확인해주세요");
+
+    const roomMemberNamespace : string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.MEMBERS}`;
+    const user = await this.cache.hGet(roomMemberNamespace, user_id);
+    if ( !user ) throw new CacheError("현재 방에 위치한 유저가 아닙니다."); // 유저가 아님
+    
+    const fileIdNamespace : string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${namespace}:${CACHE_ROOM_MEMBER_SUB_NAMESPACE_NAME.FILE_IDS}`;
+    const file_id : string | null = await this.cache.hGet(fileIdNamespace, keyName);
+    if ( !file_id ) return undefined;
+
+    // 존재하면 현재 상태 확인
+    const roomFileInfoNamespace : string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.FILES}`;
+    const fileInfo = await this.cache.hGet(roomFileInfoNamespace, file_id);
+    if ( !fileInfo ) return undefined;
+    try {
+      const obj = JSON.parse(fileInfo);
+      const status : string = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.STATUS];
+      if ( status !== "uploading" &&  status !== "completed" ) throw new CacheError("status가 잘못저장되어 있습니다.");
+
+      return {
+        file_id, status, upload_id: obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.UPLOAD_ID] ?? null
+      }
+    } catch (err) {
+      // 불량은 삭제한다. 
+      await this.cache.hDel(roomFileInfoNamespace, file_id);
+      return undefined;
+    };
+  };
+
+};

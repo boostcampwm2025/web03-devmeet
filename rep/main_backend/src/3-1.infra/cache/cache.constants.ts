@@ -68,7 +68,7 @@ export const CACHE_ROOM_FILES_KEY_PROPS_NAME = Object.freeze({
   MIME_TYPE : "mime_type",
   CATEGORY : "category", // image, video, audio, text, binary
   SIZE : "size",
-  UPLOAD_UD : "upload_id", // 기존에 upload_id로 10mb 초과면 이게 있을것이다. 
+  UPLOAD_ID : "upload_id", // 기존에 upload_id로 10mb 초과면 이게 있을것이다. 
   USER_ID : "user_id",
   NICKNAME : "nickname",
   STATUS : "status" // uploading, completed

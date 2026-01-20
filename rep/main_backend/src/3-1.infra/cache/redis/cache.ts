@@ -14,6 +14,7 @@ import {
 import {
   CheckRoomUserFromRedis,
   CheckToolTicketFromRedis,
+  CheckUserAndSelectPrevFileInfoFromRedis,
   CheckUserPayloadFromRedis,
   SelectRoomInfoDataFromRedis,
   SelectRoomInfoFromRedis,
@@ -102,6 +103,7 @@ import {
     UpdateProducerStatusToRedis, // prodcuer에서 status가 변경 될때 사용하는 redis -> 정합성이 좀 부족하다 고민 해야 함
     SelectUserProducerInfoDataFromRedis, // user에 producer 관련 데이터를 가져와야 한다.
     SelectRoomProducerDataFromRedis, // producer에 대한 데이터를 가져오는 로직 구현
+    CheckUserAndSelectPrevFileInfoFromRedis, // 방에 유저가 있는지 그리고 저장중인 다른 파일이 있는지 확인
   ],
   exports: [
     REDIS_SERVER,
@@ -137,6 +139,7 @@ import {
     UpdateProducerStatusToRedis,
     SelectUserProducerInfoDataFromRedis,
     SelectRoomProducerDataFromRedis,
+    CheckUserAndSelectPrevFileInfoFromRedis
   ],
 })
 export class RedisModule {}

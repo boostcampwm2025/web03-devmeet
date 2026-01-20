@@ -4,7 +4,7 @@ import { ComponentType, SVGProps } from 'react';
 
 interface ButtonGroupOption<T> {
   value: T;
-  label: string;
+  label?: string;
   icon?: ComponentType<SVGProps<SVGSVGElement>>;
 }
 
@@ -31,14 +31,13 @@ export default function ButtonGroup<T extends string | number>({
             <button
               key={option.value}
               onClick={() => onChange(option.value)}
-              className={`flex flex-1 items-center justify-center gap-1 rounded px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`flex h-7 flex-1 items-center justify-center gap-1 rounded px-3 py-1.5 text-xs font-medium transition-colors ${
                 value === option.value
                   ? 'bg-sky-200'
                   : 'bg-neutral-100 hover:bg-neutral-200'
               }`}
             >
-              {Icon && <Icon className="h-4 w-4" />}
-              {option.label}
+              {Icon ? <Icon className="h-5 w-5" /> : option.label}
             </button>
           );
         })}

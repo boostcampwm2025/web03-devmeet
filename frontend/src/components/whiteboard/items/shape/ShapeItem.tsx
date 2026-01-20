@@ -57,7 +57,7 @@ export default function ShapeItem({
     dash: shapeItem.dash,
 
     // 모서리 둥글기 설정 : round - 둥근 모서리 / miter - 각진 모서리
-    lineJoin: (isRoundEdge ? 'round' : 'miter') as 'round' | 'miter' | 'bevel',
+    lineJoin: (isRoundEdge ? 'round' : 'miter') as 'round' | 'miter',
     lineCap: 'round' as const,
 
     onMouseDown: onSelect,

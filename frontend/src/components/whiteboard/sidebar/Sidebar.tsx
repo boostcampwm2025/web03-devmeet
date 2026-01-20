@@ -7,6 +7,7 @@ import ShapePanel from '@/components/whiteboard/sidebar/panels/ShapePanel';
 import ArrowPanel from '@/components/whiteboard/sidebar/panels/ArrowPanel';
 import LinePanel from '@/components/whiteboard/sidebar/panels/LinePanel';
 import MediaPanel from '@/components/whiteboard/sidebar/panels/MediaPanel';
+import TextPanel from '@/components/whiteboard/sidebar/panels/TextPanel';
 
 import { StrokeStyleType } from '@/components/whiteboard/sidebar/sections/StrokeStyleSection';
 import { EdgeType } from '@/components/whiteboard/sidebar/sections/EdgesSection';
@@ -17,19 +18,22 @@ import type {
   LineItem,
   ShapeItem,
   ImageItem,
+  TextItem,
 } from '@/types/whiteboard';
 import {
   ARROW_SIZE_PRESETS,
   ARROW_STYLE_PRESETS,
 } from '@/components/whiteboard/sidebar/panels/arrowPresets';
+import { TEXT_SIZE_PRESETS } from '@/constants/textPresets';
 import {
   getArrowSize,
   getLineSize,
+  getTextSize,
   getItemStyle,
-} from '@/utils/arrowPanelHelpers';
+} from '@/utils/sidebarStyleHelpers';
 
-// 사이드 바 선택된 요소 타입
-type SelectionType = 'shape' | 'arrow' | 'line' | 'media' | null;
+// 사이드 바 선택된 요소 타입 (media와 text 모두 포함)
+type SelectionType = 'shape' | 'arrow' | 'line' | 'media' | 'text' | null;
 
 export default function Sidebar() {
   // 스토어에서 선택된 아이템 정보 가져오기
@@ -57,6 +61,8 @@ export default function Sidebar() {
       case 'video':
       case 'youtube':
         return 'media';
+      case 'text':
+        return 'text';
       default:
         return null;
     }
@@ -107,13 +113,15 @@ export default function Sidebar() {
         if (selectedItem?.type === 'youtube') return 'Youtube';
         if (selectedItem?.type === 'video') return 'Video';
         return 'Image';
+      case 'text':
+        return 'Text';
       default:
         return '';
     }
   };
 
-  // 선택된 아이템이 없으면 사이드바 표시 안 함
-  if (!selectedItem) {
+  // 선택된 아이템이 없거나 지원하지 않는 타입이면 사이드바 표시 안 함
+  if (!selectedItem || !selectionType) {
     return null;
   }
 
@@ -241,6 +249,7 @@ export default function Sidebar() {
           />
         )}
 
+        {/* media (image/video/youtube) */}
         {selectionType === 'media' && (
           <MediaPanel
             strokeColor={(selectedItem as ImageItem).stroke ?? 'transparent'}
@@ -297,6 +306,29 @@ export default function Sidebar() {
             onChangeOpacity={(opacity) => {
               updateItem(selectedId!, { opacity });
             }}
+          />
+        )}
+
+        {/* text */}
+        {selectionType === 'text' && (
+          <TextPanel
+            fill={(selectedItem as TextItem).fill}
+            size={getTextSize(selectedItem as TextItem)}
+            align={(selectedItem as TextItem).align}
+            fontStyle={(selectedItem as TextItem).fontStyle ?? 'normal'}
+            textDecoration={(selectedItem as TextItem).textDecoration ?? 'none'}
+            onChangeFill={(color) => updateItem(selectedId!, { fill: color })}
+            onChangeSize={(size) => {
+              const preset = TEXT_SIZE_PRESETS[size];
+              updateItem(selectedId!, { fontSize: preset.fontSize });
+            }}
+            onChangeAlign={(align) => updateItem(selectedId!, { align })}
+            onChangeFontStyle={(fontStyle) =>
+              updateItem(selectedId!, { fontStyle })
+            }
+            onChangeTextDecoration={(textDecoration) =>
+              updateItem(selectedId!, { textDecoration })
+            }
           />
         )}
       </div>

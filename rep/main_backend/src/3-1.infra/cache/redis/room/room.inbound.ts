@@ -25,7 +25,7 @@ import {
   ProviderToolInfo,
 } from '@app/room/queries/dto';
 import { CacheError, NotAllowToolPayload, NotAllowToolTicket } from '@error/infra/infra.error';
-import { FindUploadFileInfo } from '@/2.application/room/commands/dto';
+import { CheckUploadFileDtoValidateResult, FindUploadFileInfo } from '@/2.application/room/commands/dto';
 
 @Injectable()
 export class SelectRoomInfoFromRedis extends SelectDataFromCache<RedisClientType<any, any>> {
@@ -489,7 +489,7 @@ export class CheckUserAndSelectPrevFileInfoFromRedis extends SelectDataFromCache
     if ( !room_id || !user_id ) throw new CacheError("room_id, user_id가 없습니다 다시 확인해주세요");
 
     const roomMemberNamespace : string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.MEMBERS}`;
-    const user = await this.cache.hGet(roomMemberNamespace, user_id);
+    const user = await this.cache.hExists(roomMemberNamespace, user_id);
     if ( !user ) throw new CacheError("현재 방에 위치한 유저가 아닙니다."); // 유저가 아님
     
     const fileIdNamespace : string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${namespace}:${CACHE_ROOM_MEMBER_SUB_NAMESPACE_NAME.FILE_IDS}`;
@@ -513,6 +513,101 @@ export class CheckUserAndSelectPrevFileInfoFromRedis extends SelectDataFromCache
       await this.cache.hDel(roomFileInfoNamespace, file_id);
       return undefined;
     };
+  };
+
+};
+
+// 찾으려는 파일이 맞는지 확인하기 위한 infra 코드
+@Injectable()
+export class CheckUserAndSelectFileInfoFromRedis extends SelectDataFromCache<RedisClientType<any, any>> {
+
+  constructor(@Inject(REDIS_SERVER) cache: RedisClientType<any, any>) {
+    super(cache);
+  };  
+
+  // namespace는 room_id:user_id 이고 keyname은 file_id 이다. 
+  async select({ namespace, keyName, }: { namespace: string; keyName: string; }): Promise<CheckUploadFileDtoValidateResult | undefined> {
+
+    const [ room_id, user_id ] = namespace.split(":");
+    if ( !room_id || !user_id ) throw new CacheError("room_id, user_id가 없습니다 다시 확인해주세요");
+    const file_id : string = keyName;    
+
+    // 1. 현재 방의 멤버인지 확인
+    const roomMemberNamespace : string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.MEMBERS}`;
+    const roomFileInfoNamespace : string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.FILES}`;
+    
+    const result = await this.cache
+    .multi()
+    .hExists(roomMemberNamespace, user_id)
+    .hGet(roomFileInfoNamespace, file_id)
+    .exec();
+    
+    if (!result) return undefined; // 데이터가 없는 경우
+
+    // 2. 데이터 가져오기 
+    const isMember = Boolean(result[0] as unknown as number | boolean);
+    const rawFileInfo = result[1] as unknown as string | null;
+
+    if (!isMember) return undefined;
+    if (!rawFileInfo) return undefined;
+
+    try {
+      const obj = JSON.parse(rawFileInfo) as Record<string, any>;
+
+      const filename = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.FILENAME];
+      const mime_type = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.MIME_TYPE];
+      const category = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.CATEGORY];
+      const size = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.SIZE];
+      const upload_id = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.UPLOAD_ID] ?? null;
+      const nickname = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.NICKNAME];
+      const status = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.STATUS];
+
+      // 불량데이터 방지
+
+      // category는 맞는지
+      const isValidCategory =
+        category === "image" ||
+        category === "video" ||
+        category === "audio" ||
+        category === "text" ||
+        category === "binary";
+
+      // status는 제대로 저장이 되는지 확인
+      const isValidStatus = status === "uploading" || status === "completed";
+
+      if (
+
+        // 타입이랑 각 데이터는 제대로 저장이 되었는지 확인 
+        typeof filename !== "string" ||
+        typeof mime_type !== "string" ||
+        typeof nickname !== "string" ||
+        typeof size !== "number" ||
+        !isValidCategory ||
+        !isValidStatus ||
+        !(upload_id === null || typeof upload_id === "string")
+      ) {
+        // 불량 데이터면 정리
+        await this.cache.hDel(roomFileInfoNamespace, file_id);
+        return undefined;
+      }
+
+      const result: CheckUploadFileDtoValidateResult = {
+        status,
+        filename,
+        size,
+        category,
+        upload_id,
+        nickname,
+        mime_type,
+      };
+
+      return result;
+    } catch {
+      // JSON이 깨졌으면 정리
+      await this.cache.hDel(roomFileInfoNamespace, file_id);
+      return undefined;
+    }
+
   };
 
 };

@@ -6,7 +6,9 @@ import TextAlignSection from '@/components/whiteboard/sidebar/sections/text/Text
 import TextFormatSection from '@/components/whiteboard/sidebar/sections/text/TextFormatSection';
 import type { TextSize } from '@/constants/textPresets';
 import type { TextAlignment } from '@/types/whiteboard/base';
-import LayerSection from '@/components/whiteboard/sidebar/sections/LayerSection';
+import LayerSection, {
+  LayerDirection,
+} from '@/components/whiteboard/sidebar/sections/LayerSection';
 
 // TextPanel 컴포넌트
 interface TextPanelProps {
@@ -20,7 +22,7 @@ interface TextPanelProps {
   onChangeAlign: (align: TextAlignment) => void;
   onChangeFontStyle: (fontStyle: string) => void;
   onChangeTextDecoration: (textDecoration: string) => void;
-  onChangeLayer: (direction: 'front' | 'back') => void;
+  onChangeLayer: (direction: LayerDirection) => void;
 }
 
 export default function TextPanel({

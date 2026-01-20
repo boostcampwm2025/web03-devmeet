@@ -3,7 +3,9 @@
 import ArrowStrokeSection from '@/components/whiteboard/sidebar/sections/ArrowStrokeSection';
 import ArrowStyleSection from '@/components/whiteboard/sidebar/sections/ArrowStyleSection';
 import type { ArrowSize, ArrowStyle } from '@/constants/arrowPresets';
-import LayerSection from '@/components/whiteboard/sidebar/sections/LayerSection';
+import LayerSection, {
+  LayerDirection,
+} from '@/components/whiteboard/sidebar/sections/LayerSection';
 
 // LinePanel 컴포넌트
 interface LinePanelProps {
@@ -13,7 +15,7 @@ interface LinePanelProps {
   onChangeStroke: (color: string) => void;
   onChangeSize: (size: ArrowSize) => void;
   onChangeStyle: (style: ArrowStyle) => void;
-  onChangeLayer: (direction: 'front' | 'back') => void;
+  onChangeLayer: (direction: LayerDirection) => void;
 }
 
 export default function LinePanel({

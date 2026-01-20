@@ -10,8 +10,9 @@ import EdgesSection, {
   EdgeType,
 } from '@/components/whiteboard/sidebar/sections/EdgesSection';
 import OpacitySection from '@/components/whiteboard/sidebar/sections/OpacitySection';
-import LayerSection from '@/components/whiteboard/sidebar/sections/LayerSection';
-
+import LayerSection, {
+  LayerDirection,
+} from '@/components/whiteboard/sidebar/sections/LayerSection';
 interface ShapePanelProps {
   strokeColor: string;
   backgroundColor: string;
@@ -26,7 +27,7 @@ interface ShapePanelProps {
   onChangeStrokeStyle: (style: StrokeStyleType) => void;
   onChangeEdgeType: (type: EdgeType) => void;
   onChangeOpacity: (opacity: number) => void;
-  onChangeLayer: (direction: 'front' | 'back') => void;
+  onChangeLayer: (direction: LayerDirection) => void;
 }
 
 export default function ShapePanel({

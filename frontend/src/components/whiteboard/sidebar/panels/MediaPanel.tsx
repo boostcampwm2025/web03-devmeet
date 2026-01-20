@@ -9,7 +9,9 @@ import EdgesSection, {
   EdgeType,
 } from '@/components/whiteboard/sidebar/sections/EdgesSection';
 import OpacitySection from '@/components/whiteboard/sidebar/sections/OpacitySection';
-import LayerSection from '@/components/whiteboard/sidebar/sections/LayerSection';
+import LayerSection, {
+  LayerDirection,
+} from '@/components/whiteboard/sidebar/sections/LayerSection';
 
 interface MediaPanelProps {
   strokeColor: string;
@@ -23,7 +25,7 @@ interface MediaPanelProps {
   onChangeStrokeStyle: (style: StrokeStyleType) => void;
   onChangeEdgeType: (type: EdgeType) => void;
   onChangeOpacity: (opacity: number) => void;
-  onChangeLayer: (direction: 'front' | 'back') => void;
+  onChangeLayer: (direction: LayerDirection) => void;
 }
 
 export default function MediaPanel({

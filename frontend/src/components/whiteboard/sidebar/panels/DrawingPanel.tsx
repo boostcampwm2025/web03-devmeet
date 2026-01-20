@@ -3,7 +3,9 @@
 import StrokeColorSection from '@/components/whiteboard/sidebar/sections/StrokeColorSection';
 import ButtonGroup from '@/components/whiteboard/sidebar/ui/ButtonGroup';
 import type { DrawingSize } from '@/constants/drawingPresets';
-import LayerSection from '@/components/whiteboard/sidebar/sections/LayerSection';
+import LayerSection, {
+  LayerDirection,
+} from '@/components/whiteboard/sidebar/sections/LayerSection';
 
 // DrawingPanel 컴포넌트
 interface DrawingPanelProps {
@@ -11,7 +13,7 @@ interface DrawingPanelProps {
   size: DrawingSize;
   onChangeStroke: (color: string) => void;
   onChangeSize: (size: DrawingSize) => void;
-  onChangeLayer?: (direction: 'front' | 'back') => void;
+  onChangeLayer?: (direction: LayerDirection) => void;
 }
 
 export default function DrawingPanel({

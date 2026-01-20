@@ -5,7 +5,9 @@ import ArrowStyleSection from '@/components/whiteboard/sidebar/sections/ArrowSty
 import ButtonGroup from '@/components/whiteboard/sidebar/ui/ButtonGroup';
 import type { ArrowSize, ArrowStyle } from '@/constants/arrowPresets';
 import type { ArrowHeadType } from '@/types/whiteboard';
-import LayerSection from '@/components/whiteboard/sidebar/sections/LayerSection';
+import LayerSection, {
+  LayerDirection,
+} from '@/components/whiteboard/sidebar/sections/LayerSection';
 
 // ArrowPanel 컴포넌트
 interface ArrowPanelProps {
@@ -19,7 +21,7 @@ interface ArrowPanelProps {
   onChangeStyle: (style: ArrowStyle) => void;
   onChangeStartHeadType: (type: ArrowHeadType) => void;
   onChangeEndHeadType: (type: ArrowHeadType) => void;
-  onChangeLayer: (direction: 'front' | 'back') => void;
+  onChangeLayer: (direction: LayerDirection) => void;
 }
 
 export default function ArrowPanel({

@@ -17,7 +17,6 @@ import {
 import { RoomInfoValues } from '@app/room/dtos';
 import {
   GetRoomInfoCacheResult,
-  GetRoomInfoResult,
   GetRoomMainInfo,
   GetRoomMembersResult,
   MembersInfo,
@@ -608,6 +607,58 @@ export class CheckUserAndSelectFileInfoFromRedis extends SelectDataFromCache<Red
       return undefined;
     }
 
+  };
+
+};
+
+// 방에 있는 유저가 맞는지 그리고 file_id에 상태가 completed가 맞는지 확인
+@Injectable()
+export class CheckRoomMemberFromRedis extends SelectDataFromCache<RedisClientType<any, any>> {
+
+  constructor(@Inject(REDIS_SERVER) cache: RedisClientType<any, any>) {
+    super(cache);
+  };  
+
+  // namespace는 room_id:user_id이고 keyName은 file_id 이다. 
+  async select({ namespace, keyName, }: { namespace: string; keyName: string; }): Promise<string | undefined> {
+    
+    const [ room_id, user_id ] = namespace.split(":");
+    if ( !room_id || !user_id ) throw new CacheError("room_id, user_id가 없습니다 다시 확인해주세요");
+    const file_id : string = keyName;  
+
+    // 현재방의 멤버가 맞는지 확인
+    const roomMemberNamespace : string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.MEMBERS}`;
+    const roomFileInfoNamespace : string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.FILES}`;
+
+    const result = await this.cache
+    .multi()
+    .hExists(roomMemberNamespace, user_id)
+    .hGet(roomFileInfoNamespace, file_id)
+    .exec();
+    
+    if (!result) return undefined; // 데이터가 없는 경우
+
+    // 2. 데이터 가져오기 
+    const isMember = Boolean(result[0] as unknown as number | boolean);
+    const rawFileInfo = result[1] as unknown as string | null;
+    if (!isMember) return undefined;
+    if (!rawFileInfo) return undefined;
+
+    // parsing 안되면 다운로드 불가 
+    let obj: Record<string, any>;
+    try {
+      obj = JSON.parse(rawFileInfo);
+    } catch {
+      return undefined;
+    }
+
+    const status = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.STATUS];
+    if (status !== "completed") return undefined;
+
+    const mime = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.MIME_TYPE];
+    if (typeof mime !== "string" || mime.length === 0) return undefined;
+
+    return mime; // mime_type 반환
   };
 
 };

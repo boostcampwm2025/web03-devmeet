@@ -14,6 +14,7 @@ import {
   UpdateFileInfoToRedis,
 } from './room/room.outbound';
 import {
+  CheckRoomMemberFromRedis,
   CheckRoomUserFromRedis,
   CheckToolTicketFromRedis,
   CheckUserAndSelectFileInfoFromRedis,
@@ -110,6 +111,7 @@ import {
     InsertFileInfoToRedis, // 파일의 정보를 redis에 저장하는 로직
     CheckUserAndSelectFileInfoFromRedis, // 이 유저가 방에 존재하는지 그리고 파일이 제대로 업로드가 됐는지 확인하는 로직 
     UpdateFileInfoToRedis, // 방에 파일의 상태를 변경
+    CheckRoomMemberFromRedis // 유저가 방에 있고 다운 받을수 있는지 확인하는 로직
   ],
   exports: [
     REDIS_SERVER,
@@ -148,7 +150,8 @@ import {
     CheckUserAndSelectPrevFileInfoFromRedis,
     InsertFileInfoToRedis,
     CheckUserAndSelectFileInfoFromRedis,
-    UpdateFileInfoToRedis
+    UpdateFileInfoToRedis,
+    CheckRoomMemberFromRedis
   ],
 })
 export class RedisModule {}

@@ -160,7 +160,7 @@ export class SignalingWebsocketGateway
       client.data.room_id = result.room_id;
 
       // 일단 기본 세팅으로 응답
-      client.emit(WEBSOCKET_SIGNALING_CLIENT_EVENT_NAME.JOINED, { ok: true });
+      client.emit(WEBSOCKET_SIGNALING_CLIENT_EVENT_NAME.JOINED, { user_id : payload.user_id, ok: true });
     } catch (err) {
       this.logger.error(err);
       throw new WsException({ message: err.message ?? '에러 발생', status: err.status ?? 500 });
@@ -535,7 +535,8 @@ export class SignalingWebsocketGateway
 
   // 파일을 다운 받을때 사용하는 로직
 
+
   // 메시지를 보낼때 사용하는 로직 
-  
+
 
 }

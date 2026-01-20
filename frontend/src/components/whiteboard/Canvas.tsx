@@ -87,10 +87,15 @@ export default function Canvas() {
   };
 
   // 마우스 이벤트 통합 훅
-  const { handleMouseDown, handleMouseMove, handleMouseUp, currentDrawing } =
-    useCanvasMouseEvents({
-      onDeselect: handleCheckDeselect,
-    });
+  const {
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    handleMouseLeave,
+    currentDrawing,
+  } = useCanvasMouseEvents({
+    onDeselect: handleCheckDeselect,
+  });
 
   // 캔버스 드래그 가능 여부
   const isDraggable = useCanvasStore((state) => state.cursorMode === 'move');
@@ -127,7 +132,7 @@ export default function Canvas() {
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
         onTouchStart={handleCheckDeselect}
       >
         <Layer

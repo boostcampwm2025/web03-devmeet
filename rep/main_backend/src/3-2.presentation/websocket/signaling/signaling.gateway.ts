@@ -162,7 +162,10 @@ export class SignalingWebsocketGateway
       client.data.room_id = result.room_id;
 
       // 일단 기본 세팅으로 응답
-      client.emit(WEBSOCKET_SIGNALING_CLIENT_EVENT_NAME.JOINED, { user_id : payload.user_id, ok: true });
+      client.emit(WEBSOCKET_SIGNALING_CLIENT_EVENT_NAME.JOINED, {
+        user_id: payload.user_id,
+        ok: true,
+      });
     } catch (err) {
       this.logger.error(err);
       throw new WsException({ message: err.message ?? '에러 발생', status: err.status ?? 500 });
@@ -501,72 +504,71 @@ export class SignalingWebsocketGateway
   @SubscribeMessage(WEBSOCKET_SIGNALING_EVENT_NAME.UPLOAD_FILE)
   async uploadFileGateway(
     @ConnectedSocket() client: Socket,
-    @MessageBody() validate: UploadFileValidate
-  ) : Promise<UploadFileResult> {
+    @MessageBody() validate: UploadFileValidate,
+  ): Promise<UploadFileResult> {
     try {
       const result = await this.signalingService.uploadFileInfo(client, validate);
 
       return result;
     } catch (err) {
       this.logger.error(err);
-      throw new WsException({ message: err.message ?? '에러 발생', status: err.status ?? 500 });      
-    };
-  };
-  
+      throw new WsException({ message: err.message ?? '에러 발생', status: err.status ?? 500 });
+    }
+  }
+
   // 파일 전송을 확인할때 사용한다.
   @SubscribeMessage(WEBSOCKET_SIGNALING_EVENT_NAME.FILE_CHECK)
   async checkFileUploadGateway(
     @ConnectedSocket() client: Socket,
-    @MessageBody() validate: CheckFileValidate
-  ) : Promise<MessageResultProps> {
+    @MessageBody() validate: CheckFileValidate,
+  ): Promise<MessageResultProps> {
     try {
       const result = await this.signalingService.checkFileUpload(client, validate);
 
-      // 모든 방에 정보를 알려야 한다. 
-      const roomMessage : MessageResultProps = { ...result, message : undefined, type : "file" };
+      // 모든 방에 정보를 알려야 한다.
+      const roomMessage: MessageResultProps = { ...result, message: undefined, type: 'file' };
       const room_id: string = client.data.room_id;
       const namespace: string = `${CHANNEL_NAMESPACE.SIGNALING}:${room_id}`;
-      client.to(namespace).emit(WEBSOCKET_SIGNALING_CLIENT_EVENT_NAME.RECV_MESSAGE, roomMessage); // 방에 파일을 전달한다. 
+      client.to(namespace).emit(WEBSOCKET_SIGNALING_CLIENT_EVENT_NAME.RECV_MESSAGE, roomMessage); // 방에 파일을 전달한다.
 
       return roomMessage;
     } catch (err) {
       this.logger.error(err);
-      throw new WsException({ message: err.message ?? '에러 발생', status: err.status ?? 500 });         
-    };
-  };
+      throw new WsException({ message: err.message ?? '에러 발생', status: err.status ?? 500 });
+    }
+  }
 
   // 파일을 다운 받을때 사용하는 로직
   @SubscribeMessage(WEBSOCKET_SIGNALING_EVENT_NAME.FILE_DOWNLOAD)
   async downloadFileGateway(
     @ConnectedSocket() client: Socket,
-    @MessageBody() validate: DownloadFileValidate
-  ) : Promise<string> {
+    @MessageBody() validate: DownloadFileValidate,
+  ): Promise<string> {
     try {
       return this.signalingService.downloadFile(client, validate);
     } catch (err) {
       this.logger.error(err);
-      throw new WsException({ message: err.message ?? '에러 발생', status: err.status ?? 500 });   
-    };
-  };
+      throw new WsException({ message: err.message ?? '에러 발생', status: err.status ?? 500 });
+    }
+  }
 
-  // 메시지를 보낼때 사용하는 로직 
+  // 메시지를 보낼때 사용하는 로직
   @SubscribeMessage(WEBSOCKET_SIGNALING_EVENT_NAME.SEND_MESSAGE)
   sendMessageGateway(
     @ConnectedSocket() client: Socket,
-    @MessageBody() validate: SendMessageValidate
-  ) : MessageResultProps {
+    @MessageBody() validate: SendMessageValidate,
+  ): MessageResultProps {
     try {
       const result = this.signalingService.makeMessage(client, validate);
 
       const room_id: string = client.data.room_id;
       const namespace: string = `${CHANNEL_NAMESPACE.SIGNALING}:${room_id}`;
-      client.to(namespace).emit(WEBSOCKET_SIGNALING_CLIENT_EVENT_NAME.RECV_MESSAGE, result); 
+      client.to(namespace).emit(WEBSOCKET_SIGNALING_CLIENT_EVENT_NAME.RECV_MESSAGE, result);
 
       return result;
     } catch (err) {
       this.logger.error(err);
-      throw new WsException({ message: err.message ?? '에러 발생', status: err.status ?? 500 });         
-    };
-  };
-
+      throw new WsException({ message: err.message ?? '에러 발생', status: err.status ?? 500 });
+    }
+  }
 }

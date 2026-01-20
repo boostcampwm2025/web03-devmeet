@@ -194,13 +194,12 @@ export class PauseProducerValidate {
 }
 
 export class UploadFileValidate {
-  
   @IsNotEmpty()
   @IsString()
-  @MaxLength(255) 
+  @MaxLength(255)
   @Matches(/^[^\\\/\0]+$/)
   filename: string;
-  
+
   @IsNotEmpty()
   @IsString()
   @MaxLength(300)
@@ -208,15 +207,14 @@ export class UploadFileValidate {
   mime_type: string;
 
   @IsNotEmpty()
-  @IsIn(["image", "video", "audio", "text", "binary"])
-  category: "image" | "video" | "audio" | "text" | "binary";
-  
+  @IsIn(['image', 'video', 'audio', 'text', 'binary'])
+  category: 'image' | 'video' | 'audio' | 'text' | 'binary';
+
   @IsInt()
   @Min(1)
   @Max(100 * 1024 * 1024)
   size: number;
-};
-
+}
 
 export class CheckUploadFileDirectPropsValidate {
   @IsNotEmpty()
@@ -254,16 +252,16 @@ export class CheckFileValidate {
   file_id!: string;
 
   @IsNotEmpty()
-  @IsIn(["direct", "multipart"])
-  type!: "direct" | "multipart";
+  @IsIn(['direct', 'multipart'])
+  type!: 'direct' | 'multipart';
 
-  @ValidateIf((o) => o.type === "direct")
+  @ValidateIf((o) => o.type === 'direct')
   @IsDefined() // direct면 아래 검증이 있음
   @ValidateNested()
   @Type(() => CheckUploadFileDirectPropsValidate)
   direct!: CheckUploadFileDirectPropsValidate;
 
-  @ValidateIf((o) => o.type === "multipart")
+  @ValidateIf((o) => o.type === 'multipart')
   @IsDefined() // multipart면 아래 검증이 있음
   @ValidateNested()
   @Type(() => CheckUploadFileMultipartPropsValidate)
@@ -271,25 +269,25 @@ export class CheckFileValidate {
 }
 
 export type MessageResultProps = {
-  type : "message" | "file";
-  message : string | undefined; // message가 들어간다. 
+  type: 'message' | 'file';
+  message: string | undefined; // message가 들어간다.
   filename?: string;
   size?: number;
-  category?: "audio" | "video" | "image" | "text" | "binary";
+  category?: 'audio' | 'video' | 'image' | 'text' | 'binary';
   thumnail_url?: string | undefined;
   file_id?: string;
   nickname: string;
   user_id: string;
-}
+};
 
 export class DownloadFileValidate {
   @IsNotEmpty()
   @IsString()
-  file_id : string;
-};
+  file_id: string;
+}
 
 export class SendMessageValidate {
   @IsNotEmpty()
   @MaxLength(1000)
-  message : string;
-};
+  message: string;
+}

@@ -59,7 +59,12 @@ import {
   ResumeConsumerDto,
   ResumeConsumersDto,
 } from '@app/sfu/queries/dto';
-import { DisConnectToolDto, DownLoadFileDto, GetRoomMembersResult, MembersInfo } from '@app/room/queries/dto';
+import {
+  DisConnectToolDto,
+  DownLoadFileDto,
+  GetRoomMembersResult,
+  MembersInfo,
+} from '@app/room/queries/dto';
 import {
   ConnectToolUsecase,
   DisconnectToolUsecase,
@@ -77,9 +82,9 @@ export class SignalingWebsocketService {
     private readonly openToolUsecase: OpenToolUsecase<any>,
     private readonly connectToolUsecase: ConnectToolUsecase<any>,
     private readonly disconnectToolUsecase: DisconnectToolUsecase<any>,
-    private readonly uploadFileUsecase : UploadFileUsecase<any, any>,
-    private readonly checkFileUsecase : CheckUploadFileUsecase<any, any>,
-    private readonly downloadFileUsecase : DownLoadFileUsecase<any, any>,
+    private readonly uploadFileUsecase: UploadFileUsecase<any, any>,
+    private readonly checkFileUsecase: CheckUploadFileUsecase<any, any>,
+    private readonly downloadFileUsecase: DownLoadFileUsecase<any, any>,
     private readonly sfuServer: SfuService,
   ) {}
 
@@ -393,44 +398,51 @@ export class SignalingWebsocketService {
       user_id: payload.user_id,
     };
     return this.sfuServer.stopScreen(dto);
-  };
+  }
 
   // 파일 업로드를 위해서 정보를 가져오겠다는 뜻
-  async uploadFileInfo(client: Socket, validate: UploadFileValidate) : Promise<UploadFileResult> {
+  async uploadFileInfo(client: Socket, validate: UploadFileValidate): Promise<UploadFileResult> {
     const room_id: string = client.data.room_id;
     const payload: SocketPayload = client.data.user;
-    const dto : UploadFileDto = {
-      ...payload, room_id, ...validate
+    const dto: UploadFileDto = {
+      ...payload,
+      room_id,
+      ...validate,
     };
     return this.uploadFileUsecase.execute(dto);
-  };
+  }
 
   // 파일 업로드를 확인하겠다는 뜻
-  async checkFileUpload(client : Socket, validate : CheckFileValidate) : Promise<CheckUploadFileResult> {
+  async checkFileUpload(
+    client: Socket,
+    validate: CheckFileValidate,
+  ): Promise<CheckUploadFileResult> {
     const room_id: string = client.data.room_id;
     const payload: SocketPayload = client.data.user;
-    const dto : CheckUploadFileDto = {
-      ...payload, room_id, ...validate
+    const dto: CheckUploadFileDto = {
+      ...payload,
+      room_id,
+      ...validate,
     };
     return this.checkFileUsecase.execute(dto);
-  };
+  }
 
   // 다운로드 할 수 있는 url을 받는 로직
-  async downloadFile(client : Socket, validate : DownloadFileValidate) : Promise<string> {
+  async downloadFile(client: Socket, validate: DownloadFileValidate): Promise<string> {
     const room_id: string = client.data.room_id;
     const payload: SocketPayload = client.data.user;
-    const dto : DownLoadFileDto = { ...payload, room_id, ...validate };
+    const dto: DownLoadFileDto = { ...payload, room_id, ...validate };
     return this.downloadFileUsecase.execute(dto);
-  };
+  }
 
   // 메시지 제작
-  makeMessage( client : Socket, validate: SendMessageValidate ) : MessageResultProps {
+  makeMessage(client: Socket, validate: SendMessageValidate): MessageResultProps {
     const payload: SocketPayload = client.data.user;
     return {
-      message : validate.message,
-      user_id : payload.user_id,
-      nickname : payload.nickname,
-      type : "message"
+      message: validate.message,
+      user_id: payload.user_id,
+      nickname: payload.nickname,
+      type: 'message',
     };
-  };
+  }
 }

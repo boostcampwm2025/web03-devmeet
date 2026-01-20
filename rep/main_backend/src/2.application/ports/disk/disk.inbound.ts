@@ -131,14 +131,13 @@ export class CheckUploadDatasFromDisk<T> extends InboundBaseDisk<T> {
 // 다운로드용 url
 @Injectable()
 export class GetDownloadUrlFromDisk<T> extends InboundBaseDisk<T> {
-
   public async getUrl({
     pathName,
-    filename
+    filename,
   }: {
     pathName: Array<string>;
-    filename : string | undefined
+    filename: string | undefined;
   }): Promise<string> | never {
     throw new NullInterfaceError();
   }
-};
+}

@@ -21,7 +21,7 @@ export const CACHE_ROOM_SUB_NAMESPACE_NAME = Object.freeze({
   INFO: 'info',
   MEMBERS: 'members',
   SOCKETS: 'sockets',
-  FILES : "files"
+  FILES: 'files',
 } as const);
 
 // code, title, owner_id 등 방에 정보들을 저장할 key_name들
@@ -62,22 +62,22 @@ export const CACHE_ROOM_SOCKETS_KEY_PROPS_NAME = Object.freeze({
   IP: 'ip',
 } as const);
 
-// file_id : { } 이런 식으로 데이터가 저장될 예정이다. 
+// file_id : { } 이런 식으로 데이터가 저장될 예정이다.
 export const CACHE_ROOM_FILES_KEY_PROPS_NAME = Object.freeze({
-  FILENAME : "filename",
-  MIME_TYPE : "mime_type",
-  CATEGORY : "category", // image, video, audio, text, binary
-  SIZE : "size",
-  UPLOAD_ID : "upload_id", // 기존에 upload_id로 10mb 초과면 이게 있을것이다. 
-  USER_ID : "user_id",
-  NICKNAME : "nickname",
-  STATUS : "status" // uploading, completed
+  FILENAME: 'filename',
+  MIME_TYPE: 'mime_type',
+  CATEGORY: 'category', // image, video, audio, text, binary
+  SIZE: 'size',
+  UPLOAD_ID: 'upload_id', // 기존에 upload_id로 10mb 초과면 이게 있을것이다.
+  USER_ID: 'user_id',
+  NICKNAME: 'nickname',
+  STATUS: 'status', // uploading, completed
 } as const);
 
 // 아래는 room에서 member들을 위해서 필요한 개인 캐시 데이터 ( 만료시간 있음 )
 // 예시: cache:rooms:${room_id}:${user_id}:file_ids key: {filename}:{mime_type}:{size} value: file_id
 export const CACHE_ROOM_MEMBER_SUB_NAMESPACE_NAME = Object.freeze({
-  FILE_IDS : "file_ids"
+  FILE_IDS: 'file_ids',
 } as const);
 
 // sfu와 관련된 cache 정보

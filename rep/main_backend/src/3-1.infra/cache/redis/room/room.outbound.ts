@@ -17,7 +17,12 @@ import {
   REDIS_SERVER,
 } from '../../cache.constants';
 import { RoomProps } from '@domain/room/vo';
-import { CheckUploadFileDto, InsertRoomDataDto, InsertToolInfoData, InsertUploadFileInfoDto } from '@app/room/commands/dto';
+import {
+  CheckUploadFileDto,
+  InsertRoomDataDto,
+  InsertToolInfoData,
+  InsertUploadFileInfoDto,
+} from '@app/room/commands/dto';
 import { CacheError } from '@error/infra/infra.error';
 
 @Injectable()
@@ -281,75 +286,65 @@ export class DeleteMainProducerFromRedis extends DeleteDataToCache<RedisClientTy
 // 파일 정보를 저장하는 로직
 @Injectable()
 export class InsertFileInfoToRedis extends InsertDataToCache<RedisClientType<any, any>> {
-
   constructor(@Inject(REDIS_SERVER) cache: RedisClientType<any, any>) {
     super(cache);
-  };
+  }
 
   async insert(entity: InsertUploadFileInfoDto): Promise<boolean> {
-    
-    // 저장해야 하는 것은 두곳이다 하나라도 저장이 안되면 에러가 발생한다. 
-    const fileIdNamespace : string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${entity.room_id}:${entity.user_id}:${CACHE_ROOM_MEMBER_SUB_NAMESPACE_NAME.FILE_IDS}`;
-    const keyName : string = `${entity.filename}:${entity.mime_type}:${entity.size}`; 
+    // 저장해야 하는 것은 두곳이다 하나라도 저장이 안되면 에러가 발생한다.
+    const fileIdNamespace: string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${entity.room_id}:${entity.user_id}:${CACHE_ROOM_MEMBER_SUB_NAMESPACE_NAME.FILE_IDS}`;
+    const keyName: string = `${entity.filename}:${entity.mime_type}:${entity.size}`;
 
-    const roomFileInfoNamespace : string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${entity.room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.FILES}`;
+    const roomFileInfoNamespace: string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${entity.room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.FILES}`;
     const fileInfoData = JSON.stringify({
-      [CACHE_ROOM_FILES_KEY_PROPS_NAME.FILENAME] : entity.filename,
-      [CACHE_ROOM_FILES_KEY_PROPS_NAME.MIME_TYPE] : entity.mime_type,
-      [CACHE_ROOM_FILES_KEY_PROPS_NAME.CATEGORY] : entity.category,
-      [CACHE_ROOM_FILES_KEY_PROPS_NAME.SIZE] : entity.size,
-      [CACHE_ROOM_FILES_KEY_PROPS_NAME.UPLOAD_ID] : entity.upload_id ?? null,
-      [CACHE_ROOM_FILES_KEY_PROPS_NAME.USER_ID] : entity.user_id,
-      [CACHE_ROOM_FILES_KEY_PROPS_NAME.NICKNAME] : entity.nickname,
-      [CACHE_ROOM_FILES_KEY_PROPS_NAME.STATUS] : "uploading"
+      [CACHE_ROOM_FILES_KEY_PROPS_NAME.FILENAME]: entity.filename,
+      [CACHE_ROOM_FILES_KEY_PROPS_NAME.MIME_TYPE]: entity.mime_type,
+      [CACHE_ROOM_FILES_KEY_PROPS_NAME.CATEGORY]: entity.category,
+      [CACHE_ROOM_FILES_KEY_PROPS_NAME.SIZE]: entity.size,
+      [CACHE_ROOM_FILES_KEY_PROPS_NAME.UPLOAD_ID]: entity.upload_id ?? null,
+      [CACHE_ROOM_FILES_KEY_PROPS_NAME.USER_ID]: entity.user_id,
+      [CACHE_ROOM_FILES_KEY_PROPS_NAME.NICKNAME]: entity.nickname,
+      [CACHE_ROOM_FILES_KEY_PROPS_NAME.STATUS]: 'uploading',
     });
 
     await this.cache
-    .multi()
-    .hSet(fileIdNamespace, keyName, entity.file_id) // 이 부분은 좀 만료가 있으면 다루기 편할것 같다. 
-    .expire(fileIdNamespace, 60 * 60) // 이게 맞는것 같다 ( 유저가 나갔다고 바로 없애기 보다는 유저가 다시 들어왔을때 편하게 올리는 용도이니까 남기고 1시간동안 건드리는게 없으면 그때 지워도 좋을것 같다. )
-    .hSet(roomFileInfoNamespace, entity.file_id, fileInfoData) // 이건좀 만료하면 않좋을것 같고 
-    .exec();
+      .multi()
+      .hSet(fileIdNamespace, keyName, entity.file_id) // 이 부분은 좀 만료가 있으면 다루기 편할것 같다.
+      .expire(fileIdNamespace, 60 * 60) // 이게 맞는것 같다 ( 유저가 나갔다고 바로 없애기 보다는 유저가 다시 들어왔을때 편하게 올리는 용도이니까 남기고 1시간동안 건드리는게 없으면 그때 지워도 좋을것 같다. )
+      .hSet(roomFileInfoNamespace, entity.file_id, fileInfoData) // 이건좀 만료하면 않좋을것 같고
+      .exec();
 
     return true;
-  };
-};
+  }
+}
 
-// 해당 파일의 상태를 업데이트 한다. 
+// 해당 파일의 상태를 업데이트 한다.
 @Injectable()
 export class UpdateFileInfoToRedis extends InsertDataToCache<RedisClientType<any, any>> {
-
   constructor(@Inject(REDIS_SERVER) cache: RedisClientType<any, any>) {
     super(cache);
-  };
+  }
 
   async insert(entity: CheckUploadFileDto): Promise<boolean> {
-    
-    const roomFileInfoNamespace : string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${entity.room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.FILES}`;
+    const roomFileInfoNamespace: string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${entity.room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.FILES}`;
 
     const result = await this.cache.hGet(roomFileInfoNamespace, entity.file_id);
 
-    if ( !result ) return false;
+    if (!result) return false;
 
     try {
       const obj = JSON.parse(result) as Record<string, any>;
 
       // status를 변경
-      obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.STATUS] = "completed";
+      obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.STATUS] = 'completed';
 
-      await this.cache.hSet(
-        roomFileInfoNamespace,
-        entity.file_id,
-        JSON.stringify(obj),
-      );
+      await this.cache.hSet(roomFileInfoNamespace, entity.file_id, JSON.stringify(obj));
 
       return true;
     } catch {
-      // JSON이 깨져 있으면 불량 데이터는 삭제한다. 
+      // JSON이 깨져 있으면 불량 데이터는 삭제한다.
       await this.cache.hDel(roomFileInfoNamespace, entity.file_id);
       return false;
-    };
-
-  };
-
-};
+    }
+  }
+}

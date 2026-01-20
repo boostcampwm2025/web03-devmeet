@@ -60,8 +60,8 @@ import { CompleteUploadToAwsS3 } from './adapters/disk.outbound';
     CompleteUploadToAwsS3,
     GetCompleteMultipartTagsFromAwsS3,
     GetPresingendUrlsFromAwsS3,
-    GetDownloadUrlFromS3Client, 
-    GetThumnailUrlFromS3Client
+    GetDownloadUrlFromS3Client,
+    GetThumnailUrlFromS3Client,
   ],
 })
 export class S3DiskModule {}

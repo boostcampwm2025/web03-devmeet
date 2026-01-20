@@ -9,7 +9,6 @@ import { importJWK, JWK, SignJWT } from 'jose';
 import { randomUUID } from 'crypto';
 import { v7 as UUidv7 } from 'uuid';
 
-
 @Injectable()
 export class CompareRoomArgonHash implements CompareHash {
   constructor() {}
@@ -47,7 +46,7 @@ export class MakeIssueToolTicket extends MakeToken {
     const token = await new SignJWT({
       room_id: payload.room_id,
       tool: payload.tool,
-      nickname : payload.nickname,
+      nickname: payload.nickname,
       socket_id: payload.socket_id,
       scope: ['tool:open'],
     })

@@ -7,7 +7,11 @@ import {
 } from '@app/room/commands/usecase';
 import { Module } from '@nestjs/common';
 import { SelectRoomDataFromMysql } from '@infra/db/mysql/room/room.inbound';
-import { CompareRoomArgonHash, MakeFileIdGenerator, MakeIssueToolTicket } from './signaling.interface';
+import {
+  CompareRoomArgonHash,
+  MakeFileIdGenerator,
+  MakeIssueToolTicket,
+} from './signaling.interface';
 import {
   CheckRoomMemberFromRedis,
   CheckRoomUserFromRedis,
@@ -44,9 +48,17 @@ import { ConfigService } from '@nestjs/config';
 import { TOOL_LEFT_TOPIC_NAME } from './signaling.validate';
 import { EVENT_STREAM_NAME } from '@infra/event-stream/event-stream.constants';
 import { KafkaService } from '@infra/event-stream/kafka/event-stream-service';
-import { CheckPresignedUrlFromAwsS3, CheckUploadDatasFromAwsS3, GetCompleteMultipartTagsFromAwsS3, GetDownloadUrlFromS3Client, GetMultipartUploadIdFromS3Bucket, GetPresignedUrlFromS3Bucket, GetPresignedUrlsFromS3Bucket, GetThumnailUrlFromS3Client } from '@infra/disk/s3/adapters/disk.inbound';
+import {
+  CheckPresignedUrlFromAwsS3,
+  CheckUploadDatasFromAwsS3,
+  GetCompleteMultipartTagsFromAwsS3,
+  GetDownloadUrlFromS3Client,
+  GetMultipartUploadIdFromS3Bucket,
+  GetPresignedUrlFromS3Bucket,
+  GetPresignedUrlsFromS3Bucket,
+  GetThumnailUrlFromS3Client,
+} from '@infra/disk/s3/adapters/disk.inbound';
 import { CompleteUploadToAwsS3 } from '@/3-1.infra/disk/s3/adapters/disk.outbound';
-
 
 @Module({
   imports: [AuthWebsocketModule, SfuModule],
@@ -183,71 +195,78 @@ import { CompleteUploadToAwsS3 } from '@/3-1.infra/disk/s3/adapters/disk.outboun
 
     // 파일을 업로드하기전에 url을 받는 로직
     {
-      provide : UploadFileUsecase,
-      useFactory : (
-        checkUserAndSelectPrevFileInfoFromCache : CheckUserAndSelectPrevFileInfoFromRedis,
-        makeFileId : MakeFileIdGenerator,
-        getUploadUrlFromDisk : GetPresignedUrlFromS3Bucket,
-        getCompleteUploadUrlFromDisk : GetCompleteMultipartTagsFromAwsS3,
-        getMultiVerGroupIdFromDisk : GetMultipartUploadIdFromS3Bucket, 
-        getUploadUrlsFromDisk : GetPresignedUrlsFromS3Bucket,
-        insertFileInfoToCache : InsertFileInfoToRedis
+      provide: UploadFileUsecase,
+      useFactory: (
+        checkUserAndSelectPrevFileInfoFromCache: CheckUserAndSelectPrevFileInfoFromRedis,
+        makeFileId: MakeFileIdGenerator,
+        getUploadUrlFromDisk: GetPresignedUrlFromS3Bucket,
+        getCompleteUploadUrlFromDisk: GetCompleteMultipartTagsFromAwsS3,
+        getMultiVerGroupIdFromDisk: GetMultipartUploadIdFromS3Bucket,
+        getUploadUrlsFromDisk: GetPresignedUrlsFromS3Bucket,
+        insertFileInfoToCache: InsertFileInfoToRedis,
       ) => {
         return new UploadFileUsecase({
-          checkUserAndSelectPrevFileInfoFromCache, makeFileId, getUploadUrlFromDisk, getCompleteUploadUrlFromDisk, getMultiVerGroupIdFromDisk, getUploadUrlsFromDisk, insertFileInfoToCache
-        })
+          checkUserAndSelectPrevFileInfoFromCache,
+          makeFileId,
+          getUploadUrlFromDisk,
+          getCompleteUploadUrlFromDisk,
+          getMultiVerGroupIdFromDisk,
+          getUploadUrlsFromDisk,
+          insertFileInfoToCache,
+        });
       },
-      inject : [
+      inject: [
         CheckUserAndSelectPrevFileInfoFromRedis,
         MakeFileIdGenerator,
         GetPresignedUrlFromS3Bucket,
         GetCompleteMultipartTagsFromAwsS3,
         GetMultipartUploadIdFromS3Bucket,
         GetPresignedUrlsFromS3Bucket,
-        InsertFileInfoToRedis
-      ]
+        InsertFileInfoToRedis,
+      ],
     },
 
-    // 파일의 업로드를 확인하는 usecase 
+    // 파일의 업로드를 확인하는 usecase
     {
-      provide : CheckUploadFileUsecase,
-      useFactory : (
-        checkUserAndSelectFileInfoFromCache : CheckUserAndSelectFileInfoFromRedis,
-        checkUploadFromDisk : CheckPresignedUrlFromAwsS3,
-        checkUploadsFromDisk : CheckUploadDatasFromAwsS3,
-        completeUploadToDisk : CompleteUploadToAwsS3,
-        updateFileInfoToCache : UpdateFileInfoToRedis,
-        getUploadUrlFromDisk : GetThumnailUrlFromS3Client,
+      provide: CheckUploadFileUsecase,
+      useFactory: (
+        checkUserAndSelectFileInfoFromCache: CheckUserAndSelectFileInfoFromRedis,
+        checkUploadFromDisk: CheckPresignedUrlFromAwsS3,
+        checkUploadsFromDisk: CheckUploadDatasFromAwsS3,
+        completeUploadToDisk: CompleteUploadToAwsS3,
+        updateFileInfoToCache: UpdateFileInfoToRedis,
+        getUploadUrlFromDisk: GetThumnailUrlFromS3Client,
       ) => {
         return new CheckUploadFileUsecase({
-          checkUserAndSelectFileInfoFromCache, checkUploadFromDisk, checkUploadsFromDisk, completeUploadToDisk, updateFileInfoToCache, getUploadUrlFromDisk
-        })
-      }, 
-      inject : [
+          checkUserAndSelectFileInfoFromCache,
+          checkUploadFromDisk,
+          checkUploadsFromDisk,
+          completeUploadToDisk,
+          updateFileInfoToCache,
+          getUploadUrlFromDisk,
+        });
+      },
+      inject: [
         CheckUserAndSelectFileInfoFromRedis,
         CheckPresignedUrlFromAwsS3,
         CheckUploadDatasFromAwsS3,
         CompleteUploadToAwsS3,
         UpdateFileInfoToRedis,
-        GetThumnailUrlFromS3Client
-      ]
+        GetThumnailUrlFromS3Client,
+      ],
     },
 
     // 파일 자체를 다운로드할 수 있는 usecase
     {
-      provide : DownLoadFileUsecase,
-      useFactory : (
-        checkRoomMemberFromCache : CheckRoomMemberFromRedis,
-        getUploadUrlFromDisk : GetDownloadUrlFromS3Client, 
+      provide: DownLoadFileUsecase,
+      useFactory: (
+        checkRoomMemberFromCache: CheckRoomMemberFromRedis,
+        getUploadUrlFromDisk: GetDownloadUrlFromS3Client,
       ) => {
-        return new DownLoadFileUsecase({ checkRoomMemberFromCache, getUploadUrlFromDisk })
+        return new DownLoadFileUsecase({ checkRoomMemberFromCache, getUploadUrlFromDisk });
       },
-      inject : [
-        CheckRoomMemberFromRedis,
-        GetDownloadUrlFromS3Client
-      ]
-    }
-
+      inject: [CheckRoomMemberFromRedis, GetDownloadUrlFromS3Client],
+    },
   ],
 })
 export class SignalingWebsocketModule {}

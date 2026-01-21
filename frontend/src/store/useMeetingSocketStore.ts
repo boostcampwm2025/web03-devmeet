@@ -1,7 +1,17 @@
-import { IsProducing, MediasoupTransports, Producers } from '@/types/media';
+import {
+  IsProducing,
+  MediasoupTransports,
+  MemberConsumer,
+  Producers,
+} from '@/types/meeting';
 import { initSendTransport } from '@/utils/initSendTransport';
 import { Device } from 'mediasoup-client';
-import { Producer, Transport } from 'mediasoup-client/types';
+import {
+  Consumer,
+  MediaKind,
+  Producer,
+  Transport,
+} from 'mediasoup-client/types';
 import { Socket } from 'socket.io-client';
 import { create } from 'zustand';
 
@@ -12,6 +22,7 @@ interface MeetingSocketState {
   recvTransport: Transport | null;
   producers: Producers;
   isProducing: IsProducing;
+  consumers: Record<string, MemberConsumer>;
 }
 
 interface MeetingSocketAction {
@@ -24,6 +35,9 @@ interface MeetingSocketAction {
 
   setProducer: (type: keyof Producers, producer: Producer | null) => void;
   setIsProducing: (type: keyof IsProducing, state: boolean) => void;
+
+  addConsumer: (userId: string, kind: MediaKind, consumer: Consumer) => void;
+  removeConsumer: (userId: string) => void;
 }
 
 export const useMeetingSocketStore = create<
@@ -43,6 +57,8 @@ export const useMeetingSocketStore = create<
 
   isProducing: { audio: false, video: false, screen: false },
 
+  consumers: {},
+
   setSocket: (socket) => set({ socket }),
   setMediasoupTransports: (socket, transports) => {
     initSendTransport(socket, transports.sendTransport);
@@ -52,4 +68,30 @@ export const useMeetingSocketStore = create<
     set((prev) => ({ producers: { ...prev.producers, [type]: producer } })),
   setIsProducing: (type, state) =>
     set((prev) => ({ isProducing: { ...prev.isProducing, [type]: state } })),
+
+  addConsumer: (userId, kind, consumer) =>
+    set((prev) => ({
+      consumers: {
+        ...prev.consumers,
+        [userId]: {
+          ...prev.consumers[userId],
+          [kind]: consumer,
+        },
+      },
+    })),
+  removeConsumer: (userId) =>
+    set((prev) => {
+      const targetMember = prev.consumers[userId];
+
+      if (targetMember) {
+        targetMember.audio?.close();
+        targetMember.video?.close();
+      }
+
+      const { [userId]: _, ...remainingConsumers } = prev.consumers;
+
+      return {
+        consumers: remainingConsumers,
+      };
+    }),
 }));

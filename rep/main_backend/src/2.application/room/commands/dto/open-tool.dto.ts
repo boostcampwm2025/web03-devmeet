@@ -2,6 +2,7 @@ export type OpenToolDto = {
   room_id: string;
   user_id: string;
   socket_id: string;
+  nickname: string;
   tool: 'whiteboard' | 'codeeditor';
 };
 

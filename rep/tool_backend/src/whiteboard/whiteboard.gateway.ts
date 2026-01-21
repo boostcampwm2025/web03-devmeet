@@ -13,17 +13,16 @@ import { Server, Socket } from 'socket.io';
 import {
   WHITEBOARD_CLIENT_EVENT_NAME,
   WHITEBOARD_EVENT_NAME,
-  WHITEBOARD_GROUP,
 } from './whiteboard.constants';
 import { WhiteboardService } from './whiteboard.service';
 import { KafkaService } from '@/infra/event-stream/kafka/event-stream.service';
 import { EVENT_STREAM_NAME } from '@/infra/event-stream/event-stream.constants';
 import { WhiteboardWebsocket } from '@/infra/websocket/whiteboard/whiteboard.service';
 
-// 아래쪽에 whiteboard 관련 @Submessage를 붙이셔서 해주시면 될것 같아요 ㅎㅎ
+
 @WebSocketGateway({
-  namespace: process.env.NODE_BACKEND_WEBSOCKET_PREFIX,
-  path: process.env.NODE_BACKEND_WEBSOCKET_WHITEBOARD, // http 핸드세이킹이 있을때 붙게 되는
+  namespace: process.env.NODE_BACKEND_WEBSOCKET_WHITEBOARD,
+  path: process.env.NODE_BACKEND_WEBSOCKET_PREFIX, // http 핸드세이킹이 있을때 붙게 되는
   cors: {
     origin: process.env.NODE_ALLOWED_ORIGIN?.split(',').map((origin) => origin.trim()),
     credentials: process.env.NODE_ALLOWED_CREDENTIALS === 'true',

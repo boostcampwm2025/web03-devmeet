@@ -1,5 +1,5 @@
 import { InsertToolInfoData, OpenToolDto } from '@app/room/commands/dto';
-import { MakeToken } from '@app/ports/share';
+import { MakeFileIdPort, MakeToken } from '@app/ports/share';
 import { CompareHash } from '@domain/shared';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -7,6 +7,7 @@ import * as argon from 'argon2';
 import { NotValiedTickeKey } from '@error/presentation/signalling/signalling.error';
 import { importJWK, JWK, SignJWT } from 'jose';
 import { randomUUID } from 'crypto';
+import { v7 as UUidv7 } from 'uuid';
 
 @Injectable()
 export class CompareRoomArgonHash implements CompareHash {
@@ -45,6 +46,7 @@ export class MakeIssueToolTicket extends MakeToken {
     const token = await new SignJWT({
       room_id: payload.room_id,
       tool: payload.tool,
+      nickname: payload.nickname,
       socket_id: payload.socket_id,
       scope: ['tool:open'],
     })
@@ -62,5 +64,16 @@ export class MakeIssueToolTicket extends MakeToken {
       .sign(privateKey);
 
     return token;
+  }
+}
+
+// file_id를 만드는 로직
+@Injectable()
+export class MakeFileIdGenerator implements MakeFileIdPort {
+  constructor() {}
+
+  // room_id를 생성하기 위한 generator
+  make(): string {
+    return UUidv7();
   }
 }

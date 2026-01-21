@@ -6,10 +6,12 @@ import {
   CheckPresignedUrlFromAwsS3,
   CheckUploadDatasFromAwsS3,
   GetCompleteMultipartTagsFromAwsS3,
+  GetDownloadUrlFromS3Client,
   GetMultipartUploadIdFromS3Bucket,
   GetPresignedUrlFromS3Bucket,
   GetPresignedUrlsFromS3Bucket,
   GetPresingendUrlsFromAwsS3,
+  GetThumnailUrlFromS3Client,
 } from './adapters/disk.inbound';
 import { CompleteUploadToAwsS3 } from './adapters/disk.outbound';
 
@@ -45,6 +47,8 @@ import { CompleteUploadToAwsS3 } from './adapters/disk.outbound';
     CompleteUploadToAwsS3,
     GetCompleteMultipartTagsFromAwsS3,
     GetPresingendUrlsFromAwsS3,
+    GetDownloadUrlFromS3Client, // 다운로드에 필요한 url을 받는다.
+    GetThumnailUrlFromS3Client, // 섬네일 다운로드에 필요한 url
   ],
   exports: [
     S3_DISK,
@@ -56,6 +60,8 @@ import { CompleteUploadToAwsS3 } from './adapters/disk.outbound';
     CompleteUploadToAwsS3,
     GetCompleteMultipartTagsFromAwsS3,
     GetPresingendUrlsFromAwsS3,
+    GetDownloadUrlFromS3Client,
+    GetThumnailUrlFromS3Client,
   ],
 })
 export class S3DiskModule {}

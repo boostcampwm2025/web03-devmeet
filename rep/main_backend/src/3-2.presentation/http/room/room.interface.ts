@@ -1,5 +1,5 @@
-import { IdGenerator, MakeRandomStr } from '@/1.domain/shared';
-import { MakeHashPort } from '@/2.application/ports/share';
+import { IdGenerator, MakeRandomStr } from '@domain/shared';
+import { MakeFileIdPort, MakeHashPort } from '@app/ports/share';
 import { Injectable } from '@nestjs/common';
 import { v7 as UUidv7 } from 'uuid';
 import * as argon from 'argon2';

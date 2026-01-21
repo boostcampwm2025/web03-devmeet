@@ -2,13 +2,19 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsDefined,
   IsIn,
+  IsInt,
   IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
+  Matches,
+  Max,
   MaxLength,
+  Min,
   MinLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import type { RtpParameters, DtlsParameters, RtpCapabilities } from 'mediasoup/types';
@@ -181,7 +187,107 @@ export class PauseProducerValidate {
   @IsString()
   producer_id: string;
 
+  @IsNotEmpty()
   @IsString()
   @IsIn(['audio', 'video'])
   kind: 'audio' | 'video';
+}
+
+export class UploadFileValidate {
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(255)
+  @Matches(/^[^\\\/\0]+$/)
+  filename: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(300)
+  @Matches(/^[\w.+-]+\/[\w.+-]+$/)
+  mime_type: string;
+
+  @IsNotEmpty()
+  @IsIn(['image', 'video', 'audio', 'text', 'binary'])
+  category: 'image' | 'video' | 'audio' | 'text' | 'binary';
+
+  @IsInt()
+  @Min(1)
+  @Max(100 * 1024 * 1024)
+  size: number;
+}
+
+export class CheckUploadFileDirectPropsValidate {
+  @IsNotEmpty()
+  @IsString()
+  @Matches(/^[^\s]+$/)
+  etag!: string;
+}
+
+export class CheckUploadFileMultipartSubPropsValidate {
+  @IsInt()
+  @Min(1)
+  part_number!: number;
+
+  @IsNotEmpty()
+  @IsString()
+  @Matches(/^[^\s]+$/)
+  etag!: string;
+}
+
+export class CheckUploadFileMultipartPropsValidate {
+  @IsNotEmpty()
+  @IsString()
+  upload_id!: string;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => CheckUploadFileMultipartSubPropsValidate)
+  tags!: CheckUploadFileMultipartSubPropsValidate[];
+}
+
+export class CheckFileValidate {
+  @IsNotEmpty()
+  @IsString()
+  file_id!: string;
+
+  @IsNotEmpty()
+  @IsIn(['direct', 'multipart'])
+  type!: 'direct' | 'multipart';
+
+  @ValidateIf((o) => o.type === 'direct')
+  @IsDefined() // direct면 아래 검증이 있음
+  @ValidateNested()
+  @Type(() => CheckUploadFileDirectPropsValidate)
+  direct!: CheckUploadFileDirectPropsValidate;
+
+  @ValidateIf((o) => o.type === 'multipart')
+  @IsDefined() // multipart면 아래 검증이 있음
+  @ValidateNested()
+  @Type(() => CheckUploadFileMultipartPropsValidate)
+  multipart!: CheckUploadFileMultipartPropsValidate;
+}
+
+export type MessageResultProps = {
+  type: 'message' | 'file';
+  message: string | undefined; // message가 들어간다.
+  filename?: string;
+  size?: number;
+  category?: 'audio' | 'video' | 'image' | 'text' | 'binary';
+  thumnail_url?: string | undefined;
+  file_id?: string;
+  nickname: string;
+  user_id: string;
+};
+
+export class DownloadFileValidate {
+  @IsNotEmpty()
+  @IsString()
+  file_id: string;
+}
+
+export class SendMessageValidate {
+  @IsNotEmpty()
+  @MaxLength(1000)
+  message: string;
 }

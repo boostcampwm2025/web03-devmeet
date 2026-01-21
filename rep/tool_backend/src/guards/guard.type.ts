@@ -9,5 +9,6 @@ export type ToolBackendPayload = {
   tool: 'whiteboard' | 'codeeditor';
   socket_id: string;
   ticket: string;
+  nickname: string;
   clientType: 'main' | 'sub';
 };

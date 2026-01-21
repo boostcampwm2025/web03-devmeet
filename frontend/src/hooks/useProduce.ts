@@ -16,10 +16,10 @@ export const useProduce = () => {
 
   const startAudioProduce = async () => {
     // 함수가 호출되었을 시점의 값을 위해 getState() 사용
-    const { producers, isProducing } = useMeetingSocketStore.getState();
+    const { isProducing } = useMeetingSocketStore.getState();
 
     // 이미 Producer가 있거나, 현재 생성 중이라면(strictMode로 인한 2번 호출 방지) 리턴
-    if (!helpers || producers.audioProducer || isProducing.audio) {
+    if (!helpers || isProducing.audio) {
       return;
     }
 
@@ -50,24 +50,18 @@ export const useProduce = () => {
     const { audioProducer } = useMeetingSocketStore.getState().producers;
 
     if (socket && audioProducer) {
-      // Mediasoup 전송 중단
-      audioProducer.close();
-      // 실제 하드웨어 정지
-      audioProducer.track?.stop();
       // 서버에 OFF 신호 전달
       socket.emit('signaling:ws:produce_off', {
         producer_id: audioProducer.id,
         kind: 'audio',
       });
-
-      setProducer('audioProducer', null);
       setMedia({ audioOn: false });
     }
   };
 
   const startVideoProduce = async () => {
-    const { producers, isProducing } = useMeetingSocketStore.getState();
-    if (!helpers || producers.videoProducer || isProducing.video) {
+    const { isProducing } = useMeetingSocketStore.getState();
+    if (!helpers || isProducing.video) {
       return;
     }
 
@@ -99,9 +93,6 @@ export const useProduce = () => {
         producer_id: videoProducer.id,
         kind: 'video',
       });
-      videoProducer.close();
-      videoProducer.track?.stop();
-      setProducer('videoProducer', null);
       setMedia({ videoOn: false });
     }
   };

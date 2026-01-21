@@ -56,6 +56,27 @@ export default function CodeEditor({
     const yLanguage = ydoc.getMap<LanguageState>('language');
     const yText = ydoc.getText('monaco');
     const awareness = new awarenessProtocol.Awareness(ydoc);
+    const remoteOrigin = Symbol('remote');
+
+    editor.getModel()?.pushStackElement();
+
+    const model = editor.getModel();
+    if (!model) return;
+
+    const { MonacoBinding } = await import('y-monaco');
+    // 양방향 바인딩 해주기
+    const binding = new MonacoBinding(
+      yText, // 원본 데이터
+      model, // 실제 에디터에 보이는 코드
+      new Set([editor]), // 바인딩할 에디터 인스턴스들
+      awareness, // 여기서 다른 유저들의 위치 정보를 받아온다.
+    );
+
+    const undoManager = new Y.UndoManager(yText, {
+      // 보통 y-monaco 바인딩 인스턴스를 지정 -> 내 키보드 입력만 추적하게
+      trackedOrigins: new Set([binding]),
+      captureTimeout: 500, // 0.5초 이내의 연속 입력은 하나의 Undo 단위로 묶음
+    });
 
     providerRef.current = { ydoc, awareness };
 
@@ -74,7 +95,9 @@ export default function CodeEditor({
     });
 
     // Yjs -> Socket
-    ydoc.on('update', (update: Uint8Array) => {
+    ydoc.on('update', (update: Uint8Array, origin) => {
+      if (origin === remoteOrigin) return;
+
       socket.emit('yjs-update', update);
     });
 
@@ -88,7 +111,10 @@ export default function CodeEditor({
 
     // Socket -> Yjs
     socket.on('yjs-update', (update: ArrayBuffer) => {
-      Y.applyUpdate(ydoc, new Uint8Array(update));
+      // 트랜잭션 분리
+      ydoc.transact(() => {
+        Y.applyUpdate(ydoc, new Uint8Array(update));
+      }, remoteOrigin); // remote -> 로컬 수정과 구분
     });
 
     // Socket -> Awareness
@@ -106,16 +132,20 @@ export default function CodeEditor({
       socket.emit('yjs-update', fullUpdate);
     });
 
-    const model = editor.getModel();
-    if (!model) return;
+    // 모나코 에디터 단축키 오버라이딩
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyZ, () => {
+      undoManager.undo();
+    });
 
-    const { MonacoBinding } = await import('y-monaco');
-    // 양방향 바인딩 해주기
-    const binding = new MonacoBinding(
-      yText, // 원본 데이터
-      model, // 실제 에디터에 보이는 코드
-      new Set([editor]), // 바인딩할 에디터 인스턴스들
-      awareness, // 여기서 다른 유저들의 위치 정보를 받아온다.
+    // 윈도우/맥 Redo 대응 (Ctrl+Y 또는 Ctrl+Shift+Z)
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyY, () => {
+      undoManager.redo();
+    });
+    editor.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyZ,
+      () => {
+        undoManager.redo();
+      },
     );
 
     // 커서 렌더링만 담당
@@ -222,6 +252,7 @@ export default function CodeEditor({
     });
 
     cleanupRef.current = () => {
+      undoManager.destroy();
       binding.destroy();
       socket.disconnect();
       ydoc.destroy();

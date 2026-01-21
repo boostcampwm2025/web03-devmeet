@@ -23,7 +23,8 @@ import {
   ProviderToolInfo,
 } from '@/types/meeting';
 import { createConsumeHelpers } from '@/utils/createConsumeHelpers';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import VideoView from './media/VideoView';
 
 export default function MeetingRoom({ meetingId }: { meetingId: string }) {
   const {
@@ -50,6 +51,15 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
   const { joinCodeEditor } = useCodeEditorSocket();
   const { socket: mainSocket } = useMeetingSocket();
   const { codeEditorSocket } = useToolSocketStore();
+
+  const [screenSharer, setScreenSharer] = useState<{
+    id: string;
+    nickname: string;
+  } | null>(null);
+
+  const screenStream = useMeetingStore((state) =>
+    screenSharer ? state.memberStreams[screenSharer.id]?.video : null,
+  );
 
   useEffect(() => {
     if (!codeEditorSocket) {
@@ -83,7 +93,7 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
 
   // 초기 입장 시 로비에서 설정한 미디어 Produce
   useEffect(() => {
-    if (!isReady || !socket || !userId) return;
+    if (!isReady || !socket || !userId || !device || !recvTransport) return;
 
     const { audioOn, videoOn } = media;
 
@@ -99,6 +109,49 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
         setMembers(members.filter((member) => member.user_id !== userId));
 
         if (!main) return;
+
+        const { consumeOne } = createConsumeHelpers({
+          socket,
+          device,
+          recvTransport,
+        });
+
+        const checkAndConsumeScreen = async (
+          info: ProviderInfo | ProviderToolInfo | null,
+        ) => {
+          if (!info) return;
+
+          // 화면공유 상태면
+          if (
+            'type' in info &&
+            (info.type === 'screen_audio' || info.type === 'screen_video')
+          ) {
+            console.log(
+              `[화면 공유 감지] ${info.nickname}님의 공유를 수신합니다.`,
+            );
+            setScreenSharer({ id: info.user_id, nickname: info.nickname });
+
+            const screenProducerInfo: ProducerInfo = {
+              producer_id: info.provider_id,
+              user_id: info.user_id,
+              status: 'main', // 화면 공유는 메인
+              kind: info.kind,
+              type: info.type,
+              nickname: info.nickname,
+              is_paused: false,
+            };
+
+            try {
+              const { consumer, kind, stream } =
+                await consumeOne(screenProducerInfo);
+
+              addConsumer(info.user_id, kind, consumer);
+              setMemberStream(info.user_id, kind, stream);
+            } catch (err) {
+              console.error('화면 공유 데이터 수신 실패:', err);
+            }
+          }
+        };
 
         const checkAndJoinTool = (
           info: ProviderInfo | ProviderToolInfo | null,
@@ -117,13 +170,18 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
 
         checkAndJoinTool(main.main);
         checkAndJoinTool(main.sub);
+
+        await Promise.all([
+          checkAndConsumeScreen(main.main),
+          checkAndConsumeScreen(main.sub),
+        ]);
       } catch (error) {
         console.error('에러 발생:', error);
       }
     };
 
     initRoom();
-  }, [isReady, socket]);
+  }, [isReady, socket, device, recvTransport]);
 
   // 입장, 퇴장하는 사용자 처리
   useEffect(() => {
@@ -132,15 +190,29 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
     const onNewUser = async (userInfo: MeetingMemberInfo) => {
       addMember(userInfo);
     };
-    socket.on('room:new_user', onNewUser);
+
     const onUserClosed = async (userId: string) => {
+      setScreenSharer((prev) => (prev?.id === userId ? null : prev));
+
       removeMember(userId);
       removeConsumer(userId);
     };
+
+    const onScreenStop = ({ main, sub }: { main: boolean; sub: boolean }) => {
+      setScreenSharer((prev) => {
+        if (!prev) return null;
+        if (main || sub) return null;
+        return prev;
+      });
+    };
+
+    socket.on('room:new_user', onNewUser);
     socket.on('room:user_closed', onUserClosed);
+    socket.on('room:screen_stop', onScreenStop);
     return () => {
       socket.off('room:new_user', onNewUser);
       socket.off('room:user_closed', onUserClosed);
+      socket.off('room:screen_stop', onScreenStop);
     };
   }, [socket]);
 
@@ -157,6 +229,8 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
       const {
         user_id: producerId,
         kind: producerKind,
+        type: producerType,
+        nickname: producerNickname,
         is_paused: isPaused,
       } = producerInfo;
 
@@ -187,6 +261,16 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
 
           addConsumer(producerId, kind, consumer);
           setMemberStream(producerId, kind, stream);
+
+          if (
+            producerType === 'screen_video' ||
+            producerType === 'screen_audio'
+          ) {
+            console.log(
+              `[실시간 화면 공유 감지] ${producerNickname}님이 공유를 시작했습니다.`,
+            );
+            setScreenSharer({ id: producerId, nickname: producerNickname });
+          }
         } catch (error) {
           console.error('신규 컨슈머 생성 실패:', error);
         }
@@ -208,6 +292,17 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
       <section className="relative flex-1 overflow-hidden">
         {/* 워크스페이스 / 코드 에디터 등의 컴포넌트가 들어갈 공간 */}
         <div className="flex h-full w-full overflow-hidden">
+          {screenStream && (
+            <div className="group flex-center relative aspect-video w-full rounded-lg bg-neutral-700">
+              <div className="flex-center h-full w-full overflow-hidden rounded-lg">
+                <VideoView stream={screenStream} mirrored={false} />
+                <div className="absolute bottom-6 left-10 rounded-md bg-black/60 px-3 py-1.5 text-sm font-medium text-white">
+                  {screenSharer?.nickname}님의 화면
+                </div>
+              </div>
+            </div>
+          )}
+
           {isWhiteboardOpen && (
             <div
               className={isCodeEditorOpen ? 'h-full w-1/2' : 'h-full w-full'}

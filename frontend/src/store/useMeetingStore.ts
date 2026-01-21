@@ -19,7 +19,7 @@ interface MeetingState {
   isInfoOpen: boolean;
   isMemberOpen: boolean;
   isChatOpen: boolean;
-  isWorkspaceOpen: boolean;
+  isWhiteboardOpen: boolean;
   isCodeEditorOpen: boolean;
 }
 
@@ -44,7 +44,7 @@ interface MeetingActions {
       | 'isInfoOpen'
       | 'isMemberOpen'
       | 'isChatOpen'
-      | 'isWorkspaceOpen'
+      | 'isWhiteboardOpen'
       | 'isCodeEditorOpen'
     >,
     state: boolean,
@@ -60,7 +60,7 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
   isInfoOpen: false,
   isMemberOpen: false,
   isChatOpen: false,
-  isWorkspaceOpen: false,
+  isWhiteboardOpen: false,
   isCodeEditorOpen: false,
 
   setMedia: (media) => set((prev) => ({ media: { ...prev.media, ...media } })),

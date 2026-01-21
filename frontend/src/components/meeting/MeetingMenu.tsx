@@ -31,7 +31,7 @@ export default function MeetingMenu() {
     isInfoOpen,
     isChatOpen,
     isMemberOpen,
-    isWorkspaceOpen,
+    isWhiteboardOpen,
     isCodeEditorOpen,
     setIsOpen,
   } = useMeetingStore();
@@ -87,7 +87,7 @@ export default function MeetingMenu() {
   };
 
   const onWorkspaceClick = () => {
-    setIsOpen('isWorkspaceOpen', !isWorkspaceOpen);
+    setIsOpen('isWhiteboardOpen', !isWhiteboardOpen);
   };
 
   const onCodeEditorClick = () => {
@@ -168,7 +168,7 @@ export default function MeetingMenu() {
         <MeetingButton
           icon={<WorkspaceIcon className="h-8 w-8" />}
           text="워크스페이스"
-          isActive={isWorkspaceOpen}
+          isActive={isWhiteboardOpen}
           onClick={onWorkspaceClick}
         />
         <MeetingButton

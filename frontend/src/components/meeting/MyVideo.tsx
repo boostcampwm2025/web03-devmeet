@@ -1,38 +1,49 @@
 import { MoreHoriIcon } from '@/assets/icons/common';
 import { MicOffIcon } from '@/assets/icons/meeting';
 import VideoView from '@/components/meeting/media/VideoView';
+import { useVoiceActivity } from '@/hooks/useVoiceActivity';
+import { useMeetingSocketStore } from '@/store/useMeetingSocketStore';
 import { useMeetingStore } from '@/store/useMeetingStore';
-import { MeetingMemberInfo } from '@/types/meeting';
+import { useUserStore } from '@/store/useUserStore';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
-export default function SmVideo({
-  user_id,
-  nickname,
-  profile_path,
-  cam,
-  mic,
-}: MeetingMemberInfo) {
+export default function MyVideo() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const onMoreClick = () => setIsDropdownOpen((prev) => !prev);
 
-  const streams = useMeetingStore((state) => state.memberStreams[user_id]);
+  const { media } = useMeetingStore();
+  const { nickname, profilePath } = useUserStore();
+  const { producers } = useMeetingSocketStore();
+
+  // 영상 정보 가져오기
+  const localStream = useMemo(() => {
+    const track = producers.videoProducer?.track;
+    if (!track) return null;
+    return new MediaStream([track]);
+  }, [producers.videoProducer]);
+
+  // 마이크 소리 감지
+  const isSpeaking = useVoiceActivity(producers.audioProducer?.track);
 
   return (
-    <div
-      className={`group flex-center relative aspect-video w-40 rounded-lg bg-neutral-700`}
-    >
+    <div className="group flex-center relative aspect-video w-40 rounded-lg bg-neutral-700">
+      {/* 테두리 영역 */}
+      {media.audioOn && isSpeaking && (
+        <div className="pointer-events-none absolute inset-0 z-10 rounded-lg border-3 border-sky-500" />
+      )}
+
       {/* 영상 */}
-      {streams?.video ? (
+      {media.videoOn && localStream ? (
         <div className="flex-center h-full w-full overflow-hidden rounded-lg">
-          <VideoView stream={streams.video} />
+          <VideoView stream={localStream} />
         </div>
-      ) : profile_path ? (
+      ) : profilePath ? (
         <Image
           width={64}
           height={64}
           className="aspect-square w-16 rounded-full object-cover"
-          src={profile_path}
+          src={profilePath}
           alt={`${nickname}님의 프로필 사진`}
         />
       ) : (
@@ -43,7 +54,7 @@ export default function SmVideo({
 
       {/* 이름표 */}
       <div className="absolute bottom-2 left-2 flex max-w-[calc(100%-16px)] items-center gap-1 rounded-sm bg-neutral-900 p-1">
-        {!streams?.audio && <MicOffIcon className="h-3 w-3 shrink-0" />}
+        {!media.audioOn && <MicOffIcon className="h-3 w-3 shrink-0" />}
         <span className="ellipsis w-full text-xs font-bold text-neutral-200">
           {nickname}
         </span>

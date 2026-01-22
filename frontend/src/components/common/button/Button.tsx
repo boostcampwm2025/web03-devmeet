@@ -23,7 +23,7 @@ const style: {
     primary: 'bg-sky-600 text-white hover:bg-sky-700', // sky
     secondary: 'bg-sky-700 text-white', // dark-sky
     outlinePrimary: 'bg-white border border-sky-600 text-sky-600',
-    disabled: 'bg-neutral-500 text-white', // ex. 취소 버튼
+    disabled: 'bg-neutral-100 text-neutral-400', // ex. 취소 버튼
   },
 };
 

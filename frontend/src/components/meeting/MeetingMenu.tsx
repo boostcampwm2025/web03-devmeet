@@ -16,6 +16,7 @@ import {
 } from '@/assets/icons/meeting';
 import Modal from '@/components/common/Modal';
 import MeetingButton from '@/components/meeting/MeetingButton';
+import { useCodeEditorSocket } from '@/hooks/useCodeEditorSocket';
 import { useProduce } from '@/hooks/useProduce';
 import { useMeetingStore } from '@/store/useMeetingStore';
 import { useRouter } from 'next/navigation';
@@ -30,9 +31,10 @@ export default function MeetingMenu() {
     isInfoOpen,
     isChatOpen,
     isMemberOpen,
-    isWorkspaceOpen,
+    isWhiteboardOpen,
     isCodeEditorOpen,
     setIsOpen,
+    screenSharer,
   } = useMeetingStore();
   const {
     startAudioProduce,
@@ -42,6 +44,12 @@ export default function MeetingMenu() {
     startScreenProduce,
     stopScreenProduce,
   } = useProduce();
+
+  const { openCodeEditor, closeCodeEditor } = useCodeEditorSocket();
+
+  const isMeSharing = media.screenShareOn;
+  const isSomeoneSharing = screenSharer !== null;
+  const isDisabledSharing = isSomeoneSharing && !isMeSharing;
 
   const toggleAudio = async () => {
     const { audioOn } = useMeetingStore.getState().media;
@@ -75,20 +83,24 @@ export default function MeetingMenu() {
   };
 
   const onScreenShareClick = async () => {
-    const { screenShareOn } = useMeetingStore.getState().media;
-    if (screenShareOn) {
+    if (isMeSharing) {
       stopScreenProduce();
     } else {
+      if (isSomeoneSharing) return;
       await startScreenProduce();
     }
   };
 
   const onWorkspaceClick = () => {
-    setIsOpen('isWorkspaceOpen', !isWorkspaceOpen);
+    setIsOpen('isWhiteboardOpen', !isWhiteboardOpen);
   };
 
   const onCodeEditorClick = () => {
-    setIsOpen('isCodeEditorOpen', !isCodeEditorOpen);
+    if (isCodeEditorOpen) {
+      closeCodeEditor();
+      return;
+    }
+    openCodeEditor();
   };
 
   const router = useRouter();
@@ -157,11 +169,12 @@ export default function MeetingMenu() {
           text="화면 공유"
           isActive={useMeetingStore.getState().media.screenShareOn}
           onClick={onScreenShareClick}
+          disabled={isDisabledSharing}
         />
         <MeetingButton
           icon={<WorkspaceIcon className="h-8 w-8" />}
           text="워크스페이스"
-          isActive={isWorkspaceOpen}
+          isActive={isWhiteboardOpen}
           onClick={onWorkspaceClick}
         />
         <MeetingButton

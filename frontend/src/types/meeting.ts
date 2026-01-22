@@ -35,7 +35,7 @@ export interface IsProducing {
   screen: boolean;
 }
 
-interface ProviderInfo {
+export interface ProviderInfo {
   user_id: string;
   nickname: string;
   provider_id: string;
@@ -43,7 +43,7 @@ interface ProviderInfo {
   type: 'mic' | 'cam' | 'screen_video' | 'screen_audio';
 }
 
-interface ProviderToolInfo {
+export interface ProviderToolInfo {
   user_id: string;
   tool: 'whiteboard' | 'codeeditor';
 }

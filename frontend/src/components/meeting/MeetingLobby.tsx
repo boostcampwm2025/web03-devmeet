@@ -24,11 +24,16 @@ export default function MeetingLobby({
 
   // 비회원 닉네임 확인 로직
   const [isNicknameError, setIsNicknameError] = useState(false);
+
   const onButtonClick = () => {
     if (isLoggedIn) {
       onJoin(nickname);
     } else {
-      if (tempNickname.trim()) {
+      if (
+        tempNickname.trim() &&
+        tempNickname.length >= 1 &&
+        tempNickname.length <= 16
+      ) {
         onJoin(tempNickname);
       } else {
         setIsNicknameError(true);
@@ -79,7 +84,7 @@ export default function MeetingLobby({
           onCancel={() => setIsNicknameError(false)}
           isLightMode
         >
-          닉네임을 입력해주세요
+          닉네임은 1자 이상, 16자 이하로 입력해주세요.
         </Modal>
       )}
     </main>

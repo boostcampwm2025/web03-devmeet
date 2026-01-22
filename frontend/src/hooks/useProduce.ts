@@ -152,13 +152,16 @@ export const useProduce = () => {
       useMeetingSocketStore.getState().producers;
 
     if (socket && screenVideoProducer) {
-      screenVideoProducer.close();
-      screenAudioProducer?.close();
-      screenVideoProducer.track?.stop();
-      screenAudioProducer?.track?.stop();
-      setProducer('screenVideoProducer', null);
-      setProducer('screenAudioProducer', null);
-      setMedia({ screenShareOn: false });
+      socket.emit('signaling:ws:screen_stop', () => {
+        screenVideoProducer.close();
+        screenAudioProducer?.close();
+        screenVideoProducer.track?.stop();
+        screenAudioProducer?.track?.stop();
+
+        setProducer('screenVideoProducer', null);
+        setProducer('screenAudioProducer', null);
+        setMedia({ screenShareOn: false });
+      });
     }
   };
 

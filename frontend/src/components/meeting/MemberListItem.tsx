@@ -40,7 +40,7 @@ export default function MemberListItem({
         <Image
           width={32}
           height={32}
-          className="h-8 w-8 rounded-full"
+          className="h-8 w-8 rounded-full bg-white"
           src={profileImg}
           alt={`${name}의 프로필 사진`}
         />

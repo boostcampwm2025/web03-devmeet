@@ -43,7 +43,7 @@ export const useWhiteboardSocket = () => {
 
       // 워크스페이스 열기
       // 나중에 이름을 whiteboard로 변경 해야할 거 같은데 어딘가... workspace로 되어있어서
-      setIsOpen('isWorkspaceOpen', true);
+      setIsOpen('isWhiteboardOpen', true);
     });
 
     // 연결 실패 시
@@ -75,7 +75,7 @@ export const useWhiteboardSocket = () => {
       setWhiteboardSocket(null);
     }
 
-    setIsOpen('isWorkspaceOpen', false);
+    setIsOpen('isWhiteboardOpen', false);
   }, [setWhiteboardSocket, setIsOpen]);
 
   return { connectWhiteboard, disconnectWhiteboard };

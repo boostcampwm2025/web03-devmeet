@@ -115,7 +115,7 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
       } = producerInfo;
 
       const existingConsumer =
-        useMeetingSocketStore.getState().consumers[producerId]?.[producerKind];
+        useMeetingSocketStore.getState().consumers[producerId];
 
       if (isPaused) {
         removeMemberStream(userId, producerKind);
@@ -139,7 +139,7 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
         try {
           const { consumer, kind, stream } = await consumeOne(producerInfo);
 
-          addConsumer(producerId, kind, consumer);
+          addConsumer(producerId, consumer);
           setMemberStream(userId, kind, stream);
         } catch (error) {
           console.error('신규 컨슈머 생성 실패:', error);

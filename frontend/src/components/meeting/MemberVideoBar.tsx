@@ -123,7 +123,7 @@ export default function MemberVideoBar() {
     if (!hasNextPage) return;
     setCurrentPage((prev) => prev + 1);
   };
-  console.log(members, memberStreams);
+  console.log(members, memberStreams, consumers);
 
   return (
     <header className="flex w-full justify-between px-4 py-2">

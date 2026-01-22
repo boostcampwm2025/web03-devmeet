@@ -1,14 +1,10 @@
-import {
-  ConsumerInfo,
-  MeetingMemberInfo,
-  MemberConsumer,
-} from '@/types/meeting';
-import { Transport } from 'mediasoup-client/types';
+import { ConsumerInfo, MeetingMemberInfo } from '@/types/meeting';
+import { Consumer, Transport } from 'mediasoup-client/types';
 
 export const getVideoConsumerIds = (
   members: Record<string, MeetingMemberInfo>,
   visibleMembers: MeetingMemberInfo[],
-  consumers: Record<string, MemberConsumer>,
+  consumers: Record<string, Consumer>,
 ) => {
   const allMembers = Object.values(members);
   const visibleIdsSet = new Set(visibleMembers.map((member) => member.user_id));
@@ -24,7 +20,7 @@ export const getVideoConsumerIds = (
     const producerId = member.cam?.provider_id;
     if (!producerId) return;
 
-    const consumer = consumers[producerId]?.video;
+    const consumer = consumers[producerId];
 
     if (visibleIdsSet.has(member.user_id)) {
       // 새로운 consume 대상
@@ -58,7 +54,7 @@ export const getVideoConsumerIds = (
 
 export const getAudioConsumerIds = (
   members: Record<string, MeetingMemberInfo>,
-  consumers: Record<string, MemberConsumer>,
+  consumers: Record<string, Consumer>,
 ) => {
   const allMembers = Object.values(members);
   const newAudioConsumers: string[] = [];
@@ -67,7 +63,7 @@ export const getAudioConsumerIds = (
     const micId = member.mic?.provider_id;
     if (!micId) return;
 
-    if (!consumers[micId]?.audio) {
+    if (!consumers[micId]) {
       newAudioConsumers.push(micId);
     }
   });
@@ -95,7 +91,6 @@ export const getConsumerInstances = async (
 
       return {
         producerId: producer_id,
-        kind: data.kind,
         consumer: consumer,
       };
     }),

@@ -93,3 +93,11 @@ export interface ConsumerInfo {
   kind: MediaKind;
   rtpParameters: RtpParameters;
 }
+
+export interface MeetingInfoResponse {
+  title: string;
+  host_nickname: string;
+  current_participants: number;
+  max_participants: number;
+  has_password: boolean;
+}

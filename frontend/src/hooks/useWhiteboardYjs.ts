@@ -106,25 +106,23 @@ export const useWhiteboardYjs = (socket: Socket | null) => {
       socket.emit('yjs-update', fullUpdate);
     });
 
-    // Y.Map → WhiteboardItem 변환
-    const yMapToItem = (yMap: Y.Map<YMapValue>): WhiteboardItem => {
-      return yMap.toJSON() as WhiteboardItem;
-    };
-
     // Yjs Array → SharedStore
     const handleYjsChange = () => {
       const yMaps = yItems.toArray();
-      const newItems = yMaps.map(yMapToItem);
 
-      // 중복 ID 감지
-      const uniqueIds = new Set<string>();
+      // 중복 제거
+      const seenIds = new Set<string>();
+      const uniqueItems: WhiteboardItem[] = [];
       const indexesToDelete: number[] = [];
 
-      newItems.forEach((item, index) => {
-        if (uniqueIds.has(item.id)) {
+      yMaps.forEach((yMap, index) => {
+        const item = yMap.toJSON() as WhiteboardItem;
+
+        if (seenIds.has(item.id)) {
           indexesToDelete.push(index);
         } else {
-          uniqueIds.add(item.id);
+          seenIds.add(item.id);
+          uniqueItems.push(item);
         }
       });
 
@@ -139,11 +137,6 @@ export const useWhiteboardYjs = (socket: Socket | null) => {
       }
 
       // UI 업데이트
-      const uniqueItems = newItems.filter(
-        (item, index, self) =>
-          self.findIndex((i) => i.id === item.id) === index,
-      );
-
       setItems(uniqueItems);
     };
 

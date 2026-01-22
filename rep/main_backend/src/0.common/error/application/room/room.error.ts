@@ -107,3 +107,47 @@ export class NotAllowRoomMemberOne extends BaseError {
     });
   }
 }
+
+export class NotAllowFileSize extends BaseError {
+  constructor(size: number) {
+    super({
+      message: `파일의 크기는 ${size}를 넘어서는 안됩니다.`,
+      status: 500,
+    });
+  }
+}
+
+export class NotFoundResult extends BaseError {
+  constructor() {
+    super({
+      message: `파일 다운로드를 위한 결과값을 만들지 못했습니다.`,
+      status: 500,
+    });
+  }
+}
+export class NotAllowRoomMemberFile extends BaseError {
+  constructor() {
+    super({
+      message: `현재 방에 위치해 있지 않거나 정보를 잘못보내셨습니다.`,
+      status: 500,
+    });
+  }
+}
+
+export class NotAllowRoomFileData extends BaseError {
+  constructor(name: string) {
+    super({
+      message: `파일을 전송하는데 ${name}에 값이 잘못보내졌습니다.`,
+      status: 500,
+    });
+  }
+}
+
+export class NotAllowUpdateFileData extends BaseError {
+  constructor() {
+    super({
+      message: '파일 데이터에 상태를 업데이트 하지 못했습니다.',
+      status: 500,
+    });
+  }
+}

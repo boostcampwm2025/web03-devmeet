@@ -17,6 +17,7 @@ export class CodeeditorService {
       socket_id: verified.socket_id,
       ticket: verified.ticket,
       clientType: type,
+      nickname: verified.nickname,
     };
 
     if (payload.tool !== 'codeeditor') throw new Error('codeeditor만 가능한 gateway입니다.');

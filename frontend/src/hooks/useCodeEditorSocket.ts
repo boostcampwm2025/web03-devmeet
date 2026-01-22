@@ -6,7 +6,6 @@ import { useCallback } from 'react';
 
 const TOOL_BACKEND_URL = process.env.NEXT_PUBLIC_TOOL_BACKEND_URL;
 const NAMESPACE = process.env.NEXT_PUBLIC_TOOL_BACKEND_WEBSOCKET_PREFIX;
-const SOCKET_PATH = process.env.NEXT_PUBLIC_TOOL_BACKEND_WEBSOCKET_CODEEDITOR;
 
 export const useCodeEditorSocket = () => {
   const { socket: mainSocket } = useMeetingSocketStore(); // 시그널링 메인 소켓
@@ -16,14 +15,14 @@ export const useCodeEditorSocket = () => {
 
   const connectToTool = useCallback(
     (tool: string, ticket: string, type: 'main' | 'sub') => {
-      const newSocket = io(`${TOOL_BACKEND_URL}${NAMESPACE}`, {
-        path: `/${tool}`, // ???
+      const newSocket = io(`${TOOL_BACKEND_URL}/${tool}`, {
+        path: `${NAMESPACE}`,
         transports: ['websocket'],
         auth: { token: ticket, type },
       });
 
       newSocket.on('connect', () => {
-        console.log(`${tool} 소켓 연결 성공 (타입: ${type})`);
+        // console.log(`${tool} 소켓 연결 성공 (타입: ${type})`);
 
         if (tool === 'codeeditor') {
           setCodeEditorSocket(newSocket);
@@ -78,7 +77,14 @@ export const useCodeEditorSocket = () => {
     if (!mainSocket) return;
 
     mainSocket.emit('signaling:ws:disconnect_tool', { tool: 'codeeditor' });
-    setIsOpen('isCodeEditorOpen', false);
+
+    const { codeEditorSocket } = useToolSocketStore.getState();
+
+    if (codeEditorSocket) {
+      codeEditorSocket.off();
+      codeEditorSocket.disconnect();
+      setCodeEditorSocket(null);
+    }
   };
 
   return { openCodeEditor, joinCodeEditor, closeCodeEditor };

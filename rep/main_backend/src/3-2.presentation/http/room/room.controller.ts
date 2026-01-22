@@ -42,8 +42,13 @@ export class RoomController {
     return this.roomService.createRoomService(dto);
   }
 
+  // 방의 정보를 가져오는 로직
   @Get(':code')
   async getRoomInfoController(@Param('code') code: string): Promise<GetRoomInfoResult> {
     return this.roomService.getRoomInfoService(code);
   }
+
+  // 방의 비밀번호를 변경하는 로직
+
+  // 파일을 전송하는 로직
 }

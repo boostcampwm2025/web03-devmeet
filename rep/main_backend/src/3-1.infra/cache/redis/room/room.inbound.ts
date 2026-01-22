@@ -2,8 +2,10 @@ import { SelectDataFromCache } from '@app/ports/cache/cache.inbound';
 import { Inject, Injectable } from '@nestjs/common';
 import { type RedisClientType } from 'redis';
 import {
+  CACHE_ROOM_FILES_KEY_PROPS_NAME,
   CACHE_ROOM_INFO_KEY_NAME,
   CACHE_ROOM_INFO_PRODUCE_KEY_PROPS_NAME,
+  CACHE_ROOM_MEMBER_SUB_NAMESPACE_NAME,
   CACHE_ROOM_MEMBERS_KEY_PROPS_NAME,
   CACHE_ROOM_NAMESPACE_NAME,
   CACHE_ROOM_SUB_NAMESPACE_NAME,
@@ -15,14 +17,17 @@ import {
 import { RoomInfoValues } from '@app/room/dtos';
 import {
   GetRoomInfoCacheResult,
-  GetRoomInfoResult,
   GetRoomMainInfo,
   GetRoomMembersResult,
   MembersInfo,
   ProviderInfo,
   ProviderToolInfo,
 } from '@app/room/queries/dto';
-import { NotAllowToolPayload, NotAllowToolTicket } from '@error/infra/infra.error';
+import { CacheError, NotAllowToolPayload, NotAllowToolTicket } from '@error/infra/infra.error';
+import {
+  CheckUploadFileDtoValidateResult,
+  FindUploadFileInfo,
+} from '@/2.application/room/commands/dto';
 
 @Injectable()
 export class SelectRoomInfoFromRedis extends SelectDataFromCache<RedisClientType<any, any>> {
@@ -467,5 +472,210 @@ export class SelectRoomInfoDataFromRedis extends SelectDataFromCache<RedisClient
       current_participants: Number(roomInfo[CACHE_ROOM_INFO_KEY_NAME.CURRENT_PARTICIANTS]),
       max_participants: Number(roomInfo[CACHE_ROOM_INFO_KEY_NAME.MAX_PARTICIANTS]),
     };
+  }
+}
+
+// 유저가 실제로 방에 위치한 유저가 맞는지 확인하고 upload_id에 상태에 대해서 확인한다. ( 일단 상태까지 모두 )
+@Injectable()
+export class CheckUserAndSelectPrevFileInfoFromRedis extends SelectDataFromCache<
+  RedisClientType<any, any>
+> {
+  constructor(@Inject(REDIS_SERVER) cache: RedisClientType<any, any>) {
+    super(cache);
+  }
+
+  // namespace는 room_id:user_id 이고 keyname은 filename:mime_type:size 이다.
+  async select({
+    namespace,
+    keyName,
+  }: {
+    namespace: string;
+    keyName: string;
+  }): Promise<FindUploadFileInfo | undefined> {
+    // 1. user가 방에 있는 사람인지 확인
+    const [room_id, user_id] = namespace.split(':');
+    if (!room_id || !user_id) throw new CacheError('room_id, user_id가 없습니다 다시 확인해주세요');
+
+    const roomMemberNamespace: string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.MEMBERS}`;
+    const user = await this.cache.hExists(roomMemberNamespace, user_id);
+    if (!user) throw new CacheError('현재 방에 위치한 유저가 아닙니다.'); // 유저가 아님
+
+    const fileIdNamespace: string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${namespace}:${CACHE_ROOM_MEMBER_SUB_NAMESPACE_NAME.FILE_IDS}`;
+    const file_id: string | null = await this.cache.hGet(fileIdNamespace, keyName);
+    if (!file_id) return undefined;
+
+    // 존재하면 현재 상태 확인
+    const roomFileInfoNamespace: string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.FILES}`;
+    const fileInfo = await this.cache.hGet(roomFileInfoNamespace, file_id);
+    if (!fileInfo) return undefined;
+    try {
+      const obj = JSON.parse(fileInfo);
+      const status: string = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.STATUS];
+      if (status !== 'uploading' && status !== 'completed')
+        throw new CacheError('status가 잘못저장되어 있습니다.');
+
+      return {
+        file_id,
+        status,
+        upload_id: obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.UPLOAD_ID] ?? null,
+      };
+    } catch (err) {
+      // 불량은 삭제한다.
+      await this.cache.hDel(roomFileInfoNamespace, file_id);
+      return undefined;
+    }
+  }
+}
+
+// 찾으려는 파일이 맞는지 확인하기 위한 infra 코드
+@Injectable()
+export class CheckUserAndSelectFileInfoFromRedis extends SelectDataFromCache<
+  RedisClientType<any, any>
+> {
+  constructor(@Inject(REDIS_SERVER) cache: RedisClientType<any, any>) {
+    super(cache);
+  }
+
+  // namespace는 room_id:user_id 이고 keyname은 file_id 이다.
+  async select({
+    namespace,
+    keyName,
+  }: {
+    namespace: string;
+    keyName: string;
+  }): Promise<CheckUploadFileDtoValidateResult | undefined> {
+    const [room_id, user_id] = namespace.split(':');
+    if (!room_id || !user_id) throw new CacheError('room_id, user_id가 없습니다 다시 확인해주세요');
+    const file_id: string = keyName;
+
+    // 1. 현재 방의 멤버인지 확인
+    const roomMemberNamespace: string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.MEMBERS}`;
+    const roomFileInfoNamespace: string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.FILES}`;
+
+    const result = await this.cache
+      .multi()
+      .hExists(roomMemberNamespace, user_id)
+      .hGet(roomFileInfoNamespace, file_id)
+      .exec();
+
+    if (!result) return undefined; // 데이터가 없는 경우
+
+    // 2. 데이터 가져오기
+    const isMember = Boolean(result[0] as unknown as number | boolean);
+    const rawFileInfo = result[1] as unknown as string | null;
+
+    if (!isMember) return undefined;
+    if (!rawFileInfo) return undefined;
+
+    try {
+      const obj = JSON.parse(rawFileInfo) as Record<string, any>;
+
+      const filename = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.FILENAME];
+      const mime_type = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.MIME_TYPE];
+      const category = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.CATEGORY];
+      const size = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.SIZE];
+      const upload_id = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.UPLOAD_ID] ?? null;
+      const nickname = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.NICKNAME];
+      const status = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.STATUS];
+
+      // 불량데이터 방지
+
+      // category는 맞는지
+      const isValidCategory =
+        category === 'image' ||
+        category === 'video' ||
+        category === 'audio' ||
+        category === 'text' ||
+        category === 'binary';
+
+      // status는 제대로 저장이 되는지 확인
+      const isValidStatus = status === 'uploading' || status === 'completed';
+
+      if (
+        // 타입이랑 각 데이터는 제대로 저장이 되었는지 확인
+        typeof filename !== 'string' ||
+        typeof mime_type !== 'string' ||
+        typeof nickname !== 'string' ||
+        typeof size !== 'number' ||
+        !isValidCategory ||
+        !isValidStatus ||
+        !(upload_id === null || typeof upload_id === 'string')
+      ) {
+        // 불량 데이터면 정리
+        await this.cache.hDel(roomFileInfoNamespace, file_id);
+        return undefined;
+      }
+
+      const result: CheckUploadFileDtoValidateResult = {
+        status,
+        filename,
+        size,
+        category,
+        upload_id,
+        nickname,
+        mime_type,
+      };
+
+      return result;
+    } catch {
+      // JSON이 깨졌으면 정리
+      await this.cache.hDel(roomFileInfoNamespace, file_id);
+      return undefined;
+    }
+  }
+}
+
+// 방에 있는 유저가 맞는지 그리고 file_id에 상태가 completed가 맞는지 확인
+@Injectable()
+export class CheckRoomMemberFromRedis extends SelectDataFromCache<RedisClientType<any, any>> {
+  constructor(@Inject(REDIS_SERVER) cache: RedisClientType<any, any>) {
+    super(cache);
+  }
+
+  // namespace는 room_id:user_id이고 keyName은 file_id 이다.
+  async select({
+    namespace,
+    keyName,
+  }: {
+    namespace: string;
+    keyName: string;
+  }): Promise<string | undefined> {
+    const [room_id, user_id] = namespace.split(':');
+    if (!room_id || !user_id) throw new CacheError('room_id, user_id가 없습니다 다시 확인해주세요');
+    const file_id: string = keyName;
+
+    // 현재방의 멤버가 맞는지 확인
+    const roomMemberNamespace: string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.MEMBERS}`;
+    const roomFileInfoNamespace: string = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.FILES}`;
+
+    const result = await this.cache
+      .multi()
+      .hExists(roomMemberNamespace, user_id)
+      .hGet(roomFileInfoNamespace, file_id)
+      .exec();
+
+    if (!result) return undefined; // 데이터가 없는 경우
+
+    // 2. 데이터 가져오기
+    const isMember = Boolean(result[0] as unknown as number | boolean);
+    const rawFileInfo = result[1] as unknown as string | null;
+    if (!isMember) return undefined;
+    if (!rawFileInfo) return undefined;
+
+    // parsing 안되면 다운로드 불가
+    let obj: Record<string, any>;
+    try {
+      obj = JSON.parse(rawFileInfo);
+    } catch {
+      return undefined;
+    }
+
+    const status = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.STATUS];
+    if (status !== 'completed') return undefined;
+
+    const fileName = obj[CACHE_ROOM_FILES_KEY_PROPS_NAME.FILENAME];
+    if (typeof fileName !== 'string' || fileName.length === 0) return undefined;
+
+    return fileName; // mime_type 반환
   }
 }

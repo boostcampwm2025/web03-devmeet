@@ -1,56 +1,51 @@
 import { MoreHoriIcon } from '@/assets/icons/common';
 import { MicOffIcon } from '@/assets/icons/meeting';
+import VideoView from '@/components/meeting/media/VideoView';
+import { useMeetingStore } from '@/store/useMeetingStore';
+import { MeetingMemberInfo } from '@/types/meeting';
 import Image from 'next/image';
 import { useState } from 'react';
 
-interface SmVideoProps {
-  name: string;
-  audio: boolean;
-  video: boolean;
-  speaking: boolean;
-  profileImg: string;
-
-  // 이후 음성이나 영상 정보 추가 필요
-}
-
 export default function SmVideo({
-  name,
-  audio,
-  video,
-  speaking,
-  profileImg,
-}: SmVideoProps) {
+  user_id,
+  nickname,
+  profile_path,
+  cam,
+  mic,
+}: MeetingMemberInfo) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const onMoreClick = () => setIsDropdownOpen((prev) => !prev);
 
+  const streams = useMeetingStore((state) => state.memberStreams[user_id]);
+
   return (
     <div
-      className={`group flex-center relative aspect-video w-40 rounded-lg bg-neutral-700 ${speaking ? 'outline-3 -outline-offset-3 outline-sky-500' : ''}`}
+      className={`group flex-center relative aspect-video w-40 rounded-lg bg-neutral-700`}
     >
       {/* 영상 */}
-      {video ? (
-        <Image
-          width={160}
-          height={90}
-          className="aspect-video w-40 rounded-lg object-cover"
-          src={profileImg}
-          alt={`${name}님의 프로필 사진`}
-        />
-      ) : (
+      {streams?.video ? (
+        <div className="flex-center h-full w-full overflow-hidden rounded-lg">
+          <VideoView stream={streams.video} />
+        </div>
+      ) : profile_path ? (
         <Image
           width={64}
           height={64}
           className="aspect-square w-16 rounded-full object-cover"
-          src={profileImg}
-          alt={`${name}님의 프로필 사진`}
+          src={profile_path}
+          alt={`${nickname}님의 프로필 사진`}
         />
+      ) : (
+        <div className="flex-center aspect-square w-16 rounded-full bg-neutral-500 text-2xl font-bold text-neutral-50">
+          {nickname[0]}
+        </div>
       )}
 
       {/* 이름표 */}
       <div className="absolute bottom-2 left-2 flex max-w-[calc(100%-16px)] items-center gap-1 rounded-sm bg-neutral-900 p-1">
-        {!audio && <MicOffIcon className="h-3 w-3 shrink-0" />}
+        {!streams?.audio && <MicOffIcon className="h-3 w-3 shrink-0" />}
         <span className="ellipsis w-full text-xs font-bold text-neutral-200">
-          {name}
+          {nickname}
         </span>
       </div>
 

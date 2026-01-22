@@ -7,13 +7,18 @@ import { SelectHsetDataFromRedis } from './user/user.inbound';
 import {
   DeleteMainProducerFromRedis,
   DeleteRoomDatasToRedis,
+  InsertFileInfoToRedis,
   InsertRoomDatasToRedis,
   InsertRoomDataToRedis,
   InsertToolTicketToRedis,
+  UpdateFileInfoToRedis,
 } from './room/room.outbound';
 import {
+  CheckRoomMemberFromRedis,
   CheckRoomUserFromRedis,
   CheckToolTicketFromRedis,
+  CheckUserAndSelectFileInfoFromRedis,
+  CheckUserAndSelectPrevFileInfoFromRedis,
   CheckUserPayloadFromRedis,
   SelectRoomInfoDataFromRedis,
   SelectRoomInfoFromRedis,
@@ -102,6 +107,11 @@ import {
     UpdateProducerStatusToRedis, // prodcuer에서 status가 변경 될때 사용하는 redis -> 정합성이 좀 부족하다 고민 해야 함
     SelectUserProducerInfoDataFromRedis, // user에 producer 관련 데이터를 가져와야 한다.
     SelectRoomProducerDataFromRedis, // producer에 대한 데이터를 가져오는 로직 구현
+    CheckUserAndSelectPrevFileInfoFromRedis, // 방에 유저가 있는지 그리고 저장중인 다른 파일이 있는지 확인
+    InsertFileInfoToRedis, // 파일의 정보를 redis에 저장하는 로직
+    CheckUserAndSelectFileInfoFromRedis, // 이 유저가 방에 존재하는지 그리고 파일이 제대로 업로드가 됐는지 확인하는 로직
+    UpdateFileInfoToRedis, // 방에 파일의 상태를 변경
+    CheckRoomMemberFromRedis, // 유저가 방에 있고 다운 받을수 있는지 확인하는 로직
   ],
   exports: [
     REDIS_SERVER,
@@ -137,6 +147,11 @@ import {
     UpdateProducerStatusToRedis,
     SelectUserProducerInfoDataFromRedis,
     SelectRoomProducerDataFromRedis,
+    CheckUserAndSelectPrevFileInfoFromRedis,
+    InsertFileInfoToRedis,
+    CheckUserAndSelectFileInfoFromRedis,
+    UpdateFileInfoToRedis,
+    CheckRoomMemberFromRedis,
   ],
 })
 export class RedisModule {}

@@ -1,22 +1,23 @@
 'use client';
 
-import { DUMMY_DATA } from '@/app/[meetingId]/dummy';
 import { ChevronLeftIcon, ChevronRightIcon } from '@/assets/icons/common';
+import MyVideo from '@/components/meeting/MyVideo';
 import SmVideo from '@/components/meeting/SmVideo';
 import { useMeetingStore } from '@/store/useMeetingStore';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export default function MemberVideoBar() {
-  // 이후 WebRTC로 수정 필요
-  const { lastPage, membersPerPage, totalMemberCount, members } = DUMMY_DATA;
+  const MEMBERS_PER_PAGE = 6;
 
-  const { setMembers } = useMeetingStore();
+  const { members } = useMeetingStore();
   const [currentPage, setCurrentPage] = useState(1);
-  const [hasPrevPage, hasNextPage] = [currentPage > 1, currentPage < lastPage];
-
-  useEffect(() => {
-    setMembers(totalMemberCount);
-  }, [setMembers, totalMemberCount]);
+  const memberCount = Object.values(members).length;
+  const totalPages =
+    memberCount <= 5 ? 1 : 1 + Math.ceil((memberCount - 5) / MEMBERS_PER_PAGE);
+  const [hasPrevPage, hasNextPage] = [
+    currentPage > 1,
+    currentPage < totalPages,
+  ];
 
   const onPrevClick = () => {
     if (!hasPrevPage) return;
@@ -28,9 +29,9 @@ export default function MemberVideoBar() {
     setCurrentPage((prev) => prev + 1);
   };
 
-  // (프로토타입용) 이후 WebRTC나 API 호출 시 불필요
-  const start = (currentPage - 1) * membersPerPage;
-  const end = (currentPage - 1) * membersPerPage + membersPerPage;
+  const isFirstPage = currentPage === 1;
+  const start = isFirstPage ? 0 : (currentPage - 2) * MEMBERS_PER_PAGE + 5;
+  const end = isFirstPage ? 5 : start + MEMBERS_PER_PAGE;
 
   return (
     <header className="flex w-full justify-between px-4 py-2">
@@ -43,9 +44,12 @@ export default function MemberVideoBar() {
 
       <section className="flex gap-4">
         {/* 이후 백엔드 연동 시 pagination으로 수정, 수동 slice는 불필요 */}
-        {members.slice(start, end).map((member) => (
-          <SmVideo key={member.id} {...member} />
-        ))}
+        {start === 0 && <MyVideo />}
+        {Object.values(members)
+          .slice(start, end)
+          .map((member) => (
+            <SmVideo key={member.user_id} {...member} />
+          ))}
       </section>
 
       <button

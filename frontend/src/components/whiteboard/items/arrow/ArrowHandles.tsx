@@ -3,6 +3,7 @@
 import { Circle } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import { getControlPoints } from '@/utils/arrow';
+import { useCursorStyle } from '@/hooks/useCursorStyle';
 import type { ArrowItem } from '@/types/whiteboard';
 
 interface ArrowHandlesProps {
@@ -10,7 +11,10 @@ interface ArrowHandlesProps {
   selectedHandleIndex: number | null;
   onHandleClick: (e: KonvaEventObject<MouseEvent>, index: number) => void;
   onStartDrag: (e: KonvaEventObject<DragEvent>) => void;
-  onControlPointDrag: (pointIndex: number, e: KonvaEventObject<DragEvent>) => void;
+  onControlPointDrag: (
+    pointIndex: number,
+    e: KonvaEventObject<DragEvent>,
+  ) => void;
   onEndDrag: (e: KonvaEventObject<DragEvent>) => void;
 }
 
@@ -29,6 +33,8 @@ export default function ArrowHandles({
     y: arrow.points[arrow.points.length - 1],
   };
 
+  const { handleMouseEnter, handleMouseLeave } = useCursorStyle('pointer');
+
   return (
     <>
       {/* 시작 핸들 */}
@@ -42,6 +48,8 @@ export default function ArrowHandles({
         draggable
         onDragMove={onStartDrag}
         onClick={(e) => onHandleClick(e, 0)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       />
 
       {/* 중간점 핸들  */}
@@ -59,6 +67,8 @@ export default function ArrowHandles({
             draggable
             onDragMove={(e) => onControlPointDrag(point.index, e)}
             onClick={(e) => onHandleClick(e, point.index)}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
           />
         );
       })}
@@ -74,6 +84,8 @@ export default function ArrowHandles({
         draggable
         onDragMove={onEndDrag}
         onClick={(e) => onHandleClick(e, arrow.points.length - 2)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       />
     </>
   );

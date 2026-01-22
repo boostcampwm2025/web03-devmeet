@@ -30,7 +30,7 @@ export default function TextArea({
 
   useEffect(() => {
     if (!stageRef.current) return;
-    
+
     const textNode = stageRef.current.findOne('#' + textId) as Konva.Text;
     if (!textNode) return;
 
@@ -43,10 +43,10 @@ export default function TextArea({
 
   useEffect(() => {
     if (!ref.current || !stageRef.current) return;
-    
+
     const textNode = stageRef.current.findOne('#' + textId) as Konva.Text;
     if (!textNode) return;
-    
+
     const textarea = ref.current;
 
     //textNode와 스타일 동기화
@@ -83,6 +83,7 @@ export default function TextArea({
     textarea.style.fontFamily = textNode.fontFamily();
     textarea.style.textAlign = textNode.align();
     textarea.style.color = textNode.fill() as string;
+    textarea.style.caretColor = '#000000';
 
     // Line Height 계산
     const lineHeightPx =
@@ -110,9 +111,7 @@ export default function TextArea({
 
     // 높이
     textarea.style.height = 'auto';
-    textarea.style.height = `${
-      textarea.scrollHeight + textNode.fontSize() * stageScale
-    }px`;
+    textarea.style.height = `${textarea.scrollHeight}px`;
 
     positionTextarea();
 
@@ -122,12 +121,10 @@ export default function TextArea({
       const canvasWidth = nodeWidth / stageScale;
       const canvasHeight = textarea.offsetHeight / stageScale;
 
-      const hasWidthChanged = Math.abs(
-        canvasWidth - lastBoundsRef.current.width,
-      ) > 0.5;
-      const hasHeightChanged = Math.abs(
-        canvasHeight - lastBoundsRef.current.height,
-      ) > 0.5;
+      const hasWidthChanged =
+        Math.abs(canvasWidth - lastBoundsRef.current.width) > 0.5;
+      const hasHeightChanged =
+        Math.abs(canvasHeight - lastBoundsRef.current.height) > 0.5;
 
       if (!hasWidthChanged && !hasHeightChanged) return;
 
@@ -150,9 +147,7 @@ export default function TextArea({
 
     const handleInput = () => {
       textarea.style.height = 'auto';
-      textarea.style.height = `${
-        textarea.scrollHeight + textNode.fontSize() * stageScale
-      }px`;
+      textarea.style.height = `${textarea.scrollHeight}px`;
 
       onChange(textarea.value);
       positionTextarea();
@@ -160,6 +155,12 @@ export default function TextArea({
     };
 
     const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+
+      if (target.closest('aside')) {
+        return;
+      }
+
       if (e.target !== textarea) {
         onChange(textarea.value);
         onClose();

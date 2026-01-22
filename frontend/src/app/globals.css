@@ -3,6 +3,7 @@
 @theme {
   --font-sans: var(--font-suit), sans-serif;
   --font-cafe24: var(--font-cafe24), sans-serif;
+  --font-roboto: var(--font-roboto), sans-serif;
 }
 
 :root {
@@ -33,6 +34,22 @@ button {
   @apply overflow-hidden text-ellipsis whitespace-nowrap;
 }
 
+.section-title {
+  @apply text-2xl font-bold text-neutral-900;
+}
+
+.input-default {
+  @apply w-full rounded-sm px-2 py-3 text-base text-neutral-900;
+}
+
+.input-sm {
+  @apply w-full rounded-sm px-2 py-2.5 text-sm text-neutral-900;
+}
+
+.input-light {
+  @apply border border-neutral-300 outline-none focus:border-sky-600;
+}
+
 /* 미팅 관련 커스텀 클래스 */
 .dropdown-btn {
   @apply w-full px-3 py-2.5 text-left text-sm text-neutral-50 hover:bg-neutral-500;
@@ -40,4 +57,18 @@ button {
 
 .meeting-side-modal {
   @apply flex w-full flex-1 flex-col overflow-hidden rounded-lg border border-neutral-600 bg-neutral-700;
+}
+
+/* Oauth 버튼에 사용될 규정에 맞는 폰트 속성 */
+.kakao-font {
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  @apply text-[15px] leading-normal font-semibold text-black/85;
+}
+
+.google-font {
+  font-family: var(--font-roboto);
+  @apply text-sm leading-5 text-[#1F1F1F];
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { PanelProps } from '@/types/whiteboardUI';
+import { PanelProps } from '@/types/whiteboard/whiteboardUI';
 
 // Stack 아이콘 관련
 // import { STACK_LIST } from '@/constants/stackList';

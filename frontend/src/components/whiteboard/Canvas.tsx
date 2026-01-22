@@ -1,13 +1,22 @@
 'use client';
 
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { useRef, useState, useMemo, useEffect } from 'react';
+
 import Konva from 'konva';
-import { Stage, Layer, Rect } from 'react-konva';
-import { useCanvasStore } from '@/store/useCanvasStore';
+import { Stage, Layer, Rect, Line } from 'react-konva';
+
 import type { WhiteboardItem, TextItem, ArrowItem } from '@/types/whiteboard';
-import { useWindowSize } from '@/hooks/useWindowSize';
+
+import { useCanvasStore } from '@/store/useCanvasStore';
+import { cn } from '@/utils/cn';
+
+import { useElementSize } from '@/hooks/useElementSize';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { useCanvasInteraction } from '@/hooks/useCanvasInteraction';
+import { useCanvasShortcuts } from '@/hooks/useCanvasShortcuts';
 import { useArrowHandles } from '@/hooks/useArrowHandles';
+import { useCanvasMouseEvents } from '@/hooks/useCanvasMouseEvents';
+
 import RenderItem from '@/components/whiteboard/items/RenderItem';
 import TextArea from '@/components/whiteboard/items/text/TextArea';
 import ItemTransformer from '@/components/whiteboard/controls/ItemTransformer';
@@ -23,13 +32,24 @@ export default function Canvas() {
   const editingTextId = useCanvasStore((state) => state.editingTextId);
   const selectItem = useCanvasStore((state) => state.selectItem);
   const updateItem = useCanvasStore((state) => state.updateItem);
-  const deleteItem = useCanvasStore((state) => state.deleteItem);
   const setEditingTextId = useCanvasStore((state) => state.setEditingTextId);
+  const setViewportSize = useCanvasStore((state) => state.setViewportSize);
+  const cursorMode = useCanvasStore((state) => state.cursorMode);
 
   const stageRef = useRef<Konva.Stage | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isDraggingArrow, setIsDraggingArrow] = useState(false);
+  const [isDraggingCanvas, setIsDraggingCanvas] = useState(false);
 
-  const size = useWindowSize();
+  const size = useElementSize(containerRef);
+
+  // viewport 크기를 store에 업데이트
+  useEffect(() => {
+    if (size.width > 0 && size.height > 0) {
+      setViewportSize(size.width, size.height);
+    }
+  }, [size.width, size.height, setViewportSize]);
+
   const { handleWheel, handleDragMove, handleDragEnd } = useCanvasInteraction(
     size.width,
     size.height,
@@ -46,8 +66,10 @@ export default function Canvas() {
     [items, selectedId],
   );
 
-  const isArrowSelected = selectedItem?.type === 'arrow';
+  const isArrowOrLineSelected =
+    selectedItem?.type === 'arrow' || selectedItem?.type === 'line';
 
+  // 화살표/선 훅
   const {
     selectedHandleIndex,
     setSelectedHandleIndex,
@@ -58,42 +80,12 @@ export default function Canvas() {
     handleArrowDblClick,
     deleteControlPoint,
   } = useArrowHandles({
-    arrow: isArrowSelected ? (selectedItem as ArrowItem) : null,
+    arrow: isArrowOrLineSelected ? (selectedItem as ArrowItem) : null,
     stageRef,
     updateItem,
   });
 
-  // 키보드 삭제
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!selectedId || editingTextId) return;
-
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault();
-
-        // 화살표 중간점 삭제 시도
-        if (isArrowSelected && selectedHandleIndex !== null) {
-          const deleted = deleteControlPoint();
-          if (deleted) return;
-        }
-
-        // 아이템 삭제
-        deleteItem(selectedId);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
-    selectedId,
-    editingTextId,
-    deleteItem,
-    isArrowSelected,
-    selectedHandleIndex,
-    deleteControlPoint,
-  ]);
-
-  // 선택 해제
+  // 선택 해제 핸들러
   const handleCheckDeselect = (
     e: Konva.KonvaEventObject<MouseEvent | TouchEvent>,
   ) => {
@@ -108,7 +100,44 @@ export default function Canvas() {
     }
   };
 
-  // 아이템 업데이트
+  // 외부 클릭 시 선택 해제
+  useClickOutside(
+    containerRef,
+    (e) => {
+      const target = e.target as HTMLElement;
+      // 사이드바 클릭은 무시
+      if (target.closest('aside')) {
+        return;
+      }
+
+      if (selectedId) {
+        selectItem(null);
+        setSelectedHandleIndex(null);
+      }
+    },
+    !editingTextId && !!selectedId,
+  );
+
+  // 마우스 이벤트 통합 훅
+  const {
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    handleMouseLeave,
+    currentDrawing,
+  } = useCanvasMouseEvents({
+    onDeselect: handleCheckDeselect,
+  });
+
+  // 캔버스 드래그 가능 여부
+  const isDraggable = useCanvasStore((state) => state.cursorMode === 'move');
+
+  useCanvasShortcuts({
+    isArrowOrLineSelected,
+    selectedHandleIndex,
+    deleteControlPoint,
+  });
+
   const handleItemChange = (
     id: string,
     newAttributes: Partial<WhiteboardItem>,
@@ -116,23 +145,48 @@ export default function Canvas() {
     updateItem(id, newAttributes);
   };
 
-  if (size.width === 0 || size.height === 0) return null;
+  // width={0} height={0}으로 canvas 렌더링 방지
+  if (size.width === 0 || size.height === 0) {
+    return (
+      <div
+        ref={containerRef}
+        className="flex h-full w-full items-center justify-center"
+      ></div>
+    );
+  }
 
   return (
-    <div className="h-full w-full overflow-hidden bg-neutral-100">
+    <div
+      ref={containerRef}
+      className={cn(
+        'h-full w-full overflow-hidden bg-neutral-100',
+        cursorMode === 'select' && 'cursor-default',
+        cursorMode === 'move' && !isDraggingCanvas && 'cursor-grab',
+        cursorMode === 'move' && isDraggingCanvas && 'cursor-grabbing',
+        cursorMode === 'draw' && 'cursor-crosshair',
+        cursorMode === 'eraser' && 'cursor-cell',
+      )}
+    >
       <Stage
         ref={stageRef}
         width={size.width}
         height={size.height}
-        draggable
+        draggable={isDraggable}
         x={stagePos.x}
         y={stagePos.y}
         scaleX={stageScale}
         scaleY={stageScale}
         onWheel={handleWheel}
+        onDragStart={() => setIsDraggingCanvas(true)}
         onDragMove={handleDragMove}
-        onDragEnd={handleDragEnd}
-        onMouseDown={handleCheckDeselect}
+        onDragEnd={(e) => {
+          handleDragEnd(e);
+          setIsDraggingCanvas(false);
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
         onTouchStart={handleCheckDeselect}
       >
         <Layer
@@ -166,20 +220,20 @@ export default function Canvas() {
               }
               onArrowDblClick={handleArrowDblClick}
               onDragStart={() => {
-                if (item.type === 'arrow') {
+                if (item.type === 'arrow' || item.type === 'line') {
                   setIsDraggingArrow(true);
                 }
               }}
               onDragEnd={() => {
-                if (item.type === 'arrow') {
+                if (item.type === 'arrow' || item.type === 'line') {
                   setIsDraggingArrow(false);
                 }
               }}
             />
           ))}
 
-          {/* 화살표 핸들 (드래그 중이 아닐 때만) */}
-          {isArrowSelected && selectedItem && !isDraggingArrow && (
+          {/* 화살표/선 핸들 (드래그 중이 아닐 때만 보임) */}
+          {isArrowOrLineSelected && selectedItem && !isDraggingArrow && (
             <ArrowHandles
               arrow={selectedItem as ArrowItem}
               selectedHandleIndex={selectedHandleIndex}
@@ -187,6 +241,18 @@ export default function Canvas() {
               onStartDrag={handleArrowStartDrag}
               onControlPointDrag={handleArrowControlPointDrag}
               onEndDrag={handleArrowEndDrag}
+            />
+          )}
+
+          {/* 그리는 중인 선 */}
+          {currentDrawing && (
+            <Line
+              points={currentDrawing.points}
+              stroke={currentDrawing.stroke}
+              strokeWidth={currentDrawing.strokeWidth}
+              tension={0.5}
+              lineCap="round"
+              lineJoin="round"
             />
           )}
 

@@ -16,7 +16,9 @@ export function useArrowHandles({
   stageRef,
   updateItem,
 }: UseArrowHandlesProps) {
-  const [selectedHandleIndex, setSelectedHandleIndex] = useState<number | null>(null);
+  const [selectedHandleIndex, setSelectedHandleIndex] = useState<number | null>(
+    null,
+  );
 
   // 화살표 더블클릭 - 중간점 추가
   const handleArrowDblClick = (arrowId: string) => {
@@ -58,7 +60,10 @@ export function useArrowHandles({
   };
 
   // 화살표 핸들 클릭
-  const handleHandleClick = (e: KonvaEventObject<MouseEvent>, index: number) => {
+  const handleHandleClick = (
+    e: KonvaEventObject<MouseEvent>,
+    index: number,
+  ) => {
     e.cancelBubble = true;
     setSelectedHandleIndex(index);
   };

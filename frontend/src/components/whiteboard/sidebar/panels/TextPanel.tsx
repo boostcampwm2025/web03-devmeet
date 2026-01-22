@@ -19,6 +19,10 @@ interface TextPanelProps {
   onChangeAlign: (align: TextAlignment) => void;
   onChangeFontStyle: (fontStyle: string) => void;
   onChangeTextDecoration: (textDecoration: string) => void;
+  onChangeTextFormat?: (format: {
+    fontStyle: string;
+    textDecoration: string;
+  }) => void;
 }
 
 export default function TextPanel({
@@ -32,6 +36,7 @@ export default function TextPanel({
   onChangeAlign,
   onChangeFontStyle,
   onChangeTextDecoration,
+  onChangeTextFormat,
 }: TextPanelProps) {
   return (
     <div className="flex flex-col gap-2">
@@ -55,6 +60,7 @@ export default function TextPanel({
         textDecoration={textDecoration}
         onChangeFontStyle={onChangeFontStyle}
         onChangeTextDecoration={onChangeTextDecoration}
+        onChangeTextFormat={onChangeTextFormat}
       />
     </div>
   );

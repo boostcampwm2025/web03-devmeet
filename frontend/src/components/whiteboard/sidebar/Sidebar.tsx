@@ -356,6 +356,12 @@ export default function Sidebar() {
             onChangeTextDecoration={(textDecoration) =>
               updateItem(selectedId!, { textDecoration })
             }
+            onChangeTextFormat={(format) =>
+              updateItem(selectedId!, {
+                fontStyle: format.fontStyle,
+                textDecoration: format.textDecoration,
+              })
+            }
           />
         )}
         {/* drawing */}

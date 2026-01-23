@@ -5,12 +5,11 @@ import MeetingLobby from '@/components/meeting/MeetingLobby';
 import MeetingRoom from '@/components/meeting/MeetingRoom';
 import { useMeetingSocket } from '@/hooks/useMeetingSocket';
 import { useMeetingSocketStore } from '@/store/useMeetingSocketStore';
-import { useMeetingStore } from '@/store/useMeetingStore';
 import { useUserStore } from '@/store/useUserStore';
 import { MeetingInfoResponse } from '@/types/meeting';
 import { api } from '@/utils/apiClient';
 import { initMediasoupTransports } from '@/utils/initMediasoupTransports';
-import { notFound, useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 interface JoinError {
@@ -20,8 +19,7 @@ interface JoinError {
 
 export default function MeetingPage() {
   const { socket } = useMeetingSocket();
-  const { setMediasoupTransports, producers } = useMeetingSocketStore();
-  const { members } = useMeetingStore();
+  const { setMediasoupTransports } = useMeetingSocketStore();
   const { isLoggedIn, setTempUser } = useUserStore();
 
   const { meetingId } = useParams<{ meetingId: string }>();
@@ -158,6 +156,7 @@ export default function MeetingPage() {
                 ref={passwordRef}
                 className="input-sm input-light"
                 type="password"
+                autoFocus
               />
             </Modal>
           )}

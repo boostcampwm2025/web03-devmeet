@@ -23,6 +23,14 @@ export default function MeetingLobby({
   // 비회원 닉네임 확인 로직
   const [isNicknameError, setIsNicknameError] = useState(false);
 
+  if (!meetingInfo) {
+    return (
+      <main className="flex min-h-screen items-center justify-center">
+        회의실 정보를 불러오는 중입니다 ...
+      </main>
+    );
+  }
+
   const onButtonClick = () => {
     if (isLoggedIn) {
       onJoin(nickname);
@@ -70,6 +78,7 @@ export default function MeetingLobby({
                 onChange={(e) => setTempNickname(e.target.value)}
                 className="input-default input-light"
                 placeholder="닉네임을 입력해주세요"
+                autoFocus
               />
             )}
 

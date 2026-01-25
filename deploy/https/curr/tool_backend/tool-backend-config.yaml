@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tool-backend-config
+  namespace: devmeet
+data:
+  # 기본 설정
+  NODE_PORT: "8000"
+  NODE_HOST: "0.0.0.0"
+  NODE_ENV: "production"
+
+  # CORS
+  NODE_ALLOWED_ORIGIN: "https://www.devmeet.p-e.kr"
+  NODE_ALLOWED_METHODS: "GET,POST,PUT,DELETE,PATCH"
+  NODE_ALLOWED_HEADERS: "Content-Type, Accept, Authorization"
+  NODE_ALLOWED_CREDENTIALS: "true"
+
+  # DB
+  NODE_APP_DATABASE_HOST: "172.16.5.8"
+
+  # Kafka
+  NODE_APP_KAFKA_BROKERS: "172.16.5.9:9092"
+
+  # Websocket prefix
+  NODE_BACKEND_WEBSOCKET_PREFIX: "/tool/ws"
+  NODE_BACKEND_WEBSOCKET_WHITEBOARD: "/whiteboard"
+  NODE_BACKEND_WEBSOCKET_CODEEDITOR: "/codeeditor"

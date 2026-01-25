@@ -5,13 +5,22 @@ namespace: devmeet
 
 # 감지할 리소스들
 resources:
+  # frontend 관련
   - frontend/frontend-deploy.yaml
   - frontend/frontend-service.yaml
   - frontend/frontend-config.yaml
+  
+  # main_backend 관련
   - main_backend/main-backend-deploy.yaml
   - main_backend/main-backend-service.yaml
+  - main_backend/main-backend-config.yaml
+
+  # tool_backend 관련
   - tool_backend/tool-backend-deploy.yaml
   - tool_backend/tool-backend-service.yaml
+  - tool_backend/tool-backend-config.yaml
+
+  # ingress-nginx 관련
   - devmeet-gateway-ingress.yaml
   - letsencrypt-prod.yaml
 

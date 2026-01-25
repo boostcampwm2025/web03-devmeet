@@ -50,7 +50,6 @@ type SelectionType =
 export default function Sidebar() {
   // 스토어에서 선택된 아이템 정보 가져오기
   const selectedId = useWhiteboardLocalStore((state) => state.selectedId);
-  const items = useWhiteboardSharedStore((state) => state.items);
   const { updateItem } = useItemActions();
   const cursorMode = useWhiteboardLocalStore((state) => state.cursorMode);
   const drawingStroke = useWhiteboardLocalStore((state) => state.drawingStroke);
@@ -62,10 +61,9 @@ export default function Sidebar() {
     (state) => state.setDrawingSize,
   );
 
-  // 선택된 아이템 찾기
-  const selectedItem = useMemo(
-    () => items.find((item) => item.id === selectedId),
-    [items, selectedId],
+  // 선택된 아이템 찾기 - items 전체를 구독하지 않고 선택된 아이템만 가져오기
+  const selectedItem = useWhiteboardSharedStore((state) =>
+    state.items.find((item) => item.id === selectedId),
   );
 
   // 선택된 아이템의 타입 결정

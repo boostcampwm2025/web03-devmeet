@@ -86,8 +86,10 @@ export default function Canvas() {
     handleArrowStartDrag,
     handleArrowControlPointDrag,
     handleArrowEndDrag,
+    handleHandleDragEnd,
     handleArrowDblClick,
     deleteControlPoint,
+    draggingPoints,
   } = useArrowHandles({
     arrow: isArrowOrLineSelected ? (selectedItem as ArrowItem) : null,
     stageRef,
@@ -220,28 +222,38 @@ export default function Canvas() {
           />
 
           {/* 아이템 렌더링 */}
-          {items.map((item) => (
-            <RenderItem
-              key={item.id}
-              item={item}
-              isSelected={item.id === selectedId}
-              onSelect={selectItem}
-              onChange={(newAttributes) =>
-                handleItemChange(item.id, newAttributes)
-              }
-              onArrowDblClick={handleArrowDblClick}
-              onDragStart={() => {
-                if (item.type === 'arrow' || item.type === 'line') {
-                  setIsDraggingArrow(true);
+          {items.map((item) => {
+            // 드래그 중인 화살표/선이면 draggingPoints 적용
+            const displayItem =
+              item.id === selectedId &&
+              (item.type === 'arrow' || item.type === 'line') &&
+              draggingPoints
+                ? { ...item, points: draggingPoints }
+                : item;
+
+            return (
+              <RenderItem
+                key={item.id}
+                item={displayItem}
+                isSelected={item.id === selectedId}
+                onSelect={selectItem}
+                onChange={(newAttributes) =>
+                  handleItemChange(item.id, newAttributes)
                 }
-              }}
-              onDragEnd={() => {
-                if (item.type === 'arrow' || item.type === 'line') {
-                  setIsDraggingArrow(false);
-                }
-              }}
-            />
-          ))}
+                onArrowDblClick={handleArrowDblClick}
+                onDragStart={() => {
+                  if (item.type === 'arrow' || item.type === 'line') {
+                    setIsDraggingArrow(true);
+                  }
+                }}
+                onDragEnd={() => {
+                  if (item.type === 'arrow' || item.type === 'line') {
+                    setIsDraggingArrow(false);
+                  }
+                }}
+              />
+            );
+          })}
 
           {/* 화살표/선 핸들 (드래그 중이 아닐 때만 보임) */}
           {isArrowOrLineSelected && selectedItem && !isDraggingArrow && (
@@ -252,6 +264,8 @@ export default function Canvas() {
               onStartDrag={handleArrowStartDrag}
               onControlPointDrag={handleArrowControlPointDrag}
               onEndDrag={handleArrowEndDrag}
+              onDragEnd={handleHandleDragEnd}
+              draggingPoints={draggingPoints}
             />
           )}
 

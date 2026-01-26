@@ -18,8 +18,8 @@ import { EVENT_STREAM_NAME } from '@/infra/event-stream/event-stream.constants';
 import { CODEEDITOR_WEBSOCKET } from '@/infra/websocket/websocket.constants';
 import { CodeeditorWebsocket } from '@/infra/websocket/codeeditor/codeeditor.service';
 import * as Y from 'yjs';
-// 이 부분을 어떻게 처리하는게 좋을지 고민이다. 
-const roomDocs = new Map<string, Y.Doc>();
+import { CodeeditorRepository } from '@/infra/memory/tool';
+
 
 @WebSocketGateway({
   namespace: process.env.NODE_BACKEND_WEBSOCKET_CODEEDITOR,
@@ -40,6 +40,7 @@ export class CodeeditorWebsocketGateway implements OnGatewayInit, OnGatewayConne
   constructor(
     private readonly codeeditorService: CodeeditorService,
     private readonly kafkaService: KafkaService,
+    private readonly codeeditorRepo : CodeeditorRepository,
     @Inject(CODEEDITOR_WEBSOCKET) private readonly codeeditorSocket: CodeeditorWebsocket,
   ) {}
 
@@ -48,9 +49,6 @@ export class CodeeditorWebsocketGateway implements OnGatewayInit, OnGatewayConne
     this.codeeditorSocket.bindServer(server);
 
     server.use(async (socket, next) => {
-      // socket.data.payload = mockData;
-      // this.logger.log('웹소켓 준비되었습니다.');
-      // return next();
       try {
         const { token, type } = socket.handshake.auth as AuthType;
 
@@ -81,7 +79,7 @@ export class CodeeditorWebsocketGateway implements OnGatewayInit, OnGatewayConne
     await client.join(roomName);
     client.data.roomName = roomName;
 
-    const doc = roomDocs.get(roomName);
+    const doc = this.codeeditorRepo.get(roomName);
     if (doc) {
       this.logger.log(`[Sync] 서버에서 신규 유저 ${payload.user_id}에게 직접 데이터 전송`);
       const fullUpdate = Y.encodeStateAsUpdate(doc);
@@ -139,10 +137,10 @@ export class CodeeditorWebsocketGateway implements OnGatewayInit, OnGatewayConne
       // 캐싱된 룸 이름 사용
       const roomName = client.data.roomName;
 
-      let doc = roomDocs.get(roomName);
+      let doc = this.codeeditorRepo.get(roomName);
       if (!doc) {
         doc = new Y.Doc();
-        roomDocs.set(roomName, doc);
+        this.codeeditorRepo.set(roomName, doc);
       }
 
       Y.applyUpdate(doc, new Uint8Array(update));
@@ -157,7 +155,7 @@ export class CodeeditorWebsocketGateway implements OnGatewayInit, OnGatewayConne
   @SubscribeMessage('request-sync')
   handleRequestSync(@ConnectedSocket() client: Socket) {
     const roomName = client.data.roomName;
-    const doc = roomDocs.get(roomName);
+    const doc = this.codeeditorRepo.get(roomName);
 
     if (!doc) return;
 

@@ -342,7 +342,7 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
 
       <MeetingMenu />
 
-      {isInfoOpen && <InfoModal />}
+      {isInfoOpen && <InfoModal meetingId={meetingId} />}
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import {
   MediaState,
   MediaType,
+  MeetingInfoResponse,
   MeetingMemberInfo,
   MemberStream,
 } from '@/types/meeting';
@@ -14,6 +15,14 @@ const INITIAL_MEDIA_STATE: MediaState = {
   micPermission: 'unknown',
 };
 
+const INITIAL_MEETING_INFO: MeetingInfoResponse = {
+  title: '',
+  host_nickname: '',
+  current_participants: 0,
+  max_participants: 0,
+  has_password: false,
+};
+
 const VISIBLE_COUNT = 5;
 
 interface MeetingState {
@@ -25,12 +34,14 @@ interface MeetingState {
   speakingMembers: Record<string, boolean>;
   orderedMemberIds: string[];
   pinnedMemberIds: string[];
+  meetingInfo: MeetingInfoResponse;
 
   isInfoOpen: boolean;
   isMemberOpen: boolean;
   isChatOpen: boolean;
   isWhiteboardOpen: boolean;
   isCodeEditorOpen: boolean;
+  isInfoLoaded: boolean;
 }
 
 interface MeetingActions {
@@ -41,6 +52,7 @@ interface MeetingActions {
   setScreenSharer: (sharer: { id: string; nickname: string } | null) => void;
   setSpeaking: (userId: string, isSpeaking: boolean) => void;
   togglePin: (userId: string) => void;
+  setMeetingInfo: (info: Partial<MeetingInfoResponse>) => void;
 
   setMemberStream: (
     userId: string,
@@ -73,12 +85,14 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
   speakingMembers: {},
   orderedMemberIds: [],
   pinnedMemberIds: [],
+  meetingInfo: INITIAL_MEETING_INFO,
 
   isInfoOpen: false,
   isMemberOpen: false,
   isChatOpen: false,
   isWhiteboardOpen: false,
   isCodeEditorOpen: false,
+  isInfoLoaded: false,
 
   setMedia: (media) => set((prev) => ({ media: { ...prev.media, ...media } })),
   setMembers: (members) =>
@@ -185,7 +199,14 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
         orderedMemberIds: [...nextPinned, ...remainingIds],
       };
     }),
-
+  setMeetingInfo: (info) =>
+    set((state) => ({
+      meetingInfo: {
+        ...state.meetingInfo,
+        ...info,
+      },
+      isInfoLoaded: true,
+    })),
   setMemberStream: (userId, type, stream) =>
     set((state) => ({
       memberStreams: {

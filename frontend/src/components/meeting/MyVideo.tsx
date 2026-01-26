@@ -71,29 +71,6 @@ export default function MyVideo() {
           {nickname}
         </span>
       </div>
-
-      {/* 더보기 메뉴 */}
-      <div
-        ref={ref}
-        className={`absolute top-2 right-2 group-hover:flex ${isDropdownOpen ? 'flex' : 'hidden'}`}
-      >
-        <button className="rounded-sm bg-sky-700 p-0.5" onClick={onMoreClick}>
-          <MoreHoriIcon className="h-4 w-4 text-neutral-50" />
-        </button>
-        {isDropdownOpen && (
-          <menu className="absolute top-[calc(100%+8px)] right-0 z-100 w-40 rounded-sm border border-neutral-500 bg-neutral-600">
-            <button className="dropdown-btn" onClick={closeDropdown}>
-              드롭다운 메뉴1
-            </button>
-            <button className="dropdown-btn" onClick={closeDropdown}>
-              드롭다운 메뉴2
-            </button>
-            <button className="dropdown-btn" onClick={closeDropdown}>
-              드롭다운 메뉴3
-            </button>
-          </menu>
-        )}
-      </div>
     </div>
   );
 }

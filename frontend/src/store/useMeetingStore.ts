@@ -14,6 +14,8 @@ const INITIAL_MEDIA_STATE: MediaState = {
   micPermission: 'unknown',
 };
 
+const VISIBLE_COUNT = 5;
+
 interface MeetingState {
   media: MediaState;
   members: Record<string, MeetingMemberInfo>;
@@ -22,6 +24,7 @@ interface MeetingState {
   screenSharer: { id: string; nickname: string } | null;
   speakingMembers: Record<string, boolean>;
   orderedMemberIds: string[];
+  pinnedMemberIds: string[];
 
   isInfoOpen: boolean;
   isMemberOpen: boolean;
@@ -37,6 +40,7 @@ interface MeetingActions {
   removeMember: (userId: string) => void;
   setScreenSharer: (sharer: { id: string; nickname: string } | null) => void;
   setSpeaking: (userId: string, isSpeaking: boolean) => void;
+  togglePin: (userId: string) => void;
 
   setMemberStream: (
     userId: string,
@@ -68,6 +72,7 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
   screenSharer: null,
   speakingMembers: {},
   orderedMemberIds: [],
+  pinnedMemberIds: [],
 
   isInfoOpen: false,
   isMemberOpen: false,
@@ -91,18 +96,35 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
     }),
   addMember: (member) =>
     set((state) => {
+      const userId = member.user_id;
       const existingStream = state.memberStreams[member.user_id] || {};
+
+      if (state.orderedMemberIds.includes(userId)) {
+        return {
+          members: { ...state.members, [userId]: member },
+        };
+      }
+
+      const remainingIds = state.orderedMemberIds.filter(
+        (id) => !state.pinnedMemberIds.includes(id),
+      );
+
+      const nextOrderedIds = [
+        ...state.pinnedMemberIds,
+        userId,
+        ...remainingIds,
+      ];
 
       return {
         members: {
           ...state.members,
-          [member.user_id]: member,
+          [userId]: member,
         },
         memberStreams: {
           ...state.memberStreams,
-          [member.user_id]: existingStream,
+          [userId]: existingStream,
         },
-        orderedMemberIds: [member.user_id, ...state.orderedMemberIds],
+        orderedMemberIds: nextOrderedIds,
       };
     }),
   removeMember: (userId) =>
@@ -119,23 +141,48 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
         memberStreams: nextMemberStreams,
         speakingMembers: nextSpeakingMembers,
         orderedMemberIds: state.orderedMemberIds.filter((id) => id !== userId),
+        pinnedMemberIds: state.pinnedMemberIds.filter((id) => id !== userId),
       };
     }),
   setScreenSharer: (sharer) => set(() => ({ screenSharer: sharer })),
   setSpeaking: (userId, isSpeaking) =>
     set((state) => {
+      // 말하기를 멈췄을 때나, 고정된 유저는 계산에서 제외
+      if (!isSpeaking && state.pinnedMemberIds.includes(userId)) {
+        return {
+          speakingMembers: { ...state.speakingMembers, [userId]: isSpeaking },
+        };
+      }
+
       const currentIndex = state.orderedMemberIds.indexOf(userId);
       let nextOrderedIds = state.orderedMemberIds;
 
       // 발언한 사람이 첫 페이지에 존재하는지 확인
-      if (isSpeaking && currentIndex > 4) {
-        const filtered = state.orderedMemberIds.filter((id) => id !== userId);
-        nextOrderedIds = [userId, ...filtered];
+      if (isSpeaking && currentIndex > VISIBLE_COUNT - 1) {
+        const otherIds = state.orderedMemberIds.filter(
+          (id) => !state.pinnedMemberIds.includes(id) && id !== userId,
+        );
+        nextOrderedIds = [...state.pinnedMemberIds, userId, ...otherIds];
       }
 
       return {
         speakingMembers: { ...state.speakingMembers, [userId]: isSpeaking },
         orderedMemberIds: nextOrderedIds,
+      };
+    }),
+  togglePin: (userId) =>
+    set((state) => {
+      const isPinned = state.pinnedMemberIds.includes(userId);
+      const nextPinned = isPinned
+        ? state.pinnedMemberIds.filter((id) => id !== userId)
+        : [...state.pinnedMemberIds, userId];
+      const remainingIds = state.orderedMemberIds.filter(
+        (id) => !nextPinned.includes(id),
+      );
+
+      return {
+        pinnedMemberIds: nextPinned,
+        orderedMemberIds: [...nextPinned, ...remainingIds],
       };
     }),
 

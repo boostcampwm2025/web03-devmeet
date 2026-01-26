@@ -11,7 +11,7 @@ import OverlayControl from '@/components/whiteboard/controls/OverlayControl';
 import ZoomControls from '@/components/whiteboard/controls/ZoomControl';
 import Sidebar from '@/components/whiteboard/sidebar/Sidebar';
 import ToolbarContainer from '@/components/whiteboard/toolbar/ToolbarContainer';
-import RemoteCursors from '@/components/whiteboard/controls/RemoteCursors';
+import RemoteCursors from '@/components/whiteboard/remote/RemoteCursors';
 
 const Canvas = dynamic(() => import('@/components/whiteboard/Canvas'), {
   ssr: false,
@@ -38,5 +38,4 @@ function Whiteboard() {
   );
 }
 
-// React.memo로 감싸서 불필요한 재렌더링 방지
 export default memo(Whiteboard);

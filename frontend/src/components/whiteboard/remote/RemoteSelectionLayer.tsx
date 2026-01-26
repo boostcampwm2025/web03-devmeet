@@ -18,7 +18,6 @@ export default function RemoteSelectionLayer({
   items,
   stageRef,
 }: RemoteSelectionLayerProps) {
-  // 이 컴포넌트만 users를 구독
   const users = useWhiteboardAwarenessStore((state) => state.users);
 
   const displayedItemIds = new Set<string>();

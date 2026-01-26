@@ -23,7 +23,7 @@ import { useCanvasMouseEvents } from '@/hooks/useCanvasMouseEvents';
 import RenderItem from '@/components/whiteboard/items/RenderItem';
 import TextArea from '@/components/whiteboard/items/text/TextArea';
 import ItemTransformer from '@/components/whiteboard/controls/ItemTransformer';
-import RemoteSelectionLayer from '@/components/whiteboard/controls/RemoteSelectionLayer';
+import RemoteSelectionLayer from '@/components/whiteboard/remote/RemoteSelectionLayer';
 import ArrowHandles from '@/components/whiteboard/items/arrow/ArrowHandles';
 
 export default function Canvas() {

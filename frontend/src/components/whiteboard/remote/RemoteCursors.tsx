@@ -5,7 +5,6 @@ import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
 import RemoteCursor from './RemoteCursor';
 
 export default function RemoteCursors() {
-  // 이 컴포넌트만 users를 구독
   const users = useWhiteboardAwarenessStore((state) => state.users);
   const myUserId = useWhiteboardAwarenessStore((state) => state.myUserId);
   const stageScale = useWhiteboardLocalStore((state) => state.stageScale);

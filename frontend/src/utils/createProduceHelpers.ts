@@ -1,9 +1,13 @@
-import { Transport } from 'mediasoup-client/types';
+import { Device, Transport } from 'mediasoup-client/types';
 
-// track을 produce하는 헬퍼 함수들을 반환합니다.
-export function createProduceHelper(sendTransport: Transport) {
-  // vpc 9을 사용할 수 있는지 확인이 필요하다.
-  
+// track을 produce하는 헬퍼 함수들을 반환합니다. ( vp9을 사용하기 위해서 매개변수 하나를 추가 )
+export function createProduceHelper(sendTransport: Transport, device: Device) {
+  // vpc 9을 사용할 수 있는지 확인이 필요하다. ( vpc9을 사용할 수 있는지 확인하는 로직 )
+  const findVp9Codec = () =>
+    device.rtpCapabilities.codecs?.find(
+      (c) => c.kind === 'video' && c.mimeType.toLowerCase() === 'video/vp9'
+    );
+
   // 2) 실제 track produce 함수들
   const produceMic = (track: MediaStreamTrack) =>
     sendTransport.produce({
@@ -11,9 +15,24 @@ export function createProduceHelper(sendTransport: Transport) {
       appData: { type: 'mic' },
     });
   
-  // can을 보낼때 VP8 or VP9일때 나누어서 처리하는 것이 좋다. 
-  const produceCam = (track: MediaStreamTrack) =>
-    sendTransport.produce({
+  // 웹캠 같이 움직임이 많은 경우 VP8이 오히려 좋을 수 있다. ( vp9은 따로 추가 조건이 있을때 사용하면 좋을예정 )
+  const produceCam = (track: MediaStreamTrack) => {
+    // VP9이 가능한지 체크
+    // const vp9 = findVp9Codec();
+
+    // if (vp9) {
+    //   return sendTransport.produce({
+    //     track,
+    //     appData: { type: 'cam' },
+    //     codec: vp9,
+    //     encodings: [
+    //       { scalabilityMode: 'L3T3_KEY', maxBitrate: 1_200_000 }, // 3레이어 사용
+    //     ],
+    //     codecOptions: { videoGoogleStartBitrate: 600 },
+    //   });
+    // }
+
+    return sendTransport.produce({
       track,
       appData: { type: 'cam' },
       // simulcast 방식 ( 아래로 갈수록 고화질 )
@@ -27,11 +46,25 @@ export function createProduceHelper(sendTransport: Transport) {
       },
     });
 
-  // 기기에 따라서 vp9이 가능하게 해라
+  }
 
+  // 가능하면 VP9 안되면 VP8로 전달
+  const produceScreenVideo = (track: MediaStreamTrack) => {
+    const vp9 = findVp9Codec();
 
-  const produceScreenVideo = (track: MediaStreamTrack) =>
-    sendTransport.produce({
+    if (vp9) {
+      return sendTransport.produce({
+        track,
+        appData: { type: 'screen_video' },
+        codec: vp9,
+        encodings: [
+          { maxBitrate: 1_800_000 }, // cam 보다는 더 높아야 한다. (상황에 따라서 SVC를 사용할 수 있게 해주면 좋다.) ( SVC는 좀 더 나중에 세밀한 조정때 유용하다. )
+        ],
+        codecOptions: { videoGoogleStartBitrate: 400 },
+      });
+    };    
+
+    return sendTransport.produce({
       track,
       appData: { type: 'screen_video' },
       encodings: [
@@ -43,6 +76,7 @@ export function createProduceHelper(sendTransport: Transport) {
         videoGoogleStartBitrate: 400,  // 화면공유에 시작 비트레이트는 낮게 
       },
     });
+  }
 
   const produceScreenAudio = (track: MediaStreamTrack) =>
     sendTransport.produce({

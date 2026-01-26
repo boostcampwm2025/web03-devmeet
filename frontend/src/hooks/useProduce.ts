@@ -4,15 +4,16 @@ import { createProduceHelper } from '@/utils/createProduceHelpers';
 import { useMemo } from 'react';
 
 export const useProduce = () => {
-  const { socket, sendTransport, setProducer, setIsProducing } =
+  // device를 가져오도록 수정했습니다.
+  const { socket, sendTransport, setProducer, setIsProducing, device } =
     useMeetingSocketStore();
   const { setMedia } = useMeetingStore();
 
   // sendTransport가 초기화 된 이후 createProduceHelper 선언
   const helpers = useMemo(() => {
-    if (!socket || !sendTransport) return null;
-    return createProduceHelper(sendTransport);
-  }, [sendTransport]);
+    if (!socket || !sendTransport || !device) return null;
+    return createProduceHelper(sendTransport, device);
+  }, [sendTransport, device]);
 
   const startAudioProduce = async () => {
     // 함수가 호출되었을 시점의 값을 위해 getState() 사용
@@ -115,7 +116,7 @@ export const useProduce = () => {
       stream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           frameRate : { max : 15 }, // 이건 고정하는게 좋다. 
-          width : { max : 1280 }, // 이부분은 현재 device 정보에 따라서 수정이 가능하게 하는게 좋다.  
+          width : { max : 1280 }, // 이부분은 나중에 회의실 등 상황에 따라서 조정이 가능하다 ( 이거 보다 크면 다운스케일 적용 회의 방이나 분위기에 따라 다름 ) 
           height : { max : 720 } // 마찬 가지 
         },
         audio: true,

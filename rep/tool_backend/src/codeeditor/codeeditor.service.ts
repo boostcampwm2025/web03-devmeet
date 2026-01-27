@@ -95,8 +95,8 @@ export class CodeeditorService {
   // redis로 부터 docs를 가져오는 로직 ( 메모리에 없을 경우 cache에서 불러와서 저장한다. )
   async ensureDocFromRedis(roomName : string, room_id : string) : Promise<UpdateEntry> {
 
-    const existed = this.codeeditorRepo.get(roomName);
-    if ( existed ) return this.codeeditorRepo.encodeFull(roomName);
+    const existed = this.codeeditorRepo.get(room_id);
+    if ( existed ) return this.codeeditorRepo.encodeFull(room_id);
 
     // 없으면 생성한다. ( cache에서 채울 예정 )
     this.codeeditorRepo.ensure(roomName);
@@ -125,8 +125,6 @@ export class CodeeditorService {
       const uBuf = decodeB64(uB64);
       this.codeeditorRepo.applyAndAppendUpdate(roomName, new Uint8Array(uBuf));
     };
-
-    this.logger.log("redis에서 데이터를 가져왔습니다.");
 
     // 마지막 stream 까지 업데이트 시킨다. 
     return this.codeeditorRepo.encodeFull(roomName);
@@ -177,7 +175,6 @@ export class CodeeditorService {
       tx.xTrim(streamKey, 'MAXLEN', STREAM_MAXLEN, { strategyModifier: '~' }); // 원자성 보장
 
       const res = await tx.exec();
-      this.logger.log("스냅샷을 찍었습니다.")
       if ( !res ) return;
     } catch (err) {
       this.logger.error(err);

@@ -79,12 +79,9 @@ export default function ShapeTextArea({
     // Group의 절대 위치 (화면 좌표)
     const groupPos = shapeGroup.getAbsolutePosition();
 
-    // 원형은 중심점 기준, 나머지는 좌상단 기준
-    const isCircle = shapeItem.shapeType === 'circle';
-
-    // 중심점까지의 오프셋 (로컬 좌표)
-    const offsetX = isCircle ? 0 : shapeItem.width / 2;
-    const offsetY = isCircle ? 0 : shapeItem.height / 2;
+    // 모든 도형은 좌상단 기준 Group에 존재, 중앙점까지의 오프셋은 너비/높이의 절반
+    const offsetX = shapeItem.width / 2;
+    const offsetY = shapeItem.height / 2;
 
     // 회전 적용 (Group의 rotation 사용)
     const rotation = shapeGroup.rotation();
@@ -258,18 +255,14 @@ export default function ShapeTextArea({
       let newX = shapeItem.x;
       let newY = shapeItem.y;
 
-      if (shapeItem.shapeType === 'circle') {
-        newY = shapeItem.y - heightDiff / 2;
-      } else {
-        const dyLocal = -heightDiff / 2;
-        const rad = (rotation * Math.PI) / 180;
+      const dyLocal = -heightDiff / 2;
+      const rad = (rotation * Math.PI) / 180;
 
-        const dxGlobal = -dyLocal * Math.sin(rad);
-        const dyGlobal = dyLocal * Math.cos(rad);
+      const dxGlobal = -dyLocal * Math.sin(rad);
+      const dyGlobal = dyLocal * Math.cos(rad);
 
-        newX = shapeItem.x + dxGlobal;
-        newY = shapeItem.y + dyGlobal;
-      }
+      newX = shapeItem.x + dxGlobal;
+      newY = shapeItem.y + dyGlobal;
 
       lastSizeRef.current = { width: shapeItem.width, height: actualHeight };
       onSizeChange(shapeItem.width, actualHeight, newY, newX, newText);

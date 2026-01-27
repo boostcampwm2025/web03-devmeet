@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import Konva from 'konva';
 
 import { Rect, Ellipse, Line, Group, Text } from 'react-konva';
@@ -21,6 +21,8 @@ interface ShapeItemProps {
   onMouseLeave: (e: Konva.KonvaEventObject<MouseEvent>) => void;
 
   onDragStart?: () => void;
+  onDragMove?: (x: number, y: number) => void;
+  onTransformMove?: (x: number, y: number, w: number, h: number) => void;
   onDragEnd?: () => void;
 }
 
@@ -35,19 +37,20 @@ export default function ShapeItem({
   onMouseEnter,
   onMouseLeave,
   onDragStart,
+  onDragMove,
+  onTransformMove,
   onDragEnd,
 }: ShapeItemProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const lastTransformRef = useRef<number>(0);
+  const [isTransforming, setIsTransforming] = useState(false);
 
-  const isCircle = shapeItem.shapeType === 'circle';
   const width = shapeItem.width || 0;
   const height = shapeItem.height || 0;
   const x = shapeItem.x || 0;
   const y = shapeItem.y || 0;
 
-  const displayX = isCircle ? x + width / 2 : x;
-  const displayY = isCircle ? y + height / 2 : y;
+  const displayX = x;
+  const displayY = y;
 
   // 애니메이션 훅
   const shapeRef = useItemAnimation({
@@ -56,16 +59,25 @@ export default function ShapeItem({
     width: shapeItem.width,
     height: shapeItem.height,
     isSelected,
-    isDragging,
+    isDragging: isDragging || isTransforming,
   });
 
   const handleTransform = useCallback(
     (e: Konva.KonvaEventObject<Event>) => {
-      if (!shapeItem.text) return;
-
       const group = e.target as Konva.Group;
       const groupScaleX = group.scaleX();
       const groupScaleY = group.scaleY();
+
+      const newWidth = Math.max(5, shapeItem.width * groupScaleX);
+      const newHeight = Math.max(5, shapeItem.height * groupScaleY);
+
+      const newX = group.x();
+      const newY = group.y();
+
+      onTransformMove?.(newX, newY, newWidth, newHeight);
+
+      // 2. 텍스트 자동 크기 조절 (있는 경우)
+      if (!shapeItem.text) return;
 
       // 회전만 하는 경우 넘김(계산 안함)
       if (
@@ -74,38 +86,28 @@ export default function ShapeItem({
       )
         return;
 
-      // 스로틀링, 30ms마다 업데이트(텍스트 많으면 성능 문제 있음)
-      const now = Date.now();
-      if (now - lastTransformRef.current < 30) return;
-      lastTransformRef.current = now;
-
       const textNode = group.findOne('Text') as Konva.Text;
       if (!textNode) return;
 
       textNode.scaleX(1 / groupScaleX);
       textNode.scaleY(1 / groupScaleY);
 
-      const newWidth = shapeItem.width * 0.8 * groupScaleX;
-      const newHeight = shapeItem.height * groupScaleY;
-      textNode.width(newWidth);
-      textNode.height(newHeight);
+      const textWidth = shapeItem.width * 0.8 * groupScaleX;
+      const textHeight = shapeItem.height * groupScaleY;
+      textNode.width(textWidth);
+      textNode.height(textHeight);
 
       const offsetX = (shapeItem.width - shapeItem.width * 0.8) / 2;
 
-      const isCircle = shapeItem.shapeType === 'circle';
-      if (isCircle) {
-        textNode.x(-shapeItem.width / 2 + offsetX);
-        textNode.y(-shapeItem.height / 2);
-      } else {
-        textNode.x(offsetX);
-        textNode.y(0);
-      }
+      textNode.x(offsetX);
+      textNode.y(0);
     },
-    [shapeItem.text, shapeItem.width, shapeItem.height, shapeItem.shapeType],
+    [shapeItem.text, shapeItem.width, shapeItem.height, onTransformMove],
   );
 
   const handleTransformEnd = useCallback(
-    (e: Konva.KonvaEventObject<Event>, isCircleShape: boolean) => {
+    (e: Konva.KonvaEventObject<Event>) => {
+      setIsTransforming(false);
       const node = e.target as Konva.Group;
       const scaleX = node.scaleX();
       const scaleY = node.scaleY();
@@ -142,13 +144,8 @@ export default function ShapeItem({
         }
       }
 
-      let newX = node.x();
-      let newY = node.y();
-
-      if (isCircleShape) {
-        newX -= newWidth / 2;
-        newY -= newHeight / 2;
-      }
+      const newX = node.x();
+      const newY = node.y();
 
       onChange({
         x: newX,
@@ -167,22 +164,27 @@ export default function ShapeItem({
     onDragStart?.();
   }, [onDragStart]);
 
+  const handleDragMove = useCallback(
+    (e: Konva.KonvaEventObject<DragEvent>) => {
+      const newX = e.target.x();
+      const newY = e.target.y();
+
+      onDragMove?.(newX, newY);
+    },
+    [onDragMove],
+  );
+
   const handleDragEnd = useCallback(
-    (e: Konva.KonvaEventObject<DragEvent>, isCircleShape: boolean) => {
+    (e: Konva.KonvaEventObject<DragEvent>) => {
       setIsDragging(false);
 
-      let newX = e.target.x();
-      let newY = e.target.y();
-
-      if (isCircleShape) {
-        newX -= shapeItem.width / 2;
-        newY -= shapeItem.height / 2;
-      }
+      const newX = e.target.x();
+      const newY = e.target.y();
 
       onChange({ x: newX, y: newY });
       onDragEnd?.();
     },
-    [shapeItem.width, shapeItem.height, onChange, onDragEnd],
+    [onChange, onDragEnd],
   );
 
   const w = shapeItem.width || 0;
@@ -229,8 +231,8 @@ export default function ShapeItem({
         verticalAlign="middle"
         width={textWidth}
         height={height}
-        x={isCircle ? -width / 2 + offsetX : offsetX}
-        y={isCircle ? -height / 2 : 0}
+        x={offsetX}
+        y={0}
         listening={false}
         wrap="word"
         ellipsis={false}
@@ -249,15 +251,18 @@ export default function ShapeItem({
     ...commonProps,
     ref: shapeRef as React.RefObject<Konva.Group>,
     onDragStart: handleDragStart,
-    onTransform: shapeItem.text ? handleTransform : undefined,
+    // 도형 타입별 onDragMove 처리를 위해 여기서는 할당하지 않음
+    onTransformStart: () => setIsTransforming(true),
+    onTransform: handleTransform,
   };
 
   if (shapeItem.shapeType === 'rect') {
     return (
       <Group
         {...groupProps}
-        onDragEnd={(e) => handleDragEnd(e, false)}
-        onTransformEnd={(e) => handleTransformEnd(e, false)}
+        onDragEnd={(e) => handleDragEnd(e)}
+        onDragMove={(e) => handleDragMove(e)}
+        onTransformEnd={(e) => handleTransformEnd(e)}
       >
         <Rect
           width={width}
@@ -283,10 +288,13 @@ export default function ShapeItem({
     return (
       <Group
         {...groupProps}
-        onDragEnd={(e) => handleDragEnd(e, true)}
-        onTransformEnd={(e) => handleTransformEnd(e, true)}
+        onDragEnd={(e) => handleDragEnd(e)}
+        onDragMove={(e) => handleDragMove(e)}
+        onTransformEnd={(e) => handleTransformEnd(e)}
       >
         <Ellipse
+          x={width / 2}
+          y={height / 2}
           radiusX={width / 2}
           radiusY={height / 2}
           fill={shapeItem.fill}
@@ -318,8 +326,9 @@ export default function ShapeItem({
   return (
     <Group
       {...groupProps}
-      onDragEnd={(e) => handleDragEnd(e, false)}
-      onTransformEnd={(e) => handleTransformEnd(e, false)}
+      onDragEnd={(e) => handleDragEnd(e)}
+      onDragMove={(e) => handleDragMove(e)}
+      onTransformEnd={(e) => handleTransformEnd(e)}
     >
       <Line
         points={points}

@@ -113,7 +113,33 @@ export default function ShapeItem({
       node.scaleY(1);
 
       const newWidth = Math.max(5, shapeItem.width * scaleX);
-      const newHeight = Math.max(5, shapeItem.height * scaleY);
+      let newHeight = Math.max(5, shapeItem.height * scaleY);
+
+      // 텍스트 있으면 텍스트 노드 크기에 맞춰 높이 조절
+      if (shapeItem.text) {
+        const textNode = node.findOne('Text') as Konva.Text;
+        if (textNode) {
+          const originalWidth = textNode.width();
+          const originalHeight = textNode.height();
+          const textWidth = newWidth * 0.8;
+
+          textNode.width(textWidth);
+          textNode.height(NaN);
+
+          const requiredHeight = textNode.height() + 8;
+
+          // 원래 크기로 복원
+          textNode.width(originalWidth);
+          textNode.height(originalHeight);
+
+          // 텍스트를 모두 표시하기 위한 최소 높이
+          newHeight = Math.max(newHeight, requiredHeight);
+
+          // 텍스트 노드 스케일 리셋
+          textNode.scaleX(1);
+          textNode.scaleY(1);
+        }
+      }
 
       let newX = node.x();
       let newY = node.y();
@@ -130,15 +156,6 @@ export default function ShapeItem({
         height: newHeight,
         rotation: node.rotation(),
       });
-
-      // 텍스트 노드 스케일 리셋
-      if (shapeItem.text) {
-        const textNode = node.findOne('Text') as Konva.Text;
-        if (textNode) {
-          textNode.scaleX(1);
-          textNode.scaleY(1);
-        }
-      }
     },
     [shapeItem.width, shapeItem.height, shapeItem.text, onChange],
   );

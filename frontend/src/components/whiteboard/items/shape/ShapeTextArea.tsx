@@ -63,9 +63,9 @@ export default function ShapeTextArea({
         }
       }
     };
-  }, [shapeId, stageRef, text]); // text를 의존성에 추가하여 텍스트 변경 시에도 재실행
+  }, [shapeId, stageRef, text]);
 
-  // 초기화 및 스타일/위치/크기 설정
+  // 스타일/위치/크기 설정 (shapeItem 변경 시 재실행함)
   useEffect(() => {
     if (!ref.current || !stageRef.current) return;
 
@@ -179,6 +179,9 @@ export default function ShapeTextArea({
       textarea.focus();
       const textLength = textarea.value.length;
       textarea.setSelectionRange(textLength, textLength);
+    } else {
+      // 포커스 유지
+      textarea.focus();
     }
 
     return () => {

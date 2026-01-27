@@ -36,39 +36,53 @@ export function ChatListItem({
         </div>
 
         {/* 댓글 내용 */}
-        {content.type === 'TEXT' && (
+        {content.type === 'text' && (
           <span className="rounded-sm bg-neutral-600 p-2 text-sm break-all whitespace-pre-wrap text-neutral-50">
             {content.text}
           </span>
         )}
-        {content.type === 'IMAGE' && (
+
+        {content.type === 'image' && (
           <span className="rounded-sm bg-neutral-600 p-2">
             <Image
               width={200}
               height={200}
               className="max-h-50 w-auto object-cover"
-              src={content.src}
+              src={content.src as string}
               alt="채팅 이미지"
             />
           </span>
         )}
-        {content.type === 'FILE' && (
-          <button className="group flex items-center gap-4 rounded-sm bg-neutral-600 px-3 py-2">
-            <div className="flex items-center gap-3">
+
+        {content.type === 'file' && (
+          <div className="group flex items-center gap-4 rounded-sm bg-neutral-600 px-3 py-2">
+            <a
+              href={content.fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex flex-1 items-center gap-3"
+              download
+            >
               <FileIcon className="h-6 w-6 text-neutral-50" />
+
               <div className="flex flex-1 flex-col items-start gap-1">
                 <span className="text-left text-sm font-bold break-all whitespace-pre-wrap text-neutral-50">
-                  {content.fileName}
+                  {content.filename}
                 </span>
                 <span className="text-xs text-neutral-300">
                   {formatFileSize(content.size)}
                 </span>
               </div>
-            </div>
-            <i className="rounded-full p-1 group-hover:bg-neutral-500">
+            </a>
+
+            <button
+              type="button"
+              aria-label="파일 다운로드"
+              className="rounded-full p-1 group-hover:bg-neutral-500"
+            >
               <DownloadIcon className="h-6 w-6 text-neutral-50" />
-            </i>
-          </button>
+            </button>
+          </div>
         )}
       </section>
     </div>

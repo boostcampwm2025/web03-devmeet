@@ -162,7 +162,10 @@ export default function ChatModal() {
       </div>
 
       {/* 채팅 내역 */}
-      <section ref={scrollRef} className="flex-1 overflow-y-auto">
+      <section
+        ref={scrollRef}
+        className="chat-scrollbar flex-1 overflow-y-auto scroll-smooth"
+      >
         {messages.map((chat) => (
           <ChatListItem key={chat.id} {...chat} />
         ))}

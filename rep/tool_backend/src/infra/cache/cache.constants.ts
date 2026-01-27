@@ -30,6 +30,20 @@ export const CACHE_CODEEDITOR_NAMESPACE_NAME = Object.freeze({
   SNAPSHOT_LOCK : "snapshot:lock"
 } as const);
 
+// codeeditor에서 snap_shot과 관련된 keyname
+export const CACHE_CODEEDITOR_SNAPSHOT_KEY_NAME = Object.freeze({
+  SNAP : "snap", // 스냅샷 바이너리 base64 문자열로 저장된다.
+  IDX : "idx", // shapshot이 반영한 마지막 stream_id
+  TX : "tx" // snapshot이 찍힌 시간
+} as const);
+
+// stream message에 저장될 keyname
+export const CACHE_CODEEDITOR_STREAM_KEY_NAME = Object.freeze({
+  UPDATE : "update",
+  TX : "tx",
+  USER_ID : "user_id"
+} as const);
+
 // base64로 인코딩 할 예정이기 때문에 이를 이용해서 정리한다.
 export const encodeB64 = (u8: Uint8Array) => Buffer.from(u8).toString('base64');
 export const decodeB64 = (b64: string) => Buffer.from(b64, 'base64');

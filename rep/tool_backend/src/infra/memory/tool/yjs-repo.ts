@@ -34,6 +34,12 @@ export interface YjsRepository {
   // 전체를 업데이트 해준다. 
   encodeFull(room_id: string): { seq: number; update: Uint8Array };
 
+  // snapshot 생성
+  encodeSnapshot(room_id: string): Uint8Array;
+
+  // snapshot 추가
+  applySnapshot(room_id: string, snapshotUpdate: Uint8Array): void;
+
   // 삭제
   delete(room_id: string): void;
 };

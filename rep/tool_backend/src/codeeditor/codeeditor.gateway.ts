@@ -81,8 +81,7 @@ export class CodeeditorWebsocketGateway implements OnGatewayInit, OnGatewayConne
     client.data.roomName = roomName;
     
     // 메모리에 존재하면 가져오고 없으면 cache에서 가져온다. ( 이 부분을 cache에서 가져오는 걸로 수정을 한다. )  
-    this.codeeditorRepo.ensure(roomName); // 현재 존재하는지 확인하고 없다면 새로 생성
-    const full = this.codeeditorRepo.encodeFull(roomName); // 그 업데이트 본을 준다. 
+    const full = await this.codeeditorService.ensureDocFromRedis(roomName, payload.room_id);
 
     // 초기에 idx와 함께 같이 전달해준다. ( 현재 메모리에 저장된 idx )
     client.emit('yjs-init', { 
@@ -139,7 +138,7 @@ export class CodeeditorWebsocketGateway implements OnGatewayInit, OnGatewayConne
       whitelist : true
     })
   )
-  handleYjsUpdate(
+  async handleYjsUpdate(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload : YjsUpdateClientPayload
   ) {
@@ -211,6 +210,17 @@ export class CodeeditorWebsocketGateway implements OnGatewayInit, OnGatewayConne
       }
 
       // 모든 업데이트가 끝났을때 redis에 업데이트 한다. 
+      const dataPayload: ToolBackendPayload = client.data.payload;
+      await this.codeeditorService.appendUpdatesToStream(
+        dataPayload.room_id,
+        appliedUpdates.map((b) => new Uint8Array(b)),
+        dataPayload.user_id,
+      );
+
+      await this.codeeditorService.maybeSnapShot(
+        roomName,
+        dataPayload.room_id,
+      );
 
     } catch (error) {
       this.logger.error(`Yjs Update Error: ${error?.message ?? error}`);

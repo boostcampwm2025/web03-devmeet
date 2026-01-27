@@ -82,6 +82,27 @@ export class CodeeditorRepository implements YjsRepository {
     return { seq: entry.seq, update: full };
   }
 
+  // snapshot을 생성한다.
+  encodeSnapshot(room_id: string): Uint8Array {
+    const entry = this.ensure(room_id);
+    return Y.encodeStateAsUpdate(entry.doc);
+  };
+
+  // snapshot을 적용
+  applySnapshot(room_id: string, snapshotUpdate: Uint8Array): void {
+    const entry = this.ensure(room_id);
+
+    // 새 doc에서
+    const newDoc = new Y.Doc();
+    Y.applyUpdate(newDoc, snapshotUpdate);
+
+    entry.doc = newDoc;
+
+    // 새롭게 업데이트
+    entry.seq = 0;
+    entry.ring = new Array<UpdateEntry | undefined>(entry.ringSize);
+  }
+
   // room_id 삭제 ( 나중에 구현 )
   delete(room_id: string): void {
     this.roomDocs.delete(room_id);

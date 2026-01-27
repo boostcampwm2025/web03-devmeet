@@ -56,6 +56,10 @@ export default function MeetingMenu() {
   const isSomeoneSharing = screenSharer !== null;
   const isDisabledSharing = isSomeoneSharing && !screenShareOn;
 
+  const [error, setError] = useState<{ title: string; message: string } | null>(
+    null,
+  );
+
   const toggleAudio = async () => {
     const { audioOn } = useMeetingStore.getState().media;
     if (audioOn) {
@@ -88,6 +92,15 @@ export default function MeetingMenu() {
   };
 
   const onScreenShareClick = async () => {
+    if (isWhiteboardOpen || isCodeEditorOpen) {
+      setError({
+        title: '화면 공유 실패',
+        message:
+          '화이트보드 또는 코드 에디터 사용 중에는\n화면 공유가 불가합니다.',
+      });
+      return;
+    }
+
     if (screenShareOn) {
       stopScreenProduce();
     } else {
@@ -220,6 +233,16 @@ export default function MeetingMenu() {
           isWarning
         >
           회의를 나갈까요?
+        </Modal>
+      )}
+
+      {error && (
+        <Modal
+          title={error.title}
+          cancelText="확인"
+          onCancel={() => setError(null)}
+        >
+          {error.message}
         </Modal>
       )}
     </nav>

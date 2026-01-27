@@ -42,7 +42,7 @@ export default function MyVideo({ width = '160px' }: { width?: string }) {
     >
       {/* 테두리 영역 */}
       {media.audioOn && isSpeaking && (
-        <div className="pointer-events-none absolute inset-0 z-10 rounded-lg border-3 border-sky-500" />
+        <div className="pointer-events-none absolute inset-0 z-5 rounded-lg border-3 border-sky-500" />
       )}
 
       {/* 영상 */}

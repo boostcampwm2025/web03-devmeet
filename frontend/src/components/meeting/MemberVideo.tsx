@@ -36,7 +36,7 @@ export default function MemberVideo({
     >
       {/* 테두리 영역 */}
       {isSpeaking && (
-        <div className="pointer-events-none absolute inset-0 z-10 rounded-lg border-3 border-sky-500" />
+        <div className="pointer-events-none absolute inset-0 z-5 rounded-lg border-3 border-sky-500" />
       )}
 
       {/* 영상 */}

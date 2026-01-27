@@ -1,21 +1,49 @@
 import { CloseIcon, ImageIcon } from '@/assets/icons/common';
 import { FileIcon, SendIcon } from '@/assets/icons/meeting';
 import ChatListItem from '@/components/meeting/ChatListItem';
-import { useChatSender } from '@/hooks/useChatSender';
+import { useChatSender } from '@/hooks/chat/useChatSender';
+import { useFileUpload } from '@/hooks/chat/useFileUpload';
 import { useChatStore } from '@/store/useChatStore';
 import { useMeetingSocketStore } from '@/store/useMeetingSocketStore';
 import { useMeetingStore } from '@/store/useMeetingStore';
 import { useUserStore } from '@/store/useUserStore';
+import { mapRecvPayloadToChatMessage } from '@/utils/chat';
+import { formatFileSize } from '@/utils/formatter';
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
 export default function ChatModal() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { setIsOpen } = useMeetingStore();
 
   const [hasValue, setHasValue] = useState(false);
-  const [files, setFiles] = useState([]);
+  const [pendingFiles, setPendingFiles] = useState<
+    Array<{ file: File; id: string; preview?: string }>
+  >([]);
+
+  // 파일 선택 핸들러
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    const newFiles = selectedFiles.map((file) => {
+      const isImageOrVideo =
+        file.type.startsWith('image/') || file.type.startsWith('video/');
+
+      return {
+        file,
+        id: Math.random().toString(36).substring(7),
+        // 미리보기 URL 생성
+        preview: isImageOrVideo ? URL.createObjectURL(file) : undefined,
+      };
+    });
+
+    setPendingFiles((prev) => [...prev, ...newFiles]);
+    e.target.value = '';
+  };
 
   const { userId, nickname, profilePath } = useUserStore();
   const messages = useChatStore((s) => s.messages);
@@ -28,6 +56,8 @@ export default function ChatModal() {
     profileImg: profilePath as string,
   });
 
+  const { uploadFile, uploading, percent } = useFileUpload(socket);
+
   const onCloseClick = () => setIsOpen('isChatOpen', false);
 
   useEffect(() => {
@@ -37,18 +67,43 @@ export default function ChatModal() {
   }, [messages]);
 
   // 이후 form 관련 라이브러리 사용 시 수정 필요
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const value = textareaRef.current?.value;
 
-    if (value && value.trim().length > 0) {
-      sendTextMessage(value);
+    const textValue = textareaRef.current?.value.trim();
+    if (!textValue && pendingFiles.length === 0) return;
+
+    if (textValue) {
+      sendTextMessage(textValue);
 
       if (textareaRef.current) {
         textareaRef.current.value = '';
         textareaRef.current.style.height = 'auto'; // 전송하고 높이 초기화
-        setHasValue(textareaRef.current.value.trim().length > 0);
+        setHasValue(false);
       }
+    }
+
+    if (pendingFiles.length > 0) {
+      const filesToUpload = [...pendingFiles];
+      setPendingFiles([]); // 입력창 비우기
+
+      for (const item of filesToUpload) {
+        try {
+          const res = await uploadFile(item.file);
+
+          if (res) {
+            // 서버 응답 데이터를 채팅 메시지 객체로 변환
+            const newMessage = mapRecvPayloadToChatMessage(res);
+
+            useChatStore.setState((state) => ({
+              messages: [...state.messages, newMessage],
+            }));
+          }
+        } catch (err) {
+          console.error(`${item.file.name} 업로드에 실패했습니다.`);
+        }
+      }
+      setPendingFiles([]);
     }
   };
 
@@ -72,6 +127,14 @@ export default function ChatModal() {
     setHasValue(obj.value.trim().length > 0);
   };
 
+  const removePendingFiles = (id: string) => {
+    setPendingFiles((prev) => {
+      const target = prev.find((f) => f.id === id);
+      if (target?.preview) URL.revokeObjectURL(target.preview); // 메모리 해제
+      return prev.filter((f) => f.id !== id);
+    });
+  };
+
   return (
     <aside className="meeting-side-modal z-6">
       <div className="flex-center relative h-12 w-full bg-neutral-800">
@@ -92,9 +155,47 @@ export default function ChatModal() {
       </section>
 
       {/* 채팅 입력 부분 */}
-      <form className="border-t border-neutral-600">
+      <form className="border-t border-neutral-600" onSubmit={onSubmit}>
         {/* 파일 업로드 현황 */}
-        {files.length > 0 && <div></div>}
+        {pendingFiles.length > 0 && (
+          <div className="flex flex-wrap gap-3 bg-neutral-700/50 p-3">
+            {pendingFiles.map((f) => (
+              <div key={f.id} className="group relative">
+                {f.preview ? (
+                  <Image
+                    src={f.preview}
+                    width={64}
+                    height={64}
+                    alt="preview"
+                    className="h-16 w-16 rounded-md border border-neutral-500 object-cover"
+                  />
+                ) : (
+                  <div className="flex w-full items-center justify-center gap-2 rounded-md border border-neutral-500 bg-neutral-600 px-3 py-2">
+                    <FileIcon className="h-6 w-6 text-neutral-300" />
+
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <span className="truncate text-left text-sm font-bold text-neutral-50">
+                        {f.file.name}
+                      </span>
+                      <span className="text-xs text-neutral-300">
+                        {formatFileSize(f.file.size)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 삭제 버튼 */}
+                <button
+                  type="button"
+                  onClick={() => removePendingFiles(f.id)}
+                  className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-neutral-500 text-neutral-200 opacity-0 transition-opacity group-hover:opacity-100"
+                >
+                  <CloseIcon className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* 텍스트 input */}
         <textarea
@@ -109,24 +210,46 @@ export default function ChatModal() {
         <div className="flex justify-between p-2 text-neutral-200 peer-placeholder-shown:text-neutral-400">
           {/* 이미지, 파일 로직 추가 후 수정 필요 */}
           <div className="flex gap-1 text-neutral-200">
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              multiple
+              onChange={onFileChange}
+            />
             <button
               type="button"
+              disabled={uploading}
               className="rounded-sm p-1 hover:bg-neutral-600"
+              onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.accept = 'image/*,video/*';
+                  fileInputRef.current.click();
+                }
+              }}
             >
               <ImageIcon className="h-4 w-4" />
             </button>
+
             <button
               type="button"
+              disabled={uploading}
               className="rounded-sm p-1 hover:bg-neutral-600"
+              onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.accept = '*/*';
+                  fileInputRef.current.click();
+                }
+              }}
             >
               <FileIcon />
             </button>
           </div>
           <button
             type="submit"
-            disabled={!hasValue}
+            disabled={!hasValue && pendingFiles.length === 0}
             className={`rounded-sm p-1 ${
-              hasValue
+              hasValue || pendingFiles.length > 0
                 ? 'cursor-pointer text-neutral-200 hover:bg-neutral-600'
                 : 'cursor-default text-neutral-400 hover:bg-transparent'
             } `}

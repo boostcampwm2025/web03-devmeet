@@ -36,6 +36,7 @@ import ShapeTextArea from '@/components/whiteboard/items/shape/ShapeTextArea';
 import ItemTransformer from '@/components/whiteboard/controls/ItemTransformer';
 import RemoteSelectionLayer from '@/components/whiteboard/remote/RemoteSelectionLayer';
 import ArrowHandles from '@/components/whiteboard/items/arrow/ArrowHandles';
+import Portal from '@/components/common/Portal';
 
 const GEOMETRY_KEYS = ['x', 'y', 'width', 'height'] as const;
 
@@ -142,10 +143,6 @@ export default function Canvas() {
     if (!viewportRect) return items;
     const filtered = filterVisibleItems(items, viewportRect);
 
-    console.log(
-      `[화이트보드] 전체: ${items.length} / 렌더링: ${filtered.length}`,
-    );
-
     return filtered;
   }, [items, viewportRect]);
 
@@ -158,9 +155,6 @@ export default function Canvas() {
     else if (stageScale >= 0.3) ratio = 0.5;
     else ratio = 0.25;
 
-    console.log(
-      `[화이트보드] scale: ${stageScale.toFixed(2)} / pixelRatio: ${ratio}`,
-    );
     return ratio;
   }, [stageScale]);
 
@@ -334,7 +328,7 @@ export default function Canvas() {
     <div
       ref={containerRef}
       className={cn(
-        'h-full w-full overflow-hidden bg-neutral-100',
+        'h-full w-full flex-none overflow-hidden bg-neutral-100',
         cursorMode === 'select' && 'cursor-default',
         cursorMode === 'move' && !isDraggingCanvas && 'cursor-grab',
         cursorMode === 'move' && isDraggingCanvas && 'cursor-grabbing',
@@ -532,42 +526,50 @@ export default function Canvas() {
 
       {/* 텍스트 편집 모드 */}
       {editingTextId && editingItem && editingItem.type === 'text' && (
-        <TextArea
-          textId={editingTextId}
-          textItem={editingItem as TextItem}
-          stageRef={stageRef}
-          onChange={(newText) => {
-            updateItem(editingTextId, { text: newText });
-          }}
-          onClose={() => {
-            setEditingTextId(null);
-            selectItem(null);
-          }}
-        />
+        <Portal>
+          <TextArea
+            textId={editingTextId}
+            textItem={editingItem as TextItem}
+            stageRef={stageRef}
+            onChange={(newText) => {
+              updateItem(editingTextId, { text: newText });
+            }}
+            onClose={() => {
+              setEditingTextId(null);
+              selectItem(null);
+            }}
+            stageScale={stageScale}
+            stagePos={stagePos}
+          />
+        </Portal>
       )}
 
       {/* 도형 텍스트 편집 모드 */}
       {editingTextId && editingItem && editingItem.type === 'shape' && (
-        <ShapeTextArea
-          shapeId={editingTextId}
-          shapeItem={editingItem as ShapeItem}
-          stageRef={stageRef}
-          onChange={(newText) => {
-            updateItem(editingTextId, { text: newText });
-          }}
-          onClose={() => {
-            setEditingTextId(null);
-            selectItem(null);
-          }}
-          onSizeChange={(width, height, newY, newX, newText) => {
-            const updates: Partial<ShapeItem> = { width, height };
-            if (newY !== undefined) updates.y = newY;
-            if (newX !== undefined) updates.x = newX;
-            if (newText !== undefined) updates.text = newText;
+        <Portal>
+          <ShapeTextArea
+            shapeId={editingTextId}
+            shapeItem={editingItem as ShapeItem}
+            stageRef={stageRef}
+            onChange={(newText) => {
+              updateItem(editingTextId, { text: newText });
+            }}
+            onClose={() => {
+              setEditingTextId(null);
+              selectItem(null);
+            }}
+            stageScale={stageScale}
+            stagePos={stagePos}
+            onSizeChange={(width, height, newY, newX, newText) => {
+              const updates: Partial<ShapeItem> = { width, height };
+              if (newY !== undefined) updates.y = newY;
+              if (newX !== undefined) updates.x = newX;
+              if (newText !== undefined) updates.text = newText;
 
-            updateItem(editingTextId, updates);
-          }}
-        />
+              updateItem(editingTextId, updates);
+            }}
+          />
+        </Portal>
       )}
     </div>
   );

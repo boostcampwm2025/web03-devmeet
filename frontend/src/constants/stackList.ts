@@ -293,6 +293,12 @@ export const STACK_LIST: StackIconInfo[] = [
     category: 'devops',
   },
   {
+    id: 'cilium',
+    name: 'Cilium',
+    src: '/icons/stack/devops/cilium.svg',
+    category: 'devops',
+  },
+  {
     id: 'cloudflare',
     name: 'Cloudflare',
     src: '/icons/stack/devops/cloudflare.svg',
@@ -302,6 +308,12 @@ export const STACK_LIST: StackIconInfo[] = [
     id: 'cmake',
     name: 'Cmake',
     src: '/icons/stack/devops/cmake.svg',
+    category: 'devops',
+  },
+  {
+    id: 'containerd',
+    name: 'Containerd',
+    src: '/icons/stack/devops/container_d.svg',
     category: 'devops',
   },
   {
@@ -368,6 +380,12 @@ export const STACK_LIST: StackIconInfo[] = [
     id: 'maven',
     name: 'Maven',
     src: '/icons/stack/devops/maven.svg',
+    category: 'devops',
+  },
+  {
+    id: 'ncp',
+    name: 'NCP',
+    src: '/icons/stack/devops/ncp.svg',
     category: 'devops',
   },
   {
@@ -962,6 +980,12 @@ export const STACK_LIST: StackIconInfo[] = [
     id: 'aftereffects',
     name: 'Aftereffects',
     src: '/icons/stack/tool/aftereffects.svg',
+    category: 'tool',
+  },
+  {
+    id: 'argo',
+    name: 'Argo',
+    src: '/icons/stack/tool/argo.svg',
     category: 'tool',
   },
   {

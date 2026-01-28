@@ -136,6 +136,10 @@ export class WhiteboardWebsocketGateway implements OnGatewayInit, OnGatewayConne
   handleCreate(@ConnectedSocket() client: Socket, @MessageBody() data: any) {
     try {
       const roomName = client.data.roomName;
+      // 현재 인덱스 확인 후 동기화 작업 진행 (다른것도 마찬가지이다.)
+
+      // 맞으면 뿌리고 업데이트 
+
       client.to(roomName).emit(WHITEBOARD_CLIENT_EVENT_NAME.REMOTE_CREATE_ELEMENT, data);
     } catch (error) {
       this.logger.error(`Create Error: ${error.message}`);
@@ -186,7 +190,7 @@ export class WhiteboardWebsocketGateway implements OnGatewayInit, OnGatewayConne
     }
   }
 
-  // Yjs 업데이트 (아이템 동기화)
+  // Yjs 업데이트 (아이템 동기화) -> 이부분에서 동기화를 진행하는것 같다 여기서도 만약 문제가 발생하면 다시 싱크를 맞추는 작업이 필요해 보인다. 
   @SubscribeMessage('yjs-update')
   handleYjsUpdate(@ConnectedSocket() client: Socket, @MessageBody() update: Buffer) {
     try {

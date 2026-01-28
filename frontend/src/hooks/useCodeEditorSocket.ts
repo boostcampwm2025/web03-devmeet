@@ -12,16 +12,17 @@ export const useCodeEditorSocket = () => {
 
   const { setCodeEditorSocket } = useToolSocketStore();
   const { setIsOpen } = useMeetingStore();
-  const meetingId = useMeetingStore.getState().meetingId;
 
   const connectToTool = useCallback(
     (tool: string, ticket: string, type: 'main' | 'sub') => {
+      const meetingId = useMeetingStore.getState().meetingId;
       const newSocket = io(
-        `${TOOL_BACKEND_URL}/${tool}?room_code=${meetingId}`,
+        `${TOOL_BACKEND_URL}/${tool}`,
         {
           path: `${NAMESPACE}`,
           transports: ['websocket'],
           auth: { token: ticket, type },
+          query: { room_code : meetingId }
         },
       );
 

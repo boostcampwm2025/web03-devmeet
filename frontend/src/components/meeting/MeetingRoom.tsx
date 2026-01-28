@@ -8,6 +8,7 @@ import MeetingMenu from '@/components/meeting/MeetingMenu';
 import MemberModal from '@/components/meeting/MemberModal';
 import MemberVideoBar from '@/components/meeting/MemberVideoBar';
 import Whiteboard from '@/components/whiteboard/Whiteboard';
+import { useWhiteboardSocket } from '@/hooks/useWhiteboardSocket';
 import { useCodeEditorSocket } from '@/hooks/useCodeEditorSocket';
 import { useMeetingSocket } from '@/hooks/useMeetingSocket';
 import { useProduce } from '@/hooks/useProduce';
@@ -53,8 +54,9 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
   const { userId } = useUserStore();
 
   const { joinCodeEditor } = useCodeEditorSocket();
+  const { joinWhiteboard } = useWhiteboardSocket();
   const { socket: mainSocket } = useMeetingSocket();
-  const { codeEditorSocket } = useToolSocketStore();
+  const { codeEditorSocket, whiteboardSocket } = useToolSocketStore();
 
   const screenVideoStream = useMeetingStore((state) =>
     screenSharer ? state.memberStreams[screenSharer.id]?.screen_video : null,
@@ -68,6 +70,12 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
       setIsOpen('isCodeEditorOpen', false);
     }
   }, [codeEditorSocket]);
+
+  useEffect(() => {
+    if (!whiteboardSocket) {
+      setIsOpen('isWhiteboardOpen', false);
+    }
+  }, [whiteboardSocket]);
 
   // 툴 소켓 연결 전파
   useEffect(() => {
@@ -86,12 +94,30 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
       }
     };
 
+    const handleRequestWhiteboard = ({
+      request_user,
+      tool,
+    }: {
+      request_user: string;
+      tool: string;
+    }) => {
+      joinWhiteboard(tool);
+    };
+
     mainSocket.on('room:request_codeeditor', handleRequestCodeEditor);
+    mainSocket.on('room:request_whiteboard', handleRequestWhiteboard);
 
     return () => {
       mainSocket.off('room:request_codeeditor', handleRequestCodeEditor);
+      mainSocket.off('room:request_whiteboard', handleRequestWhiteboard);
     };
-  }, [mainSocket, isCodeEditorOpen, joinCodeEditor]);
+  }, [
+    mainSocket,
+    isCodeEditorOpen,
+    isWhiteboardOpen,
+    joinCodeEditor,
+    joinWhiteboard,
+  ]);
 
   // 초기 입장 시 로비에서 설정한 미디어 Produce
   useEffect(() => {
@@ -163,8 +189,8 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
           if ('tool' in info && info.tool) {
             if (info.tool === 'codeeditor' && !isCodeEditorOpen) {
               joinCodeEditor(info.tool);
-            } else if (info.tool === 'whiteboard' && !isWhiteboardOpen) {
-              // TODO: join
+            } else if (info.tool === 'whiteboard') {
+              joinWhiteboard(info.tool);
             }
           }
         };

@@ -36,6 +36,7 @@ interface MeetingState {
   pinnedMemberIds: string[];
   meetingInfo: MeetingInfoResponse;
   lastSpeakerId: string | null;
+  meetingId: string | null;
 
   isInfoOpen: boolean;
   isMemberOpen: boolean;
@@ -53,7 +54,9 @@ interface MeetingActions {
   setScreenSharer: (sharer: { id: string; nickname: string } | null) => void;
   setSpeaking: (userId: string, isSpeaking: boolean) => void;
   togglePin: (userId: string) => void;
-  setMeetingInfo: (info: Partial<MeetingInfoResponse>) => void;
+  setMeetingInfo: (
+    info: Partial<MeetingInfoResponse & { meetingId: string }>,
+  ) => void;
 
   setMemberStream: (
     userId: string,
@@ -88,6 +91,7 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
   pinnedMemberIds: [],
   meetingInfo: INITIAL_MEETING_INFO,
   lastSpeakerId: null,
+  meetingId: null,
 
   isInfoOpen: false,
   isMemberOpen: false,

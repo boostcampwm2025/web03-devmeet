@@ -6,6 +6,7 @@ import { CODEEDITOR_WEBSOCKET, WHITEBOARD_WEBSOCKET } from '@/infra/websocket/we
 import { CodeeditorWebsocket } from '@/infra/websocket/codeeditor/codeeditor.service';
 import { WhiteboardWebsocket } from '@/infra/websocket/whiteboard/whiteboard.service';
 import { CodeeditorRepository, WhiteboardRepository } from '@/infra/memory/tool';
+import { CODEEDITOR_GROUP } from '@/codeeditor/codeeditor.constants';
 
 @Controller()
 export class MainConsumerController {
@@ -39,8 +40,8 @@ export class MainConsumerController {
       if (value.tool === 'codeeditor') {
         await this.codeeditorSocket.disconnectCodeeditorRoom(value.room_id);
         // 메모리를 비워야 한다.
-
-        // cache에 저장을 해야 한다.
+        this.codeeditorRepo.delete(value.room_id);
+        // snapshot을 찍을 것인가??
       } else if (value.tool === 'whiteboard') {
         await this.whiteboardSocket.disconnectWhiteboardRoom(value.room_id);
 

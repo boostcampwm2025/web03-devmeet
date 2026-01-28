@@ -33,6 +33,10 @@ export default function MeetingPage() {
 
   const router = useRouter();
 
+  useEffect(() => {
+    setMeetingInfo({ meetingId });
+  }, [meetingId]);
+
   const onJoin = (nickname: string) => {
     setTempUser({ nickname });
     validateJoin();

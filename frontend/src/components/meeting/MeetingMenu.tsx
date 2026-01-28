@@ -56,7 +56,7 @@ export default function MeetingMenu() {
   const { openCodeEditor, closeCodeEditor } = useCodeEditorSocket();
 
   // 화이트보드 연결 / 해제 함수 가져오기
-  const { connectWhiteboard, disconnectWhiteboard } = useWhiteboardSocket();
+  const { openWhiteboard, closeWhiteboard } = useWhiteboardSocket();
 
   const isSomeoneSharing = screenSharer !== null;
   const isDisabledSharing = isSomeoneSharing && !screenShareOn;
@@ -133,10 +133,10 @@ export default function MeetingMenu() {
 
     if (isWhiteboardOpen) {
       // 이미 열려있으면 -> 연결 끊고 닫기
-      disconnectWhiteboard();
+      closeWhiteboard();
     } else {
       // 닫혀있으면 -> 연결 시도
-      connectWhiteboard();
+      openWhiteboard();
     }
     setIsOpen('isWhiteboardOpen', !isWhiteboardOpen);
     if (isMoreMenuOpen) setIsMoreMenuOpen(false);

@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from 'react';
 interface JoinError {
   title: string;
   message: string;
+  isPasswordError?: boolean;
 }
 
 export default function MeetingPage() {
@@ -55,7 +56,11 @@ export default function MeetingPage() {
   const onPasswordConfirm = () => {
     const value = passwordRef.current?.value;
     if (!value) {
-      setJoinError({ title: '입장 실패', message: '비밀번호를 입력해주세요' });
+      setJoinError({
+        title: '입장 실패',
+        message: '비밀번호를 입력해주세요',
+        isPasswordError: true,
+      });
       return;
     }
 
@@ -172,7 +177,7 @@ export default function MeetingPage() {
               cancelText="확인"
               onCancel={() => {
                 setJoinError(null);
-                setIsPasswordModalOpen(true);
+                if (joinError.isPasswordError) setIsPasswordModalOpen(true);
               }}
               isLightMode
             >

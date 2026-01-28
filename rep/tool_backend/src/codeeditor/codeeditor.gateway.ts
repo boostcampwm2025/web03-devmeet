@@ -212,7 +212,10 @@ export class CodeeditorWebsocketGateway implements OnGatewayInit, OnGatewayConne
 
       const appliedUpdates: Buffer[] = [];
       for (const b of bufs) {
-        const seq = this.codeeditorRepo.applyAndAppendUpdate(dataPayload.room_id, new Uint8Array(b));
+        const seq = this.codeeditorRepo.applyAndAppendUpdate(
+          dataPayload.room_id,
+          new Uint8Array(b),
+        );
         if (firstSeq === null) firstSeq = seq;
         lastSeq = seq;
         appliedUpdates.push(b);

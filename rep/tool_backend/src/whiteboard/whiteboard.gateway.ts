@@ -19,7 +19,6 @@ import { WhiteboardWebsocket } from '@/infra/websocket/whiteboard/whiteboard.ser
 import { WhiteboardRepository } from '@/infra/memory/tool';
 import * as Y from 'yjs';
 
-
 @WebSocketGateway({
   namespace: process.env.NODE_BACKEND_WEBSOCKET_WHITEBOARD,
   path: process.env.NODE_BACKEND_WEBSOCKET_PREFIX,
@@ -98,9 +97,9 @@ export class WhiteboardWebsocketGateway implements OnGatewayInit, OnGatewayConne
     if (entry) {
       this.logger.log(`[Sync] 서버에서 신규 유저 ${payload.user_id}에게 직접 데이터 전송`);
       const fullUpdate = Y.encodeStateAsUpdate(entry.doc);
-      client.emit('yjs-update', fullUpdate); 
+      client.emit('yjs-update', fullUpdate);
     } else {
-      client.to(roomName).emit('request-sync'); // 이건 아마 작동을 안할 것이다. 
+      client.to(roomName).emit('request-sync'); // 이건 아마 작동을 안할 것이다.
     }
 
     // Kafka 이벤트 발행(로그,동기화)
@@ -221,7 +220,7 @@ export class WhiteboardWebsocketGateway implements OnGatewayInit, OnGatewayConne
   @SubscribeMessage('request-sync')
   handleRequestSync(@ConnectedSocket() client: Socket) {
     const roomName = client.data.roomName;
-    const entry = this.whiteboardRepo.ensure(roomName)
+    const entry = this.whiteboardRepo.ensure(roomName);
 
     const fullUpdate = Y.encodeStateAsUpdate(entry.doc);
     client.emit('yjs-update', fullUpdate);

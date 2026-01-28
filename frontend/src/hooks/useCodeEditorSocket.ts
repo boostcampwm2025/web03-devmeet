@@ -12,7 +12,7 @@ export const useCodeEditorSocket = () => {
 
   const { setCodeEditorSocket } = useToolSocketStore();
   const { setIsOpen } = useMeetingStore();
-  const meetingId = useMeetingStore.getState().meetingId;
+  const meetingId = useMeetingStore.getState().meetingInfo.meetingId;
 
   const connectToTool = useCallback(
     (tool: string, ticket: string, type: 'main' | 'sub') => {
@@ -26,8 +26,6 @@ export const useCodeEditorSocket = () => {
       );
 
       newSocket.on('connect', () => {
-        // console.log(`${tool} 소켓 연결 성공 (타입: ${type})`);
-
         if (tool === 'codeeditor') {
           setCodeEditorSocket(newSocket);
           setIsOpen('isCodeEditorOpen', true);
@@ -60,8 +58,6 @@ export const useCodeEditorSocket = () => {
   const joinCodeEditor = useCallback(
     (tool: string) => {
       if (!mainSocket) return;
-
-      // console.log(`${tool} 티켓 발급 요청 중...`);
 
       mainSocket.emit(
         'signaling:ws:connect_tool',

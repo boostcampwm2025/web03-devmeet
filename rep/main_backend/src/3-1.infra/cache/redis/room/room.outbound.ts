@@ -355,24 +355,32 @@ export class UpdateFileInfoToRedis extends InsertDataToCache<RedisClientType<any
 export class UpdateRoomPasswordToRedis extends UpdateDataToCache<RedisClientType<any, any>> {
   constructor(@Inject(REDIS_SERVER) cache: RedisClientType<any, any>) {
     super(cache);
-  };
+  }
 
   // namespace는 room_id updateValue는 password_hash 이다
-  async updateKey({ namespace, keyName, updateValue, }: { namespace: string; keyName: string; updateValue: string | null; }): Promise<boolean> {
-    const room_id : string = namespace;
+  async updateKey({
+    namespace,
+    keyName,
+    updateValue,
+  }: {
+    namespace: string;
+    keyName: string;
+    updateValue: string | null;
+  }): Promise<boolean> {
+    const room_id: string = namespace;
     const namespaceInfo = `${CACHE_ROOM_NAMESPACE_NAME.CACHE_ROOM}:${room_id}:${CACHE_ROOM_SUB_NAMESPACE_NAME.INFO}`;
 
-    const password_hash : string | null = updateValue;
+    const password_hash: string | null = updateValue;
 
     // 비밀번호가 있다면 비밀번호 변경해 주어야 합니다.
-    if ( password_hash !== null ) {
+    if (password_hash !== null) {
       await this.cache.hSet(namespaceInfo, CACHE_ROOM_INFO_KEY_NAME.PASSWORD_HASH, password_hash);
-    } 
+    }
     // null인 경우 공개방으로 체인지
     else {
       await this.cache.hDel(namespaceInfo, CACHE_ROOM_INFO_KEY_NAME.PASSWORD_HASH);
-    };
+    }
 
     return true;
-  };
-};
+  }
+}

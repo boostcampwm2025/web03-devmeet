@@ -50,7 +50,7 @@ export class RoomController {
   }
 
   // 방의 비밀번호를 변경하는 로직
-  @Post(":code/password")
+  @Post(':code/password')
   @UsePipes(
     new ValidationPipe({
       whitelist: true,
@@ -60,14 +60,14 @@ export class RoomController {
   @UseGuards(JwtGuard)
   async updateRoomPasswordController(
     @Req() req: Request,
-    @Param("code") code : string,
-    @Body() validate : UpdateRoomPasswordValidate
+    @Param('code') code: string,
+    @Body() validate: UpdateRoomPasswordValidate,
   ) {
     const payload: Payload = (req as any).user;
-    const dto : UpdateRoomPasswordDto = {
-      new_password : validate.new_password ?? null,
-      user_id : payload.user_id,
-      code
+    const dto: UpdateRoomPasswordDto = {
+      new_password: validate.new_password ?? null,
+      user_id: payload.user_id,
+      code,
     };
     return this.roomService.updateRoomPasswordService(dto);
   }

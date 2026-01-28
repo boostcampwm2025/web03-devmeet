@@ -9,7 +9,7 @@ export class RoomService {
   constructor(
     private readonly createRoomUsecase: CreateRoomUsecase<any, any>,
     private readonly getRoomInfoUsecase: GetRoomInfoUsecase<any, any>,
-    private readonly updateRoomPasswordUsecase :  UdpateRoomPasswordUsecase<any, any>,
+    private readonly updateRoomPasswordUsecase: UdpateRoomPasswordUsecase<any, any>,
   ) {}
 
   // 방을 생성하기 위한 서비스
@@ -52,10 +52,10 @@ export class RoomService {
   }
 
   // 방의 비밀번호를 변경하는 로직
-  async updateRoomPasswordService(dto : UpdateRoomPasswordDto) : Promise<Record<string, boolean>> {
+  async updateRoomPasswordService(dto: UpdateRoomPasswordDto): Promise<Record<string, boolean>> {
     try {
       await this.updateRoomPasswordUsecase.execute(dto);
-      return { ok : true };
+      return { ok: true };
     } catch (err) {
       throw new HttpException(
         {
@@ -68,5 +68,5 @@ export class RoomService {
         },
       );
     }
-  };
+  }
 }

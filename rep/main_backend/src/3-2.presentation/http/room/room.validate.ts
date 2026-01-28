@@ -29,11 +29,9 @@ export class CreateRoomValidate {
 }
 
 export class UpdateRoomPasswordValidate {
-
   @IsOptional()
   @IsString()
   @MinLength(6)
   @MaxLength(16)
-  new_password? : string;
-
-};
+  new_password?: string;
+}

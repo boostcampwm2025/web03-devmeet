@@ -159,19 +159,21 @@ interface UserRoomInfoPacket extends RowDataPacket {
 }
 @Injectable()
 export class SelectUserInfoRoomFromMysql extends SelectDataFromDb<Pool> {
-
-  constructor(@Inject(MYSQL_DB) db: Pool)  {
+  constructor(@Inject(MYSQL_DB) db: Pool) {
     super(db);
-  };
-  
-  private async selectData({
-    db, code, user_id
-  } : {
-    db : Pool, code : string, user_id : string
-  }): Promise<UpdateRoomInfoResult | undefined>  {
+  }
 
+  private async selectData({
+    db,
+    code,
+    user_id,
+  }: {
+    db: Pool;
+    code: string;
+    user_id: string;
+  }): Promise<UpdateRoomInfoResult | undefined> {
     const roomTableName: string = DB_TABLE_NAME.ROOMS;
-    
+
     const sql: string = `
     SELECT 
     BIN_TO_UUID(\`${DB_ROOMS_ATTRIBUTE_NAME.ROOM_ID}\`, true) AS \`${DB_ROOMS_ATTRIBUTE_NAME.ROOM_ID}\`,
@@ -185,23 +187,30 @@ export class SelectUserInfoRoomFromMysql extends SelectDataFromDb<Pool> {
     LIMIT 1 
     `;
 
-    const [ roomInfo ] = await db.query<UserRoomInfoPacket[]>(sql, [ code, user_id ]);
+    const [roomInfo] = await db.query<UserRoomInfoPacket[]>(sql, [code, user_id]);
 
-    return roomInfo[0] ? {
-      room_id : roomInfo[0][DB_ROOMS_ATTRIBUTE_NAME.ROOM_ID],
-      prev_password : roomInfo[0][DB_ROOMS_ATTRIBUTE_NAME.PASSWORD_HASH]
-    } : undefined
-  };
+    return roomInfo[0]
+      ? {
+          room_id: roomInfo[0][DB_ROOMS_ATTRIBUTE_NAME.ROOM_ID],
+          prev_password: roomInfo[0][DB_ROOMS_ATTRIBUTE_NAME.PASSWORD_HASH],
+        }
+      : undefined;
+  }
 
-  // attributeName은 code, attributeValue는 user_id 이다. 
-  async select({ attributeName, attributeValue, }: { attributeName: string; attributeValue: string; }): Promise<UpdateRoomInfoResult | undefined> {
-    
+  // attributeName은 code, attributeValue는 user_id 이다.
+  async select({
+    attributeName,
+    attributeValue,
+  }: {
+    attributeName: string;
+    attributeValue: string;
+  }): Promise<UpdateRoomInfoResult | undefined> {
     const db: Pool = this.db;
     const code: string = attributeName;
-    const user_id : string = attributeValue;
+    const user_id: string = attributeValue;
 
     const roomInfo = await this.selectData({ db, code, user_id });
 
     return roomInfo;
-  };
-};
+  }
+}

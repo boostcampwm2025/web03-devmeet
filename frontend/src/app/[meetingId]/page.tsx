@@ -5,6 +5,7 @@ import MeetingLobby from '@/components/meeting/MeetingLobby';
 import MeetingRoom from '@/components/meeting/MeetingRoom';
 import { useMeetingSocket } from '@/hooks/useMeetingSocket';
 import { useMeetingSocketStore } from '@/store/useMeetingSocketStore';
+import { useMeetingStore } from '@/store/useMeetingStore';
 import { useUserStore } from '@/store/useUserStore';
 import { MeetingInfoResponse } from '@/types/meeting';
 import { api } from '@/utils/apiClient';
@@ -22,7 +23,9 @@ export default function MeetingPage() {
   const { setMediasoupTransports } = useMeetingSocketStore();
   const { isLoggedIn, setTempUser } = useUserStore();
 
+  const setMeetingId = useMeetingStore((s) => s.setMeetingId);
   const { meetingId } = useParams<{ meetingId: string }>();
+
   const [meetingInfo, setMeetingInfo] = useState<MeetingInfoResponse | null>(
     null,
   );
@@ -33,6 +36,10 @@ export default function MeetingPage() {
   const [isJoined, setIsJoined] = useState<boolean>(false);
 
   const router = useRouter();
+
+  useEffect(() => {
+    setMeetingId(meetingId);
+  }, [meetingId, setMeetingId]);
 
   const onJoin = (nickname: string) => {
     setTempUser({ nickname });

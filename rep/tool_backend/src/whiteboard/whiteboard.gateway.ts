@@ -27,6 +27,7 @@ import { WhiteboardRepository } from '@/infra/memory/tool';
   },
   transports: ['websocket'],
   pingTimeout: 20 * 1000,
+  maxHttpBufferSize: 10 * 1024 * 1024, // 10mb로 제한을 높인다. 
 })
 export class WhiteboardWebsocketGateway implements OnGatewayInit, OnGatewayConnection {
   private readonly logger = new Logger(WhiteboardWebsocketGateway.name);

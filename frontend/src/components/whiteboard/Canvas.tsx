@@ -5,7 +5,12 @@ import { useRef, useState, useMemo, useEffect } from 'react';
 import Konva from 'konva';
 import { Stage, Layer, Rect, Line } from 'react-konva';
 
-import type { WhiteboardItem, TextItem, ArrowItem } from '@/types/whiteboard';
+import type {
+  WhiteboardItem,
+  TextItem,
+  ArrowItem,
+  ShapeItem,
+} from '@/types/whiteboard';
 
 import { useWhiteboardSharedStore } from '@/store/useWhiteboardSharedStore';
 import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
@@ -22,6 +27,7 @@ import { useCanvasMouseEvents } from '@/hooks/useCanvasMouseEvents';
 
 import RenderItem from '@/components/whiteboard/items/RenderItem';
 import TextArea from '@/components/whiteboard/items/text/TextArea';
+import ShapeTextArea from '@/components/whiteboard/items/shape/ShapeTextArea';
 import ItemTransformer from '@/components/whiteboard/controls/ItemTransformer';
 import RemoteSelectionLayer from '@/components/whiteboard/remote/RemoteSelectionLayer';
 import ArrowHandles from '@/components/whiteboard/items/arrow/ArrowHandles';
@@ -66,7 +72,10 @@ export default function Canvas() {
 
   const editingItem = useMemo(
     () =>
-      items.find((item) => item.id === editingTextId) as TextItem | undefined,
+      items.find((item) => item.id === editingTextId) as
+        | TextItem
+        | ShapeItem
+        | undefined,
     [items, editingTextId],
   );
 
@@ -95,6 +104,11 @@ export default function Canvas() {
     stageRef,
     updateItem,
   });
+
+  // 도형 더블클릭 핸들러 (텍스트 편집 모드)
+  const handleShapeDblClick = (id: string) => {
+    setEditingTextId(id);
+  };
 
   // 선택 해제 핸들러
   const handleCheckDeselect = (
@@ -241,6 +255,7 @@ export default function Canvas() {
                   handleItemChange(item.id, newAttributes)
                 }
                 onArrowDblClick={handleArrowDblClick}
+                onShapeDblClick={handleShapeDblClick}
                 onDragStart={() => {
                   if (item.type === 'arrow' || item.type === 'line') {
                     setIsDraggingArrow(true);
@@ -297,10 +312,10 @@ export default function Canvas() {
       </Stage>
 
       {/* 텍스트 편집 모드 */}
-      {editingTextId && editingItem && (
+      {editingTextId && editingItem && editingItem.type === 'text' && (
         <TextArea
           textId={editingTextId}
-          textItem={editingItem}
+          textItem={editingItem as TextItem}
           stageRef={stageRef}
           onChange={(newText) => {
             updateItem(editingTextId, { text: newText });
@@ -308,6 +323,30 @@ export default function Canvas() {
           onClose={() => {
             setEditingTextId(null);
             selectItem(null);
+          }}
+        />
+      )}
+
+      {/* 도형 텍스트 편집 모드 */}
+      {editingTextId && editingItem && editingItem.type === 'shape' && (
+        <ShapeTextArea
+          shapeId={editingTextId}
+          shapeItem={editingItem as ShapeItem}
+          stageRef={stageRef}
+          onChange={(newText) => {
+            updateItem(editingTextId, { text: newText });
+          }}
+          onClose={() => {
+            setEditingTextId(null);
+            selectItem(null);
+          }}
+          onSizeChange={(width, height, newY, newX, newText) => {
+            const updates: Partial<ShapeItem> = { width, height };
+            if (newY !== undefined) updates.y = newY;
+            if (newX !== undefined) updates.x = newX;
+            if (newText !== undefined) updates.text = newText;
+
+            updateItem(editingTextId, updates);
           }}
         />
       )}

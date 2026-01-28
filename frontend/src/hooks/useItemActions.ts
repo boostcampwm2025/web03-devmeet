@@ -6,6 +6,7 @@ import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
 } from '@/components/whiteboard/constants/canvas';
+import { TEXT_SIZE_PRESETS } from '@/constants/textPresets';
 
 import type {
   WhiteboardItem,
@@ -78,7 +79,6 @@ export function useItemActions() {
       wrap: payload?.wrap ?? 'char',
       rotation: payload?.rotation ?? 0,
       width: payload?.width ?? 200,
-      parentPolygonId: payload?.parentPolygonId,
     };
 
     yItems.doc.transact(() => {
@@ -157,6 +157,7 @@ export function useItemActions() {
       stroke: payload?.stroke ?? '#000000',
       strokeWidth: payload?.strokeWidth ?? 2,
       rotation: payload?.rotation ?? 0,
+      fontSize: payload?.fontSize ?? TEXT_SIZE_PRESETS.S.fontSize,
     };
 
     yItems.doc.transact(() => {

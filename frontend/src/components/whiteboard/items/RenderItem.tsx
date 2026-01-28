@@ -35,6 +35,7 @@ interface RenderItemProps {
   onDragStart?: () => void;
   onDragEnd?: () => void;
   onArrowDblClick?: (id: string) => void;
+  onShapeDblClick?: (id: string) => void;
 }
 
 function RenderItem({
@@ -45,6 +46,7 @@ function RenderItem({
   onDragStart,
   onDragEnd,
   onArrowDblClick,
+  onShapeDblClick,
 }: RenderItemProps) {
   // 아이템 인터랙션 상태
   const { isDraggable, isListening } = useItemInteraction();
@@ -132,6 +134,7 @@ function RenderItem({
         isSelected={isSelected}
         onSelect={() => onSelect(item.id)}
         onChange={onChange}
+        onDblClick={() => onShapeDblClick?.(item.id)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onDragStart={onDragStart}

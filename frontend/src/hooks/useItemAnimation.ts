@@ -142,6 +142,7 @@ export function usePointsAnimation({
   useEffect(() => {
     if (
       !nodeRef.current ||
+      !points ||
       points.length < 2 ||
       isDragging ||
       isSelectedRef.current

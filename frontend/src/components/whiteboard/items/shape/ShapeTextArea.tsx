@@ -17,8 +17,6 @@ export interface ShapeTextAreaProps {
     newX?: number,
     text?: string,
   ) => void;
-  stageScale: number;
-  stagePos: { x: number; y: number };
 }
 
 export default function ShapeTextArea({
@@ -28,8 +26,6 @@ export default function ShapeTextArea({
   onChange,
   onClose,
   onSizeChange,
-  stageScale,
-  stagePos,
 }: ShapeTextAreaProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const initializedRef = useRef(false);
@@ -93,6 +89,26 @@ export default function ShapeTextArea({
     if (!shapeGroup) return;
 
     const textNode = shapeGroup.findOne('Text') as Konva.Text | undefined;
+
+    // 위치 업데이트
+    const updatePosition = () => {
+      if (!textarea || !shapeGroup) return;
+
+      const containerRect = stage.container().getBoundingClientRect();
+      const transform = textNode
+        ? textNode.getAbsoluteTransform().copy()
+        : shapeGroup.getAbsoluteTransform().copy();
+
+      if (!textNode) {
+        const expectedWidth = shapeWidth * 0.8;
+        const offsetX = (shapeWidth - expectedWidth) / 2;
+        transform.translate(offsetX, 0);
+      }
+
+      const m = transform.getMatrix();
+      textarea.style.transform = `matrix(${m[0]}, ${m[1]}, ${m[2]}, ${m[3]}, ${m[4] + containerRect.left}, ${m[5] + containerRect.top})`;
+    };
+
     const containerRect = stage.container().getBoundingClientRect();
 
     // 텍스트 노드가 있으면 해당 transform 사용, 없으면 도형 기준 transform 계산
@@ -198,7 +214,17 @@ export default function ShapeTextArea({
       textarea.focus();
     }
 
-    return () => textarea.removeEventListener('input', onInput);
+    // Stage 이벤트 구독
+    stage.on('dragmove', updatePosition);
+    stage.on('dragend', updatePosition);
+    stage.on('wheel', updatePosition);
+
+    return () => {
+      textarea.removeEventListener('input', onInput);
+      stage.off('dragmove', updatePosition);
+      stage.off('dragend', updatePosition);
+      stage.off('wheel', updatePosition);
+    };
   }, [
     shapeId,
     shapeWidth,
@@ -213,8 +239,6 @@ export default function ShapeTextArea({
     shapeItem.text,
     stageRef,
     onSizeChange,
-    stageScale,
-    stagePos,
     onChange,
     onClose,
   ]);

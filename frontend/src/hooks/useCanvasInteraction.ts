@@ -82,6 +82,7 @@ export const useCanvasInteraction = (
 
       const constrainedPos = constrainStagePosition(newPos, newScale);
 
+      stage.scale({ x: newScale, y: newScale });
       stage.position(constrainedPos);
       stage.batchDraw();
 

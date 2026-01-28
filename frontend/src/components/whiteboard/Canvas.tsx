@@ -41,8 +41,6 @@ import Portal from '@/components/common/Portal';
 const GEOMETRY_KEYS = ['x', 'y', 'width', 'height'] as const;
 
 export default function Canvas() {
-  const stageScale = useWhiteboardLocalStore((state) => state.stageScale);
-  const stagePos = useWhiteboardLocalStore((state) => state.stagePos);
   const canvasWidth = useWhiteboardSharedStore((state) => state.canvasWidth);
   const canvasHeight = useWhiteboardSharedStore((state) => state.canvasHeight);
   const items = useWhiteboardSharedStore((state) => state.items);
@@ -148,15 +146,19 @@ export default function Canvas() {
 
   // 줌 레벨에 따른 pixelRatio 조절
   const pixelRatio = useMemo(() => {
+    const stage = stageRef.current;
+    if (!stage) return window.devicePixelRatio;
+    
+    const scale = stage.scaleX();
     let ratio: number;
-    if (stageScale >= 1.5) ratio = window.devicePixelRatio;
-    else if (stageScale >= 1) ratio = 1.5;
-    else if (stageScale >= 0.5) ratio = 1;
-    else if (stageScale >= 0.3) ratio = 0.5;
+    if (scale >= 1.5) ratio = window.devicePixelRatio;
+    else if (scale >= 1) ratio = 1.5;
+    else if (scale >= 0.5) ratio = 1;
+    else if (scale >= 0.3) ratio = 0.5;
     else ratio = 0.25;
 
     return ratio;
-  }, [stageScale]);
+  }, [stageRef]);
 
   // viewport 크기를 store에 업데이트
   useEffect(() => {
@@ -341,8 +343,6 @@ export default function Canvas() {
         width={size.width}
         height={size.height}
         draggable={isDraggable}
-        scaleX={stageScale}
-        scaleY={stageScale}
         pixelRatio={pixelRatio}
         onWheel={handleWheel}
         onDragStart={() => setIsDraggingCanvas(true)}
@@ -538,8 +538,6 @@ export default function Canvas() {
               setEditingTextId(null);
               selectItem(null);
             }}
-            stageScale={stageScale}
-            stagePos={stagePos}
           />
         </Portal>
       )}
@@ -558,8 +556,6 @@ export default function Canvas() {
               setEditingTextId(null);
               selectItem(null);
             }}
-            stageScale={stageScale}
-            stagePos={stagePos}
             onSizeChange={(width, height, newY, newX, newText) => {
               const updates: Partial<ShapeItem> = { width, height };
               if (newY !== undefined) updates.y = newY;

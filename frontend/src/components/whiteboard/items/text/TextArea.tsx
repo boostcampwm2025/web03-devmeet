@@ -12,8 +12,6 @@ export interface TextAreaProps {
   onChange: (v: string) => void;
   onClose: () => void;
   onBoundsChange?: (width: number, height: number) => void;
-  stageScale: number;
-  stagePos: { x: number; y: number };
 }
 
 export default function TextArea({
@@ -23,8 +21,6 @@ export default function TextArea({
   onChange,
   onClose,
   onBoundsChange,
-  stageScale,
-  stagePos,
 }: TextAreaProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const lastBoundsRef = useRef<{ width: number; height: number }>({
@@ -53,12 +49,21 @@ export default function TextArea({
 
     const textarea = ref.current;
     const stage = textNode.getStage()!;
-    const containerRect = stage.container().getBoundingClientRect();
+
+    // 위치 업데이트 함수
+    const updatePosition = () => {
+      if (!textarea || !textNode) return;
+
+      const containerRect = stage.container().getBoundingClientRect();
+      const m = textNode.getAbsoluteTransform().getMatrix();
+      textarea.style.transform = `matrix(${m[0]}, ${m[1]}, ${m[2]}, ${m[3]}, ${m[4] + containerRect.left}, ${m[5] + containerRect.top})`;
+    };
 
     // 초기값 설정
     textarea.value = textNode.text();
 
     // 핼렬 기반 변환 (위치, 회전, 배율)
+    const containerRect = stage.container().getBoundingClientRect();
     const m = textNode.getAbsoluteTransform().getMatrix();
     textarea.style.position = 'absolute';
     textarea.style.left = '0';
@@ -154,6 +159,11 @@ export default function TextArea({
     textarea.addEventListener('keydown', handleKeyDown);
     textarea.addEventListener('input', handleInput);
 
+    // Stage 이벤트 구독 (pan/zoom 시 위치 업데이트)
+    stage.on('dragmove', updatePosition);
+    stage.on('dragend', updatePosition);
+    stage.on('wheel', updatePosition);
+
     const timer = setTimeout(() => {
       window.addEventListener('mousedown', handleOutsideClick);
     });
@@ -162,18 +172,12 @@ export default function TextArea({
       textarea.removeEventListener('keydown', handleKeyDown);
       textarea.removeEventListener('input', handleInput);
       window.removeEventListener('mousedown', handleOutsideClick);
+      stage.off('dragmove', updatePosition);
+      stage.off('dragend', updatePosition);
+      stage.off('wheel', updatePosition);
       clearTimeout(timer);
     };
-  }, [
-    textId,
-    textItem,
-    onChange,
-    onClose,
-    onBoundsChange,
-    stageRef,
-    stageScale,
-    stagePos,
-  ]);
+  }, [textId, textItem, onChange, onClose, onBoundsChange, stageRef]);
 
   return (
     <textarea

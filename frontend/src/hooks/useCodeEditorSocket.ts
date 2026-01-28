@@ -12,14 +12,18 @@ export const useCodeEditorSocket = () => {
 
   const { setCodeEditorSocket } = useToolSocketStore();
   const { setIsOpen } = useMeetingStore();
+  const meetingId = useMeetingStore.getState().meetingId;
 
   const connectToTool = useCallback(
     (tool: string, ticket: string, type: 'main' | 'sub') => {
-      const newSocket = io(`${TOOL_BACKEND_URL}/${tool}`, {
-        path: `${NAMESPACE}`,
-        transports: ['websocket'],
-        auth: { token: ticket, type },
-      });
+      const newSocket = io(
+        `${TOOL_BACKEND_URL}/${tool}?room_code=${meetingId}`,
+        {
+          path: `${NAMESPACE}`,
+          transports: ['websocket'],
+          auth: { token: ticket, type },
+        },
+      );
 
       newSocket.on('connect', () => {
         // console.log(`${tool} 소켓 연결 성공 (타입: ${type})`);

@@ -19,9 +19,6 @@ import { WhiteboardWebsocket } from '@/infra/websocket/whiteboard/whiteboard.ser
 import { WhiteboardRepository } from '@/infra/memory/tool';
 import * as Y from 'yjs';
 
-//메모리에 저장함 추후 변경
-const roomDocs = new Map<string, Y.Doc>();
-
 @WebSocketGateway({
   namespace: process.env.NODE_BACKEND_WEBSOCKET_WHITEBOARD,
   path: process.env.NODE_BACKEND_WEBSOCKET_PREFIX,
@@ -95,15 +92,14 @@ export class WhiteboardWebsocketGateway implements OnGatewayInit, OnGatewayConne
 
     console.log(payload.user_id);
 
-    // 서버에 저장된 Y.Doc이 있으면 신규 유저에게 전송함
-    const doc = roomDocs.get(roomName);
-    if (doc) {
+    // 서버에 저장된 Y.Doc이 있으면 신규 유저에게 전송함 ( 나중에 수정 )
+    const entry = this.whiteboardRepo.ensure(roomName);
+    if (entry) {
       this.logger.log(`[Sync] 서버에서 신규 유저 ${payload.user_id}에게 직접 데이터 전송`);
-      const fullUpdate = Y.encodeStateAsUpdate(doc);
+      const fullUpdate = Y.encodeStateAsUpdate(entry.doc);
       client.emit('yjs-update', fullUpdate);
     } else {
-      // 서버에 Doc이 없으면 다른 사용자에게 요청
-      client.to(roomName).emit('request-sync');
+      client.to(roomName).emit('request-sync'); // 이건 아마 작동을 안할 것이다.
     }
 
     // Kafka 이벤트 발행(로그,동기화)
@@ -199,12 +195,7 @@ export class WhiteboardWebsocketGateway implements OnGatewayInit, OnGatewayConne
       const roomName = client.data.roomName;
 
       // 서버에 저장
-      let doc = roomDocs.get(roomName);
-      if (!doc) {
-        doc = new Y.Doc();
-        roomDocs.set(roomName, doc);
-      }
-      Y.applyUpdate(doc, new Uint8Array(update));
+      const seq = this.whiteboardRepo.applyAndAppendUpdate(roomName, new Uint8Array(update));
 
       // 브로드캐스트
       client.to(roomName).volatile.emit('yjs-update', update);
@@ -229,11 +220,9 @@ export class WhiteboardWebsocketGateway implements OnGatewayInit, OnGatewayConne
   @SubscribeMessage('request-sync')
   handleRequestSync(@ConnectedSocket() client: Socket) {
     const roomName = client.data.roomName;
-    const doc = roomDocs.get(roomName);
+    const entry = this.whiteboardRepo.ensure(roomName);
 
-    if (!doc) return;
-
-    const fullUpdate = Y.encodeStateAsUpdate(doc);
+    const fullUpdate = Y.encodeStateAsUpdate(entry.doc);
     client.emit('yjs-update', fullUpdate);
 
     this.logger.log(`[Sync] 동기화 요청 처리: ${roomName}`);

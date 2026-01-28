@@ -20,6 +20,7 @@ interface MeetingState {
   memberStreams: Record<string, MemberStream>;
   hasNewChat: boolean;
   screenSharer: { id: string; nickname: string } | null;
+  meetingId: string | null;
 
   isInfoOpen: boolean;
   isMemberOpen: boolean;
@@ -34,6 +35,7 @@ interface MeetingActions {
   addMember: (member: MeetingMemberInfo) => void;
   removeMember: (userId: string) => void;
   setScreenSharer: (sharer: { id: string; nickname: string } | null) => void;
+  setMeetingId: (id: string) => void;
 
   setMemberStream: (
     userId: string,
@@ -63,6 +65,7 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
   memberStreams: {},
   hasNewChat: false,
   screenSharer: null,
+  meetingId: null,
 
   isInfoOpen: false,
   isMemberOpen: false,
@@ -106,6 +109,7 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
       return { members: nextMembers, memberStreams: nextMemberStreams };
     }),
   setScreenSharer: (sharer) => set(() => ({ screenSharer: sharer })),
+  setMeetingId: (id) => set({ meetingId: id }),
 
   setMemberStream: (userId, type, stream) =>
     set((state) => ({

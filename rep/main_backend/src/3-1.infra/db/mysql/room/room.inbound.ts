@@ -171,7 +171,7 @@ export class SelectUserInfoRoomFromMysql extends SelectDataFromDb<Pool> {
   }): Promise<UpdateRoomInfoResult | undefined>  {
 
     const roomTableName: string = DB_TABLE_NAME.ROOMS;
-
+    
     const sql: string = `
     SELECT 
     BIN_TO_UUID(\`${DB_ROOMS_ATTRIBUTE_NAME.ROOM_ID}\`, true) AS \`${DB_ROOMS_ATTRIBUTE_NAME.ROOM_ID}\`,

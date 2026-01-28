@@ -2,17 +2,17 @@ import { Module } from '@nestjs/common';
 import { RoomController } from './room.controller';
 import { RoomService } from './room.service';
 import { AuthModule } from '../auth/auth.module';
-import { CreateRoomUsecase } from '@app/room/commands/usecase';
+import { CreateRoomUsecase, UdpateRoomPasswordUsecase } from '@app/room/commands/usecase';
 import {
   MakeArgonRoomPasswordHash,
   MakeRoomIdGenerator,
   MakeRoomRandomCodeGenerator,
 } from './room.interface';
-import { DeleteRoomDataToMysql, InsertRoomDataToMysql } from '@infra/db/mysql/room/room.outbound';
-import { InsertRoomDataToRedis } from '@infra/cache/redis/room/room.outbound';
+import { DeleteRoomDataToMysql, InsertRoomDataToMysql, UpdateRoomPasswordToMysql } from '@infra/db/mysql/room/room.outbound';
+import { InsertRoomDataToRedis, UpdateRoomPasswordToRedis } from '@infra/cache/redis/room/room.outbound';
 import { GetRoomInfoUsecase } from '@app/room/queries/usecase';
 import { SelectRoomInfoDataFromRedis } from '@infra/cache/redis/room/room.inbound';
-import { SelectRoomIdFromMysql } from '@infra/db/mysql/room/room.inbound';
+import { SelectRoomIdFromMysql, SelectUserInfoRoomFromMysql } from '@infra/db/mysql/room/room.inbound';
 
 @Module({
   imports: [
@@ -70,6 +70,28 @@ import { SelectRoomIdFromMysql } from '@infra/db/mysql/room/room.inbound';
       },
       inject: [SelectRoomIdFromMysql, SelectRoomInfoDataFromRedis],
     },
+
+    // 방의 비밀번호를 바꾸는 로직 
+    {
+      provide : UdpateRoomPasswordUsecase,
+      useFactory : (
+        selectUserInfoInRoomFromDb : SelectUserInfoRoomFromMysql,
+        hashPassword : MakeArgonRoomPasswordHash,
+        updateRoomPasswordToDb : UpdateRoomPasswordToMysql,
+        updateRoomPasswordToCache : UpdateRoomPasswordToRedis
+      ) => {
+        return new UdpateRoomPasswordUsecase({
+          selectUserInfoInRoomFromDb, hashPassword, updateRoomPasswordToDb, updateRoomPasswordToCache
+        })
+      },
+      inject : [
+        SelectUserInfoRoomFromMysql,
+        MakeArgonRoomPasswordHash,
+        UpdateRoomPasswordToMysql,
+        UpdateRoomPasswordToRedis
+      ]
+    }
+
   ],
 })
 export class RoomModule {}

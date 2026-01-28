@@ -53,7 +53,7 @@ export function ChatListItem({
         </div>
 
         {/* 댓글 내용 */}
-        {content.type === 'text' && (
+        {!isFile && content.type === 'text' && (
           <span className="inline-flex self-start rounded-sm bg-neutral-600 p-2 text-sm break-all whitespace-pre-wrap text-neutral-50">
             {content.text}
           </span>
@@ -80,7 +80,7 @@ export function ChatListItem({
           </span>
         )}
 
-        {content.type === 'file' && content.category === 'video' && (
+        {isFile && content.category === 'video' && (
           <span className="rounded-sm bg-neutral-600 p-2">
             <video
               controls
@@ -93,7 +93,7 @@ export function ChatListItem({
           </span>
         )}
 
-        {content.type === 'file' &&
+        {isFile &&
           (content.category === 'binary' || content.category === 'text') && (
             <div className="group flex items-center gap-4 rounded-sm bg-neutral-600 px-3 py-2">
               <a

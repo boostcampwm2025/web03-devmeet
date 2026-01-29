@@ -48,6 +48,7 @@ interface MeetingState {
   isChatOpen: boolean;
   isWhiteboardOpen: boolean;
   isCodeEditorOpen: boolean;
+  isCodeEditorOpening: boolean;
   isInfoLoaded: boolean;
 }
 
@@ -81,6 +82,7 @@ interface MeetingActions {
     >,
     state: boolean,
   ) => void;
+  setIsCodeEditorOpening: (state: boolean) => void;
 }
 
 export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
@@ -101,6 +103,7 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
   isWhiteboardOpen: false,
   isCodeEditorOpen: false,
   isInfoLoaded: false,
+  isCodeEditorOpening: false,
 
   setMedia: (media) => set((prev) => ({ media: { ...prev.media, ...media } })),
   setMembers: (members) =>
@@ -243,4 +246,5 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
 
   setHasNewChat: (state) => set({ hasNewChat: state }),
   setIsOpen: (type, state) => set({ [type]: state }),
+  setIsCodeEditorOpening: (state) => set({ isCodeEditorOpening: state }),
 }));

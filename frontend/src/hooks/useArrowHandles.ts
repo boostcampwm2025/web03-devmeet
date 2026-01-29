@@ -1,13 +1,18 @@
 import { useState, useRef } from 'react';
 import Konva from 'konva';
 import { KonvaEventObject } from 'konva/lib/Node';
-import type { ArrowItem, WhiteboardItem, ShapeItem } from '@/types/whiteboard';
+import type {
+  ArrowItem,
+  LineItem,
+  WhiteboardItem,
+  ShapeItem,
+} from '@/types/whiteboard';
 import { pointToSegmentDistance } from '@/utils/arrow';
 import { getWorldPointerPosition } from '@/utils/coordinate';
 import { getNearestSnapPoint } from '@/utils/geom';
 
 interface UseArrowHandlesProps {
-  arrow: ArrowItem | null;
+  arrow: ArrowItem | LineItem | null;
   items: WhiteboardItem[];
   stageRef: React.RefObject<Konva.Stage | null>;
   updateItem: (id: string, payload: Partial<WhiteboardItem>) => void;
@@ -22,6 +27,7 @@ export function useArrowHandles({
   const [selectedHandleIndex, setSelectedHandleIndex] = useState<number | null>(
     null,
   );
+
   // 드래그 중인 points를 로컬 상태로 관리
   const [draggingPoints, setDraggingPoints] = useState<number[] | null>(null);
 
@@ -88,16 +94,15 @@ export function useArrowHandles({
     setSelectedHandleIndex(index);
   };
 
-  // 부착 로직 함수
+  // 부착 로직 함수 (arrow 타입만 부착 지원)
   const checkSnapping = (x: number, y: number) => {
-    // 도형만 필터링 (자기 자신 제외)
-    const shapes = items.filter(
-      (item) =>
-        item.type === 'shape' ||
-        item.type === 'image' ||
-        item.type === 'video' ||
-        item.type === 'youtube',
-    ) as ShapeItem[];
+    // line 타입은 부착 기능 비활성화
+    if (arrow?.type === 'line') {
+      return { x, y };
+    }
+
+    // 도형만 부착
+    const shapes = items.filter((item) => item.type === 'shape') as ShapeItem[];
 
     let closestDist = 20; // 부착 감지 거리
     let foundSnap = null;
@@ -215,13 +220,13 @@ export function useArrowHandles({
         updates.startBinding = currentSnapTarget.current;
       } else {
         // 빈 공간에 놓으면 바인딩 해제
-        updates.startBinding = undefined;
+        updates.startBinding = null;
       }
     } else if (handleType === 'end') {
       if (currentSnapTarget.current) {
         updates.endBinding = currentSnapTarget.current;
       } else {
-        updates.endBinding = undefined;
+        updates.endBinding = null;
       }
     }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import Konva from 'konva';
 import type { ShapeItem } from '@/types/whiteboard';
 
@@ -28,16 +28,19 @@ export default function ShapeTextArea({
   onSizeChange,
 }: ShapeTextAreaProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
-  const lastSizeRef = useRef({
-    width: shapeItem.width,
-    height: shapeItem.height,
-  });
   const initializedRef = useRef(false);
+  const lastSentHeightRef = useRef(shapeItem.height);
+  const lastSentTextRef = useRef(shapeItem.text || '');
 
-  // 텍스트 상태를 컴포넌트 내부에서 관리
-  const [text, setText] = useState(shapeItem.text || '');
+  // 초기 값 설정
+  useEffect(() => {
+    if (ref.current && !initializedRef.current) {
+      ref.current.value = shapeItem.text || '';
+      lastSentTextRef.current = shapeItem.text || '';
+    }
+  }, [shapeItem.text]);
 
-  // 입력 중일 때 텍스트 노드 숨기기 (텍스트 변경 시에도 재실행)
+  // 입력 중일 때 텍스트 노드 숨김
   useEffect(() => {
     if (!stageRef.current) return;
 
@@ -45,7 +48,6 @@ export default function ShapeTextArea({
     const shapeGroup = stage.findOne('#' + shapeId) as Konva.Group;
     if (!shapeGroup) return;
 
-    // Group 내부의 Text 노드 찾아서 숨기기
     const textNode = shapeGroup.findOne('Text') as Konva.Text;
     if (textNode) {
       textNode.visible(false);
@@ -53,7 +55,6 @@ export default function ShapeTextArea({
     }
 
     return () => {
-      // cleanup 시 다시 찾아서 보이게 (textNode가 새로 생성될 수 있음)
       const currentGroup = stage.findOne('#' + shapeId) as Konva.Group;
       if (currentGroup) {
         const currentTextNode = currentGroup.findOne('Text') as Konva.Text;
@@ -63,222 +64,256 @@ export default function ShapeTextArea({
         }
       }
     };
-  }, [shapeId, stageRef, text]);
+  }, [shapeId, stageRef, shapeItem.text]);
 
-  // 스타일/위치/크기 설정 (shapeItem 변경 시 재실행함)
+  // 렌더링에 필요한 스타일
+  const {
+    width: shapeWidth,
+    height: shapeHeight,
+    rotation: shapeRotation,
+    fontSize: shapeFontSize,
+    fontFamily: shapeFontFamily,
+    fontStyle: shapeFontStyle,
+    textColor: shapeTextColor,
+    textAlign: shapeTextAlign,
+    textDecoration: shapeTextDecoration,
+  } = shapeItem;
+
+  // Konva 절대 변환 행렬(getAbsoluteTransform) 기반 위치 계산
   useEffect(() => {
     if (!ref.current || !stageRef.current) return;
 
     const textarea = ref.current;
     const stage = stageRef.current;
-
-    // Group 노드를 찾기
     const shapeGroup = stage.findOne('#' + shapeId) as Konva.Group;
     if (!shapeGroup) return;
 
-    // Group의 절대 위치 (화면 좌표)
-    const groupPos = shapeGroup.getAbsolutePosition();
+    const textNode = shapeGroup.findOne('Text') as Konva.Text | undefined;
 
-    // 모든 도형은 좌상단 기준 Group에 존재, 중앙점까지의 오프셋은 너비/높이의 절반
-    const offsetX = shapeItem.width / 2;
-    const offsetY = shapeItem.height / 2;
+    // 위치 업데이트
+    const updatePosition = () => {
+      if (!textarea || !shapeGroup) return;
 
-    // 회전 적용 (Group의 rotation 사용)
-    const rotation = shapeGroup.rotation();
-    const rad = (rotation * Math.PI) / 180;
-    const cos = Math.cos(rad);
-    const sin = Math.sin(rad);
+      const containerRect = stage.container().getBoundingClientRect();
+      const transform = textNode
+        ? textNode.getAbsoluteTransform().copy()
+        : shapeGroup.getAbsoluteTransform().copy();
 
-    // 회전된 오프셋 계산
-    const rotatedOffsetX = offsetX * cos - offsetY * sin;
-    const rotatedOffsetY = offsetX * sin + offsetY * cos;
+      if (!textNode) {
+        const expectedWidth = shapeWidth * 0.8;
+        const offsetX = (shapeWidth - expectedWidth) / 2;
+        transform.translate(offsetX, 0);
+      }
 
-    // 최종 중심점 위치 (화면 좌표)
-    const centerX = groupPos.x + rotatedOffsetX * stage.scaleX();
-    const centerY = groupPos.y + rotatedOffsetY * stage.scaleY();
+      const m = transform.getMatrix();
+      textarea.style.transform = `matrix(${m[0]}, ${m[1]}, ${m[2]}, ${m[3]}, ${m[4] + containerRect.left}, ${m[5] + containerRect.top})`;
+    };
 
-    // Textarea 위치 설정 (중앙 정렬)
+    const containerRect = stage.container().getBoundingClientRect();
+
+    // 텍스트 노드가 있으면 해당 transform 사용, 없으면 도형 기준 transform 계산
+    const transform = textNode
+      ? textNode.getAbsoluteTransform().copy()
+      : shapeGroup.getAbsoluteTransform().copy();
+
+    let textWidth: number;
+    let textPadding: number;
+
+    if (textNode) {
+      textWidth = textNode.width();
+      textPadding = textNode.padding();
+    } else {
+      const expectedWidth = shapeWidth * 0.8;
+      const offsetX = (shapeWidth - expectedWidth) / 2;
+      transform.translate(offsetX, 0);
+      textWidth = expectedWidth;
+      textPadding = 4;
+    }
+
+    const m = transform.getMatrix();
+
     textarea.style.position = 'absolute';
-    textarea.style.left = `${centerX}px`;
-    textarea.style.top = `${centerY}px`;
-    textarea.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
-    textarea.style.transformOrigin = 'center center';
+    textarea.style.left = '0';
+    textarea.style.top = '0';
+    textarea.style.transformOrigin = '0 0';
+    textarea.style.transform = `matrix(${m[0]}, ${m[1]}, ${m[2]}, ${m[3]}, ${m[4] + containerRect.left}, ${m[5] + containerRect.top})`;
+    textarea.style.zIndex = '0';
 
     // 스타일 설정
-    const fontSize = shapeItem.fontSize || 16;
-    const lineHeight = 1.2;
+    const fontSize = shapeFontSize || 16;
+    textarea.style.fontSize = `${fontSize}px`;
+    textarea.style.fontFamily = shapeFontFamily || 'Arial';
+    textarea.style.color = shapeTextColor || '#000000';
+    textarea.style.width = `${textWidth}px`;
+    textarea.style.textAlign = shapeTextAlign || 'center';
 
-    textarea.style.fontSize = `${fontSize * stage.scaleX()}px`;
-    textarea.style.fontFamily = shapeItem.fontFamily || 'Arial';
-    textarea.style.color = shapeItem.textColor || '#000000';
-
-    // fontStyle 파싱 ('normal' | 'italic' | 'bold' | 'bold italic')
-    const fontStyle = shapeItem.fontStyle || 'normal';
+    const fontStyle = shapeFontStyle || 'normal';
     textarea.style.fontWeight = fontStyle.includes('bold') ? 'bold' : 'normal';
     textarea.style.fontStyle = fontStyle.includes('italic')
       ? 'italic'
       : 'normal';
+    textarea.style.textDecoration = shapeTextDecoration || 'none';
 
-    textarea.style.textDecoration = shapeItem.textDecoration || 'none';
-    textarea.style.background = 'transparent';
+    textarea.style.backgroundColor = 'transparent';
     textarea.style.border = 'none';
     textarea.style.outline = 'none';
     textarea.style.resize = 'none';
     textarea.style.overflow = 'hidden';
-
-    // Line Height 계산
-    const lineHeightPx = fontSize * lineHeight * stage.scaleX();
-    textarea.style.lineHeight = `${lineHeightPx}px`;
-
-    const padding = 4;
-    textarea.style.padding = `${padding * stage.scaleX()}px`;
-
-    textarea.style.textAlign = shapeItem.textAlign || 'center';
     textarea.style.boxSizing = 'border-box';
-    textarea.style.zIndex = '1000';
+    textarea.style.lineHeight = '1.2';
+    textarea.style.padding = `${textPadding}px`;
 
-    // 초기 크기 설정
-    textarea.style.width = `${shapeItem.width * stage.scaleX() * 0.8}px`;
-
-    // 높이 조정 및 도형 크기 업데이트
-    const adjustHeight = () => {
+    const adjustHeight = (isInitial: boolean = false) => {
       textarea.style.height = 'auto';
-      textarea.style.height = `${textarea.scrollHeight}px`;
+      const scrollHeight = textarea.scrollHeight;
 
-      // 텍스트 크기에 맞춰 도형 높이만 조절 (너비는 고정)
-      if (onSizeChange) {
-        const newHeight = Math.max(
-          shapeItem.height * stage.scaleY(),
-          textarea.scrollHeight + 20,
+      const absScale = (textNode || shapeGroup).getAbsoluteScale();
+      const scaleY = absScale.y;
+
+      const screenY = containerRect.top + m[5];
+      const maxAvailableScreenHeight = window.innerHeight - screenY - 90;
+      const maxAvailableLocalHeight = maxAvailableScreenHeight / scaleY;
+
+      textarea.style.maxHeight = `${maxAvailableLocalHeight}px`;
+      textarea.style.overflowY =
+        scrollHeight > maxAvailableLocalHeight ? 'auto' : 'hidden';
+      textarea.style.height = `${Math.min(scrollHeight, maxAvailableLocalHeight)}px`;
+
+      //텍스트 변경 또는 높이 증가가 필요할 때만 도형 크기 및 텍스트 동기화
+      if (onSizeChange && !isInitial) {
+        const newShapeHeight = Math.max(
+          shapeHeight,
+          (textarea.scrollHeight + 20) / 1, // 로컬 스케일 기준이므로 1로 나눔
         );
 
-        // 스케일 보정해서 실제 도형 크기로 변환
-        const actualHeight = newHeight / stage.scaleY();
-
-        // 크기가 실제로 변경되었을 때만 업데이트
         const threshold = 1;
-        if (Math.abs(actualHeight - lastSizeRef.current.height) > threshold) {
-          lastSizeRef.current = {
-            width: shapeItem.width,
-            height: actualHeight,
-          };
-          onSizeChange(shapeItem.width, actualHeight);
+        const heightChanged =
+          Math.abs(newShapeHeight - lastSentHeightRef.current) > threshold;
+        const textChanged = textarea.value !== lastSentTextRef.current;
+
+        if (heightChanged || textChanged) {
+          lastSentHeightRef.current = newShapeHeight;
+          lastSentTextRef.current = textarea.value;
+          onSizeChange(
+            shapeWidth,
+            newShapeHeight,
+            undefined,
+            undefined,
+            textarea.value,
+          );
         }
       }
     };
 
-    textarea.addEventListener('input', adjustHeight);
-    adjustHeight();
+    const onInput = () => adjustHeight(false);
+    textarea.addEventListener('input', onInput);
+    adjustHeight(true);
 
-    // 처음에만 실행
     if (!initializedRef.current) {
       initializedRef.current = true;
       textarea.focus();
-      const textLength = textarea.value.length;
-      textarea.setSelectionRange(textLength, textLength);
-    } else {
-      // 포커스 유지
-      textarea.focus();
     }
 
-    return () => {
-      textarea.removeEventListener('input', adjustHeight);
-    };
-  }, [shapeId, shapeItem, stageRef, onSizeChange]);
+    // Stage 이벤트 구독
+    stage.on('dragmove', updatePosition);
+    stage.on('dragend', updatePosition);
+    stage.on('stageTransformChange', updatePosition);
 
+    return () => {
+      textarea.removeEventListener('input', onInput);
+      stage.off('dragmove', updatePosition);
+      stage.off('dragend', updatePosition);
+      stage.off('stageTransformChange', updatePosition);
+    };
+  }, [
+    shapeId,
+    shapeWidth,
+    shapeHeight,
+    shapeRotation,
+    shapeFontSize,
+    shapeFontFamily,
+    shapeFontStyle,
+    shapeTextColor,
+    shapeTextAlign,
+    shapeTextDecoration,
+    shapeItem.text,
+    stageRef,
+    onSizeChange,
+    onChange,
+    onClose,
+  ]);
+
+  // 외부 클릭 시 텍스트 편집 종료하고 최종 크기/위치 반영
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-
       // 사이드바 클릭은 무시 (편집 유지)
-      if (target.closest('aside')) {
-        return;
-      }
+      if (target.closest('aside')) return;
 
-      // textarea 외부 클릭 시 저장 및 닫기
       if (ref.current && e.target !== ref.current) {
-        onChange(text);
+        const textarea = ref.current;
+        const currentText = textarea.value;
+
+        if (onSizeChange) {
+          const stage = stageRef.current;
+          if (stage) {
+            // 텍스트 높이에 맞춰 도형의 최소 높이 계산
+            const newHeight = Math.max(
+              shapeItem.height,
+              textarea.scrollHeight + 20,
+            );
+
+            // 높이 증가 시 도형 중심 유지하기 위한 위치 보정
+            const heightDiff = newHeight - shapeItem.height;
+            const rotation = stage.findOne('#' + shapeId)?.rotation() || 0;
+
+            const dyLocal = -heightDiff / 2;
+            const rad = (rotation * Math.PI) / 180;
+            const dxGlobal = -dyLocal * Math.sin(rad);
+            const dyGlobal = dyLocal * Math.cos(rad);
+
+            // 최종 크기, 위치, 텍스트 동기화
+            onSizeChange(
+              shapeItem.width,
+              newHeight,
+              shapeItem.y + dyGlobal,
+              shapeItem.x + dxGlobal,
+              currentText,
+            );
+          }
+        } else {
+          // 크기 변경이 없는 경우 텍스트만 반영
+          onChange(currentText);
+        }
         onClose();
       }
     };
 
-    // 외부 영역 클릭 시 textarea가 즉시 blur 되면서 onChange가 누락되는 문제가 있어
-    // 이벤트 등록 시점을 다음 이벤트 루프로 미룸
-    const timer = setTimeout(() => {
-      window.addEventListener('mousedown', handleOutsideClick);
-    });
+    window.addEventListener('mousedown', handleOutsideClick);
 
     return () => {
       window.removeEventListener('mousedown', handleOutsideClick);
-      clearTimeout(timer);
     };
-  }, [onChange, onClose, text]);
+  }, [onChange, onClose, onSizeChange, shapeId, shapeItem, stageRef]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Esc: 완료
     if (e.key === 'Escape') {
       e.preventDefault();
-      onChange(text);
+      onChange(ref.current?.value || '');
       onClose();
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newText = e.target.value;
-    setText(newText);
-
-    // 텍스트 변경 시 도형 높이 조절 (너비는 고정)
-    if (!ref.current || !stageRef.current || !onSizeChange) {
-      onChange(newText);
-      return;
-    }
-
-    const textarea = ref.current;
-    const stage = stageRef.current;
-
-    // 높이 재계산
-    textarea.style.height = 'auto';
-    textarea.style.height = `${textarea.scrollHeight}px`;
-
-    const newHeight = Math.max(
-      shapeItem.height * stage.scaleY(),
-      textarea.scrollHeight + 20,
-    );
-
-    const actualHeight = newHeight / stage.scaleY();
-
-    const threshold = 1;
-    if (Math.abs(actualHeight - lastSizeRef.current.height) > threshold) {
-      const heightDiff = actualHeight - lastSizeRef.current.height;
-      const rotation = stage.findOne('#' + shapeId)?.rotation() || 0;
-
-      let newX = shapeItem.x;
-      let newY = shapeItem.y;
-
-      const dyLocal = -heightDiff / 2;
-      const rad = (rotation * Math.PI) / 180;
-
-      const dxGlobal = -dyLocal * Math.sin(rad);
-      const dyGlobal = dyLocal * Math.cos(rad);
-
-      newX = shapeItem.x + dxGlobal;
-      newY = shapeItem.y + dyGlobal;
-
-      lastSizeRef.current = { width: shapeItem.width, height: actualHeight };
-      onSizeChange(shapeItem.width, actualHeight, newY, newX, newText);
-    } else {
-      onChange(newText);
     }
   };
 
   return (
     <textarea
       ref={ref}
-      value={text}
-      onChange={handleChange}
       onKeyDown={handleKeyDown}
       spellCheck={false}
-      className="absolute z-1000 m-0 box-border resize-none overflow-hidden border-none bg-transparent p-0 break-all whitespace-pre-wrap outline-none focus:outline-none"
+      className="scrollbar-hide absolute z-0 m-0 box-border resize-none overflow-hidden border-none bg-transparent p-0 break-all whitespace-pre-wrap outline-none focus:outline-none"
+      style={{
+        msOverflowStyle: 'none',
+        scrollbarWidth: 'none',
+      }}
     />
   );
 }

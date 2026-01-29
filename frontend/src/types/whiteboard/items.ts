@@ -40,8 +40,8 @@ export interface ArrowItem extends BaseItem {
   startHeadType?: ArrowHeadType;
   endHeadType?: ArrowHeadType;
   chevronSpacing?: number;
-  startBinding?: ArrowBinding;
-  endBinding?: ArrowBinding;
+  startBinding?: ArrowBinding | null;
+  endBinding?: ArrowBinding | null;
 }
 
 export interface LineItem extends BaseItem {

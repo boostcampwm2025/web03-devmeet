@@ -221,10 +221,22 @@ export default function ChatModal() {
             key={chat.id}
             {...chat}
             onImageLoad={() => {
-              scrollRef.current?.scrollTo({
-                top: scrollRef.current.scrollHeight,
-                behavior: 'smooth',
-              });
+              const container = scrollRef.current;
+              if (!container) return;
+
+              const threshold = 150;
+              const isNearBottom =
+                container.scrollHeight -
+                  container.scrollTop -
+                  container.clientHeight <
+                threshold;
+
+              if (isNearBottom) {
+                container.scrollTo({
+                  top: container.scrollHeight,
+                  behavior: 'smooth',
+                });
+              }
             }}
           />
         ))}

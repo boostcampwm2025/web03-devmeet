@@ -14,6 +14,9 @@ export interface MediaState {
   screenShareOn: boolean;
   cameraPermission: MediaPermission;
   micPermission: MediaPermission;
+  speakerId: string;
+  micId: string;
+  cameraId: string;
 }
 export interface Producers {
   audioProducer: Producer | null;

@@ -1,15 +1,13 @@
 'use client';
 
+import { useMeetingStore } from '@/store/useMeetingStore';
 import { useEffect, useState } from 'react';
 
 export type DeviceKind = 'audioinput' | 'audiooutput' | 'videoinput';
 
 export const useMediaDevices = () => {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
-
-  const [speakerId, setSpeakerId] = useState<string>('');
-  const [micId, setMicId] = useState<string>('');
-  const [cameraId, setCameraId] = useState<string>('');
+  const { setSpeakerId, setCameraId, setMicId } = useMeetingStore();
 
   useEffect(() => {
     const updateDevices = async () => {
@@ -52,7 +50,6 @@ export const useMediaDevices = () => {
 
     watchPermissions();
 
-    // [추가] 컴포넌트 언마운트 시 이벤트 리스너 제거
     return () => {
       navigator.mediaDevices.removeEventListener('devicechange', updateDevices);
     };
@@ -64,13 +61,5 @@ export const useMediaDevices = () => {
     microphones: byKind('audioinput'),
     cameras: byKind('videoinput'),
     speakers: byKind('audiooutput'),
-
-    micId,
-    cameraId,
-    speakerId,
-
-    setMicId,
-    setCameraId,
-    setSpeakerId,
   };
 };

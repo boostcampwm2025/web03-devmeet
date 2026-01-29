@@ -8,7 +8,7 @@ export const useProduce = () => {
   // device를 가져오도록 수정했습니다.
   const { socket, sendTransport, setProducer, setIsProducing, device } =
     useMeetingSocketStore();
-  const { setMedia } = useMeetingStore();
+  const { media, setMedia } = useMeetingStore();
 
   // sendTransport가 초기화 된 이후 createProduceHelper 선언
   const helpers = useMemo(() => {
@@ -30,6 +30,7 @@ export const useProduce = () => {
       setIsProducing('audio', true);
 
       const constraints = {
+        deviceId: media.micId ? { exact: media.micId } : undefined,
         echoCancellation: true,
         autoGainControl: true,
         sampleRate: 48000,
@@ -82,7 +83,9 @@ export const useProduce = () => {
     try {
       setIsProducing('video', true);
 
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: media.cameraId ? { deviceId: { exact: media.cameraId } } : true,
+      });
       const videoTrack = stream.getVideoTracks()[0];
 
       const videoProducer = await helpers.produceCam(videoTrack);

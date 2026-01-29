@@ -1,4 +1,3 @@
-// components/meeting/media/AudioView.tsx
 import { useVoiceActivity } from '@/hooks/useVoiceActivity';
 import { useMeetingStore } from '@/store/useMeetingStore';
 import { useEffect, useRef } from 'react';
@@ -11,6 +10,8 @@ export default function AudioView({
   userId: string;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const isSpeaking = useVoiceActivity(stream);
+  const { media, setSpeaking } = useMeetingStore();
 
   useEffect(() => {
     if (audioRef.current && stream) {
@@ -18,12 +19,18 @@ export default function AudioView({
     }
   }, [stream]);
 
-  const isSpeaking = useVoiceActivity(stream);
-  const { setSpeaking } = useMeetingStore();
+  useEffect(() => {
+    const audioEl = audioRef.current;
+    if (!audioEl) return;
+
+    // 스피커 장치 변경
+    if ('setSinkId' in HTMLAudioElement.prototype) {
+      audioEl.setSinkId(media.speakerId);
+    }
+  }, [media.speakerId, userId]);
 
   useEffect(() => {
     setSpeaking(userId, isSpeaking);
-
     return () => setSpeaking(userId, false);
   }, [isSpeaking, userId, setSpeaking]);
 

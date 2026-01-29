@@ -2,19 +2,11 @@ import { DeviceDropdown } from '@/components/meeting/DeviceDropdown';
 import { MediaPreview } from '@/components/meeting/media/MediaPreview';
 import { useMediaDevices } from '@/hooks/useMediaDevices';
 import { CamOnIcon, MicOnIcon, VolumnIcon } from '@/assets/icons/meeting';
+import { useMeetingStore } from '@/store/useMeetingStore';
 
 export default function MediaSettingSection() {
-  const {
-    microphones,
-    cameras,
-    speakers,
-    micId,
-    cameraId,
-    speakerId,
-    setMicId,
-    setCameraId,
-    setSpeakerId,
-  } = useMediaDevices();
+  const { microphones, cameras, speakers } = useMediaDevices();
+  const { media, setSpeakerId, setMicId, setCameraId } = useMeetingStore();
 
   return (
     <section className="flex w-full max-w-160 min-w-0 flex-col gap-6">
@@ -25,7 +17,7 @@ export default function MediaSettingSection() {
           label="스피커"
           devices={speakers}
           icon={VolumnIcon}
-          selectedId={speakerId}
+          selectedId={media.speakerId}
           onSelect={setSpeakerId}
           className="flex-1"
         />
@@ -34,7 +26,7 @@ export default function MediaSettingSection() {
           label="마이크"
           devices={microphones}
           icon={MicOnIcon}
-          selectedId={micId}
+          selectedId={media.micId}
           onSelect={setMicId}
           className="flex-1"
         />
@@ -43,7 +35,7 @@ export default function MediaSettingSection() {
           label="카메라"
           devices={cameras}
           icon={CamOnIcon}
-          selectedId={cameraId}
+          selectedId={media.cameraId}
           onSelect={setCameraId}
           className="flex-1"
         />

@@ -48,7 +48,7 @@ export default function Modal({
   return (
     <Portal>
       <div
-        className="flex-center fixed top-0 left-0 z-50 h-screen w-screen bg-neutral-900/30"
+        className="flex-center fixed top-0 left-0 z-50 h-screen w-screen bg-neutral-900/30 px-4 py-4"
         onMouseDown={handleMouseDown} // onClick 대신 MouseDown/Up 사용
         onMouseUp={handleMouseUp}
       >
@@ -62,7 +62,7 @@ export default function Modal({
             {title}
           </h2>
           <section
-            className={`flex-1 ${isLightMode ? styles.section.light : styles.section.dark}`}
+            className={`flex-1 whitespace-pre-wrap ${isLightMode ? styles.section.light : styles.section.dark}`}
           >
             {children}
           </section>

@@ -4,7 +4,7 @@
 
 ## 🛎️ 서비스 소개
 
-> 서비스 URL: https://www.clobby.p-e.kr/
+> 서비스 URL: https://www.devmeet.p-e.kr/
 
 `"화상 회의 따로, 코드 공유 따로... 번거로운 협업은 이제 그만."`
 
@@ -48,12 +48,11 @@ dev:meet는 화상 통화, 실시간 코드 에디터, 화이트보드를 하나
 
 - Backend
 
-  <img src="https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white"/> <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white"/> <img src="https://img.shields.io/badge/MySQL2-4479A1?style=for-the-badge&logo=mysql&logoColor=white"/> <img src="https://img.shields.io/badge/Jest-C21325?style=for-the-badge&logo=jest&logoColor=white"/> <img src="https://img.shields.io/badge/mediasoup-WebRTC-FF6F00?style=for-the-badge&logo=webrtc&logoColor=white"/> <img src="https://img.shields.io/badge/AWS%20SDK-232F3E?style=for-the-badge&logo=amazonaws&logoColor=white"/>
-
+  <img src="https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white"/> <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white"/> <img src="https://img.shields.io/badge/MySQL2-4479A1?style=for-the-badge&logo=mysql&logoColor=white"/> <img src="https://img.shields.io/badge/TypeORM-FE0803?style=for-the-badge&logo=typeorm&logoColor=white"/> <img src="https://img.shields.io/badge/Kafka%20Stream-231F20?style=for-the-badge&logo=apachekafka&logoColor=white"/> <img src="https://img.shields.io/badge/Jest-C21325?style=for-the-badge&logo=jest&logoColor=white"/> <img src="https://img.shields.io/badge/mediasoup-WebRTC-FF6F00?style=for-the-badge&logo=webrtc&logoColor=white"/>
 
 - Infra
 
-  <img src="https://img.shields.io/badge/Naver%20Cloud%20Platform-03C75A?style=for-the-badge&logo=naver&logoColor=white"/> <img src="https://img.shields.io/badge/AWS%20S3-569A31?style=for-the-badge&logo=amazons3&logoColor=white"/> <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"/> <img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white"/> <img src="https://img.shields.io/badge/Kafka-231F20?style=for-the-badge&logo=apachekafka&logoColor=white"/> <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white"/> <img src="https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white"/> 
+  <img src="https://img.shields.io/badge/Naver%20Cloud%20Platform-03C75A?style=for-the-badge&logo=naver&logoColor=white"/> <img src="https://img.shields.io/badge/AWS%20S3-569A31?style=for-the-badge&logo=amazons3&logoColor=white"/> <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"/> <img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white"/> <img src="https://img.shields.io/badge/Kafka-231F20?style=for-the-badge&logo=apachekafka&logoColor=white"/> <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white"/> <img src="https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white"/> <img src="https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white"/>
 
 <br/>
 
@@ -66,6 +65,6 @@ dev:meet는 화상 통화, 실시간 코드 에디터, 화이트보드를 하나
 |                            ISTP                            |                            INFP                            |                           ISTP                            |                           ISTJ                            |                           ESTJ                            |
 |          [@KimDwDev](https://github.com/KimDwDev)          |         [@seorang42](https://github.com/seorang42)         |         [@tjsdn052](https://github.com/tjsdn052)          |         [@chamny20](https://github.com/chamny20)          |         [@ChaJiTae](https://github.com/ChaJiTae)          |
 | ![](https://avatars.githubusercontent.com/u/212347248?v=4) | ![](https://avatars.githubusercontent.com/u/123955813?v=4) | ![](https://avatars.githubusercontent.com/u/74086324?v=4) | ![](https://avatars.githubusercontent.com/u/80542421?v=4) | ![](https://avatars.githubusercontent.com/u/55056889?v=4) |
-|                         준비됐엉️                          |                     마지막까지 즐겁게                      |                        일단 해보기                        |                   다 경험이고 추억이다                    |                          크아앙                           |
+|                          준비됐엉️                          |                     마지막까지 즐겁게                      |                        일단 해보기                        |                   다 경험이고 추억이다                    |                          크아앙                           |
 
 <br/>

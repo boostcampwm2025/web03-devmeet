@@ -29,5 +29,5 @@ export class WhiteboardWebsocket {
     const room = `${WHITEBOARD_GROUP.WHITEBOARD}:${room_id}`;
 
     this.server.in(room).disconnectSockets(true);
-  };
-};
+  }
+}

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
+import Konva from 'konva';
 
 import {
   CANVAS_HEIGHT,
@@ -23,6 +24,8 @@ interface LocalState {
   currentDrawing: DrawingItem | null;
   drawingStroke: string;
   drawingSize: DrawingSize;
+  awarenessCallback: ((selectedId: string | null) => void) | null;
+  stageRef: React.RefObject<Konva.Stage | null> | null;
 }
 
 interface LocalActions {
@@ -37,6 +40,10 @@ interface LocalActions {
   startDrawing: (x: number, y: number) => void;
   continueDrawing: (x: number, y: number) => void;
   finishDrawing: () => void;
+  setAwarenessCallback: (
+    callback: ((selectedId: string | null) => void) | null,
+  ) => void;
+  setStageRef: (ref: React.RefObject<Konva.Stage | null>) => void;
 }
 
 type LocalStore = LocalState & LocalActions;
@@ -45,7 +52,16 @@ type LocalStore = LocalState & LocalActions;
 export const useWhiteboardLocalStore = create<LocalStore>((set, get) => ({
   // Select 초기값
   selectedId: null,
-  selectItem: (id) => set({ selectedId: id }),
+  awarenessCallback: null,
+  selectItem: (id) => {
+    set({ selectedId: id });
+    // Awareness 업데이트
+    const callback = get().awarenessCallback;
+    if (callback) {
+      callback(id);
+    }
+  },
+  setAwarenessCallback: (callback) => set({ awarenessCallback: callback }),
 
   // Text Editing 초기값
   editingTextId: null,
@@ -67,12 +83,14 @@ export const useWhiteboardLocalStore = create<LocalStore>((set, get) => ({
       : { x: 0, y: 0 },
   viewportWidth: typeof window !== 'undefined' ? window.innerWidth : 0,
   viewportHeight: typeof window !== 'undefined' ? window.innerHeight : 0,
+  stageRef: null,
 
   // Stage Transform
   setStageScale: (scale) => set({ stageScale: scale }),
   setStagePos: (pos) => set({ stagePos: pos }),
   setViewportSize: (width, height) =>
     set({ viewportWidth: width, viewportHeight: height }),
+  setStageRef: (ref) => set({ stageRef: ref }),
 
   // 그리기 초기값
   currentDrawing: null,

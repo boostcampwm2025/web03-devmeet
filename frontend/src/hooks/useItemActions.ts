@@ -1,10 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
+import * as Y from 'yjs';
 
 import { useWhiteboardSharedStore } from '@/store/useWhiteboardSharedStore';
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
 } from '@/components/whiteboard/constants/canvas';
+import { TEXT_SIZE_PRESETS } from '@/constants/textPresets';
 
 import type {
   WhiteboardItem,
@@ -16,14 +18,53 @@ import type {
   ImageItem,
   VideoItem,
   YoutubeItem,
+  StackItem,
 } from '@/types/whiteboard';
+import type { YMapValue } from '@/types/whiteboard/yjs';
 
 import { extractYoutubeId } from '@/utils/youtube';
 
-// 아이템 액션 훅 / Yjs 연동 시 이 훅을 useYjsWebSocket에서 사용
+// 아이템 액션 훅
 export function useItemActions() {
+  // Store에서 Yjs 인스턴스 가져옴
+  const yItems = useWhiteboardSharedStore((state) => state.yItems);
+  const yjsOrigin = useWhiteboardSharedStore((state) => state.yjsOrigin);
+
+  // WhiteboardItem → Y.Map 변환(WhiteboardItem 그대로 사용 x )
+  const itemToYMap = (item: WhiteboardItem): Y.Map<YMapValue> => {
+    const yMap = new Y.Map<YMapValue>();
+    Object.entries(item).forEach(([key, value]) => {
+      if (value !== undefined) {
+        yMap.set(key, value as YMapValue);
+      }
+    });
+    return yMap;
+  };
+
+  // Y.Map 복제 (delete 후 재삽입 시 필요함)
+  const cloneYMap = (yMap: Y.Map<YMapValue>): Y.Map<YMapValue> => {
+    const clone = new Y.Map<YMapValue>();
+    yMap.forEach((value, key) => {
+      clone.set(key, value);
+    });
+    return clone;
+  };
+
+  // z-order 변경
+  const reorderItems = (fromIndex: number, toIndex: number) => {
+    if (!yItems?.doc) return;
+
+    yItems.doc.transact(() => {
+      const item = cloneYMap(yItems.get(fromIndex) as Y.Map<YMapValue>);
+      yItems.delete(fromIndex, 1);
+      yItems.insert(toIndex, [item]);
+    }, yjsOrigin);
+  };
+
   // 텍스트 추가
   const addText = (payload?: Partial<Omit<TextItem, 'id' | 'type'>>) => {
+    if (!yItems || !yItems.doc) return;
+
     const id = uuidv4();
     const newText: TextItem = {
       id,
@@ -38,18 +79,18 @@ export function useItemActions() {
       wrap: payload?.wrap ?? 'char',
       rotation: payload?.rotation ?? 0,
       width: payload?.width ?? 200,
-      parentPolygonId: payload?.parentPolygonId,
     };
 
-    // TODO: Yjs Doc에 추가
-    const items = useWhiteboardSharedStore.getState().items;
-    useWhiteboardSharedStore.setState({ items: [...items, newText] });
-
+    yItems.doc.transact(() => {
+      yItems.push([itemToYMap(newText)]);
+    }, yjsOrigin);
     return id;
   };
 
   // 화살표 추가
   const addArrow = (payload?: Partial<Omit<ArrowItem, 'id' | 'type'>>) => {
+    if (!yItems || !yItems.doc) return;
+
     const id = uuidv4();
     const newArrow: ArrowItem = {
       id,
@@ -67,13 +108,15 @@ export function useItemActions() {
       tension: payload?.tension ?? 0.4,
     };
 
-    // TODO: Yjs Doc에 추가
-    const items = useWhiteboardSharedStore.getState().items;
-    useWhiteboardSharedStore.setState({ items: [...items, newArrow] });
+    yItems.doc.transact(() => {
+      yItems.push([itemToYMap(newArrow)]);
+    }, yjsOrigin);
   };
 
   // 선 추가
   const addLine = (payload?: Partial<Omit<LineItem, 'id' | 'type'>>) => {
+    if (!yItems || !yItems.doc) return;
+
     const id = uuidv4();
     const newLine: LineItem = {
       id,
@@ -89,9 +132,9 @@ export function useItemActions() {
       tension: payload?.tension ?? 0.4,
     };
 
-    // TODO: Yjs Doc에 추가
-    const items = useWhiteboardSharedStore.getState().items;
-    useWhiteboardSharedStore.setState({ items: [...items, newLine] });
+    yItems.doc.transact(() => {
+      yItems.push([itemToYMap(newLine)]);
+    }, yjsOrigin);
   };
 
   // 도형 추가
@@ -99,6 +142,8 @@ export function useItemActions() {
     type: ShapeType,
     payload?: Partial<Omit<ShapeItem, 'id' | 'type' | 'shapeType'>>,
   ) => {
+    if (!yItems || !yItems.doc) return;
+
     const id = uuidv4();
     const newShape: ShapeItem = {
       id,
@@ -112,11 +157,12 @@ export function useItemActions() {
       stroke: payload?.stroke ?? '#000000',
       strokeWidth: payload?.strokeWidth ?? 2,
       rotation: payload?.rotation ?? 0,
+      fontSize: payload?.fontSize ?? TEXT_SIZE_PRESETS.S.fontSize,
     };
 
-    // TODO: Yjs Doc에 추가
-    const items = useWhiteboardSharedStore.getState().items;
-    useWhiteboardSharedStore.setState({ items: [...items, newShape] });
+    yItems.doc.transact(() => {
+      yItems.push([itemToYMap(newShape)]);
+    }, yjsOrigin);
   };
 
   // 이미지 추가
@@ -127,6 +173,8 @@ export function useItemActions() {
     width?: number;
     height?: number;
   }) => {
+    if (!yItems || !yItems.doc) return;
+
     const id = uuidv4();
     const newImage: ImageItem = {
       id,
@@ -143,9 +191,9 @@ export function useItemActions() {
       opacity: 1,
     };
 
-    // TODO: Yjs Doc에 추가
-    const items = useWhiteboardSharedStore.getState().items;
-    useWhiteboardSharedStore.setState({ items: [...items, newImage] });
+    yItems.doc.transact(() => {
+      yItems.push([itemToYMap(newImage)]);
+    }, yjsOrigin);
   };
 
   // 비디오 추가
@@ -156,6 +204,8 @@ export function useItemActions() {
     width?: number;
     height?: number;
   }) => {
+    if (!yItems || !yItems.doc) return;
+
     const id = uuidv4();
     const newVideo: VideoItem = {
       id,
@@ -172,16 +222,17 @@ export function useItemActions() {
       opacity: 1,
     };
 
-    // TODO: Yjs Doc에 추가
-    const items = useWhiteboardSharedStore.getState().items;
-    useWhiteboardSharedStore.setState({ items: [...items, newVideo] });
+    yItems.doc.transact(() => {
+      yItems.push([itemToYMap(newVideo)]);
+    }, yjsOrigin);
   };
 
   // 유튜브 추가
   const addYoutube = (payload: { url: string; x?: number; y?: number }) => {
+    if (!yItems || !yItems.doc) return;
+
     const videoId = extractYoutubeId(payload.url);
 
-    // 유효하지 않은 URL 입력시 alert 띄우고 중단
     if (!videoId) {
       alert('올바른 유튜브 URL이 아닙니다.');
       return;
@@ -207,94 +258,147 @@ export function useItemActions() {
       opacity: 1,
     };
 
-    // TODO: Yjs Doc에 추가
-    const items = useWhiteboardSharedStore.getState().items;
-    useWhiteboardSharedStore.setState({ items: [...items, newYoutube] });
+    yItems.doc.transact(() => {
+      yItems.push([itemToYMap(newYoutube)]);
+    }, yjsOrigin);
+  };
+
+  // 스택 아이템(아이콘) 추가
+  const addStack = (payload: Partial<Omit<StackItem, 'id' | 'type'>>) => {
+    if (!yItems || !yItems.doc) return;
+
+    const id = uuidv4();
+    const newStack: StackItem = {
+      id,
+      type: 'stack',
+      src: payload.src ?? '',
+      stackName: payload.stackName ?? '',
+      category: payload.category ?? 'tool',
+      x: payload.x ?? CANVAS_WIDTH / 2 - 30,
+      y: payload.y ?? CANVAS_HEIGHT / 2 - 30,
+      width: payload.width ?? 60,
+      height: payload.height ?? 60,
+      rotation: payload.rotation ?? 0,
+      opacity: payload.opacity ?? 1,
+    };
+
+    yItems.doc.transact(() => {
+      yItems.push([itemToYMap(newStack)]);
+    }, yjsOrigin);
+
+    return id;
   };
 
   // 그리기 완료 후 추가
   const addDrawing = (drawing: WhiteboardItem) => {
-    // TODO: Yjs Doc에 추가
-    const items = useWhiteboardSharedStore.getState().items;
-    useWhiteboardSharedStore.setState({ items: [...items, drawing] });
+    if (!yItems || !yItems.doc) return;
+    yItems.doc.transact(() => {
+      yItems.push([itemToYMap(drawing)]);
+    }, yjsOrigin);
   };
 
-  // 아이템 업데이트
+  // 아이템 업데이트 (Y.Map 속성 직접 수정 - Undo 스택 유지)
   const updateItem = (id: string, changes: Partial<WhiteboardItem>) => {
-    // TODO: Yjs Doc 수정
-    const items = useWhiteboardSharedStore.getState().items;
-    const newItems = items.map((item) =>
-      item.id === id ? ({ ...item, ...changes } as WhiteboardItem) : item,
-    );
-    useWhiteboardSharedStore.setState({ items: newItems });
+    if (!yItems || !yItems.doc) return;
+
+    const yMaps = yItems.toArray();
+    const index = yMaps.findIndex((yMap) => yMap.get('id') === id);
+    if (index === -1) return;
+
+    const yMap = yMaps[index];
+
+    yItems.doc.transact(() => {
+      Object.entries(changes).forEach(([key, value]) => {
+        if (value === null) {
+          yMap.delete(key);
+        } else if (value !== undefined) {
+          yMap.set(key, value);
+        }
+      });
+    }, yjsOrigin);
   };
 
   // 아이템 삭제
   const deleteItem = (id: string) => {
-    // TODO: Yjs Doc에서 삭제
-    const items = useWhiteboardSharedStore.getState().items;
-    const newItems = items.filter((item) => item.id !== id);
-    useWhiteboardSharedStore.setState({ items: newItems });
+    if (!yItems || !yItems.doc) return;
+
+    const yMaps = yItems.toArray();
+    const index = yMaps.findIndex((yMap) => yMap.get('id') === id);
+    if (index === -1) return;
+
+    yItems.doc.transact(() => {
+      yItems.delete(index, 1);
+    }, yjsOrigin);
+  };
+
+  // 여러 아이템 한번에 삭제 (지우개로 빠르게 각각 삭제하니까 몇 몇 아이템이 동기화가 안되는 문제가 있음)
+  const deleteItems = (ids: string[]) => {
+    if (!yItems || !yItems.doc || ids.length === 0) return;
+
+    yItems.doc.transact(() => {
+      const yMaps = yItems.toArray();
+      const idsToDelete = new Set(ids);
+
+      // 역순으로 순회하면서 삭제
+      for (let index = yMaps.length - 1; index >= 0; index--) {
+        const id = yMaps[index].get('id');
+        if (id && idsToDelete.has(id as string)) {
+          yItems.delete(index, 1);
+        }
+      }
+    }, yjsOrigin);
   };
 
   // 맨 앞으로
   const bringToFront = (id: string) => {
-    const items = useWhiteboardSharedStore.getState().items;
-    const index = items.findIndex((item) => item.id === id);
-    if (index === -1 || index === items.length - 1) return;
+    if (!yItems) return;
 
-    const newItems = [...items];
-    const [item] = newItems.splice(index, 1);
-    newItems.push(item);
+    const yMaps = yItems.toArray();
+    const index = yMaps.findIndex((yMap) => yMap?.get('id') === id);
+    if (index === -1 || index === yMaps.length - 1) return;
 
-    // TODO: Yjs Doc 수정
-    useWhiteboardSharedStore.setState({ items: newItems });
+    reorderItems(index, yMaps.length - 1);
   };
 
   // 맨 뒤로
   const sendToBack = (id: string) => {
-    const items = useWhiteboardSharedStore.getState().items;
-    const index = items.findIndex((item) => item.id === id);
+    if (!yItems) return;
+
+    const yMaps = yItems.toArray();
+    const index = yMaps.findIndex((yMap) => yMap?.get('id') === id);
     if (index === -1 || index === 0) return;
 
-    const newItems = [...items];
-    const [item] = newItems.splice(index, 1);
-    newItems.unshift(item);
-
-    // TODO: Yjs Doc 수정
-    useWhiteboardSharedStore.setState({ items: newItems });
+    reorderItems(index, 0);
   };
 
   // 한 단계 앞으로
   const bringForward = (id: string) => {
-    const items = useWhiteboardSharedStore.getState().items;
-    const currentIndex = items.findIndex((item) => item.id === id);
-    if (currentIndex === -1 || currentIndex === items.length - 1) return;
+    if (!yItems) return;
 
-    const newItems = [...items];
-    [newItems[currentIndex], newItems[currentIndex + 1]] = [
-      newItems[currentIndex + 1],
-      newItems[currentIndex],
-    ];
+    const yMaps = yItems.toArray();
+    const index = yMaps.findIndex((yMap) => yMap?.get('id') === id);
+    if (index === -1 || index === yMaps.length - 1) return;
 
-    // TODO: Yjs Doc 수정
-    useWhiteboardSharedStore.setState({ items: newItems });
+    reorderItems(index, index + 1);
   };
 
   // 한 단계 뒤로
   const sendBackward = (id: string) => {
-    const items = useWhiteboardSharedStore.getState().items;
-    const currentIndex = items.findIndex((item) => item.id === id);
-    if (currentIndex <= 0) return;
+    if (!yItems) return;
 
-    const newItems = [...items];
-    [newItems[currentIndex], newItems[currentIndex - 1]] = [
-      newItems[currentIndex - 1],
-      newItems[currentIndex],
-    ];
+    const yMaps = yItems.toArray();
+    const index = yMaps.findIndex((yMap) => yMap?.get('id') === id);
+    if (index <= 0) return;
 
-    // TODO: Yjs Doc 수정
-    useWhiteboardSharedStore.setState({ items: newItems });
+    reorderItems(index, index - 1);
+  };
+
+  const performTransaction = (fn: () => void) => {
+    if (!yItems || !yItems.doc) {
+      fn();
+      return;
+    }
+    yItems.doc.transact(fn, yjsOrigin);
   };
 
   return {
@@ -305,12 +409,15 @@ export function useItemActions() {
     addImage,
     addVideo,
     addYoutube,
+    addStack,
     addDrawing,
     updateItem,
     deleteItem,
+    deleteItems,
     bringToFront,
     sendToBack,
     bringForward,
     sendBackward,
+    performTransaction,
   };
 }

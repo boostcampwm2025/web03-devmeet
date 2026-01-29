@@ -8,6 +8,7 @@ import MeetingMenu from '@/components/meeting/MeetingMenu';
 import MemberModal from '@/components/meeting/MemberModal';
 import MemberVideoBar from '@/components/meeting/MemberVideoBar';
 import Whiteboard from '@/components/whiteboard/Whiteboard';
+import { useWhiteboardSocket } from '@/hooks/useWhiteboardSocket';
 import { useCodeEditorSocket } from '@/hooks/useCodeEditorSocket';
 import { useMeetingSocket } from '@/hooks/useMeetingSocket';
 import { useProduce } from '@/hooks/useProduce';
@@ -23,10 +24,13 @@ import {
   ProviderToolInfo,
 } from '@/types/meeting';
 import { createConsumeHelpers } from '@/utils/createConsumeHelpers';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import VideoView from './media/VideoView';
+import AudioView from '@/components/meeting/media/AudioView';
+import MainVideo from '@/components/meeting/MainVideo';
+import { useChatSocket } from '@/hooks/chat/useChatSocket';
 
-export default function MeetingRoom({ meetingId }: { meetingId: string }) {
+export default function MeetingRoom() {
   const {
     media,
     isInfoOpen,
@@ -37,17 +41,9 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
     screenSharer,
   } = useMeetingStore();
   const { startAudioProduce, startVideoProduce, isReady } = useProduce();
+  const { socket, device, recvTransport, addConsumer, removeConsumer } =
+    useMeetingSocketStore();
   const {
-    producers,
-    consumers,
-    socket,
-    device,
-    recvTransport,
-    addConsumer,
-    removeConsumer,
-  } = useMeetingSocketStore();
-  const {
-    members,
     setMembers,
     addMember,
     removeMember,
@@ -59,11 +55,17 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
   const { userId } = useUserStore();
 
   const { joinCodeEditor } = useCodeEditorSocket();
+  const { joinWhiteboard } = useWhiteboardSocket();
   const { socket: mainSocket } = useMeetingSocket();
-  const { codeEditorSocket } = useToolSocketStore();
+  const { codeEditorSocket, whiteboardSocket } = useToolSocketStore();
 
-  const screenStream = useMeetingStore((state) =>
+  useChatSocket(socket);
+
+  const screenVideoStream = useMeetingStore((state) =>
     screenSharer ? state.memberStreams[screenSharer.id]?.screen_video : null,
+  );
+  const screenAudioStream = useMeetingStore((state) =>
+    screenSharer ? state.memberStreams[screenSharer.id]?.screen_audio : null,
   );
 
   useEffect(() => {
@@ -71,6 +73,12 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
       setIsOpen('isCodeEditorOpen', false);
     }
   }, [codeEditorSocket]);
+
+  useEffect(() => {
+    if (!whiteboardSocket) {
+      setIsOpen('isWhiteboardOpen', false);
+    }
+  }, [whiteboardSocket]);
 
   // 툴 소켓 연결 전파
   useEffect(() => {
@@ -89,12 +97,30 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
       }
     };
 
+    const handleRequestWhiteboard = ({
+      request_user,
+      tool,
+    }: {
+      request_user: string;
+      tool: string;
+    }) => {
+      joinWhiteboard(tool);
+    };
+
     mainSocket.on('room:request_codeeditor', handleRequestCodeEditor);
+    mainSocket.on('room:request_whiteboard', handleRequestWhiteboard);
 
     return () => {
       mainSocket.off('room:request_codeeditor', handleRequestCodeEditor);
+      mainSocket.off('room:request_whiteboard', handleRequestWhiteboard);
     };
-  }, [mainSocket, isCodeEditorOpen, joinCodeEditor]);
+  }, [
+    mainSocket,
+    isCodeEditorOpen,
+    isWhiteboardOpen,
+    joinCodeEditor,
+    joinWhiteboard,
+  ]);
 
   // 초기 입장 시 로비에서 설정한 미디어 Produce
   useEffect(() => {
@@ -134,9 +160,6 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
             'type' in info &&
             (info.type === 'screen_audio' || info.type === 'screen_video')
           ) {
-            console.log(
-              `[화면 공유 감지] ${info.nickname}님의 공유를 수신합니다.`,
-            );
             setScreenSharer({ id: info.user_id, nickname: info.nickname });
 
             const screenProducerInfo: ProducerInfo = {
@@ -169,8 +192,8 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
           if ('tool' in info && info.tool) {
             if (info.tool === 'codeeditor' && !isCodeEditorOpen) {
               joinCodeEditor(info.tool);
-            } else if (info.tool === 'whiteboard' && !isWhiteboardOpen) {
-              // TODO: join
+            } else if (info.tool === 'whiteboard') {
+              joinWhiteboard(info.tool);
             }
           }
         };
@@ -199,7 +222,8 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
     };
 
     const onUserClosed = async (userId: string) => {
-      if (screenSharer?.id === userId) setScreenSharer(null);
+      const currentScreenSharer = useMeetingStore.getState().screenSharer?.id;
+      if (currentScreenSharer === userId) setScreenSharer(null);
 
       removeMember(userId);
       removeConsumer(userId);
@@ -271,9 +295,6 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
             producerType === 'screen_video' ||
             producerType === 'screen_audio'
           ) {
-            console.log(
-              `[실시간 화면 공유 감지] ${producerNickname}님이 공유를 시작했습니다.`,
-            );
             setScreenSharer({ id: userId, nickname: producerNickname });
           }
         } catch (error) {
@@ -295,12 +316,25 @@ export default function MeetingRoom({ meetingId }: { meetingId: string }) {
       <MemberVideoBar />
 
       <section className="relative flex-1 overflow-hidden">
-        {/* 워크스페이스 / 코드 에디터 등의 컴포넌트가 들어갈 공간 */}
+        {/* 화이트보드 / 코드 에디터 등의 컴포넌트가 들어갈 공간 */}
         <div className="flex h-full w-full overflow-hidden">
-          {screenStream && (
-            <div className="group flex-center relative aspect-video w-full rounded-lg bg-neutral-700">
-              <div className="flex-center h-full w-full overflow-hidden rounded-lg">
-                <VideoView stream={screenStream} mirrored={false} />
+          {!screenVideoStream && !isWhiteboardOpen && !isCodeEditorOpen && (
+            <MainVideo />
+          )}
+
+          {screenVideoStream && (
+            <div className="group flex-center relative aspect-video w-full rounded-lg bg-neutral-800">
+              <div className="flex-center h-full w-auto overflow-hidden rounded-lg">
+                <div className="flex-center h-full max-h-full w-full max-w-full overflow-hidden">
+                  <VideoView
+                    stream={screenVideoStream}
+                    mirrored={false}
+                    objectFit="object-contain"
+                  />
+                </div>
+                {screenAudioStream && (
+                  <AudioView stream={screenAudioStream} userId={userId} />
+                )}
                 <div className="absolute bottom-6 left-10 rounded-md bg-black/60 px-3 py-1.5 text-sm font-medium text-white">
                   {screenSharer?.nickname}님의 화면
                 </div>

@@ -1,0 +1,79 @@
+name: GitOps PR merge 후 정리 ( gitops 브런치 삭제 + main -> dev 역merge )
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+concurrency:
+  group: gitops-post-merge
+  cancel-in-progress: true
+
+jobs:
+  gitops-post-merge:
+    # 오직 merge를 한것만 + gitops 브런치만 승인
+    if: >
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'gitops/')
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Meta데이터 설정
+        id: meta
+        shell: bash
+        run: |
+          echo "HEAD_REF=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
+          echo "MERGE_SHA=${{ github.event.pull_request.merge_commit_sha }}" >> $GITHUB_ENV
+          echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+          echo "✅ merged gitops PR #${{ github.event.pull_request.number }}"
+          echo "✅ head branch: ${{ github.event.pull_request.head.ref }}"
+          echo "✅ merge sha:  ${{ github.event.pull_request.merge_commit_sha }}"
+
+      # 전체 커밋 히스토리를 가져온다. 
+      - name: Checkout (full history)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: 작성자 정보 세팅
+        run: |
+          git config user.name "ci-bot33"
+          git config user.email "ci-bot33@users.noreply.github.com"
+
+      - name: main -> dev로 역 merge 한다 ( ci-bot33이 실행 )
+        env:
+          BOT_TOKEN: ${{ secrets.DEV_PUSH_TOKEN }}
+        shell: bash
+        run: |
+          # 최신 refs
+          git fetch origin main dev
+
+          # dev로 이동
+          git checkout dev
+          git pull origin dev
+
+          # main을 dev에 머지 ( 충돌 나면 실패 시킨다. )
+          git merge origin/main --no-edit || {
+            echo "❌ main -> dev merge failed (conflict)."
+            exit 1
+          }
+
+          # ✅ push만 bot 토큰으로 인증 (dev 보호룰 통과용)
+          git remote set-url origin https://x-access-token:${BOT_TOKEN}@github.com/${{ github.repository }}.git
+          git push origin dev
+
+          echo "✅ back-merge main -> dev pushed"
+
+      - name: gitops 브런치 삭제
+        env:
+          BOT_TOKEN: ${{ secrets.DEV_PUSH_TOKEN }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        shell: bash
+        run: |
+          # ✅ GitHub API로 브랜치 삭제 (PAT 사용)
+          curl -fsS -X DELETE \
+            -H "Authorization: token ${BOT_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/git/refs/heads/${HEAD_REF}"
+
+          echo "Deleted branch: ${HEAD_REF}"

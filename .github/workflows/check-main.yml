@@ -15,9 +15,20 @@ jobs:
         run: |
           echo "Base: ${{ github.base_ref }}"
           echo "Head: ${{ github.head_ref }}"
-          if [ "${{ github.head_ref }}" != "dev" ]; then
-            echo "❌ dev에서 보낸 pr요청이 아닙니다."
-            exit 1
+          HEAD="${{ github.head_ref }}"
+
+          # dev에서 오는 pr 허용
+          if [ "$HEAD" = "dev" ]; then
+            echo "✅ dev PR 허용"
+            exit 0
           fi
-          echo "✅ dev branch 확인"
+
+          # gitops로 오는 pr 허용
+          if [[ "$HEAD" == gitops/* ]]; then
+            echo "✅ gitops PR 허용"
+            exit 0
+          fi
+
+          echo "❌ dev 또는 gitops/* 에서 온 PR만 main으로 허용됩니다."
+          exit 1
   

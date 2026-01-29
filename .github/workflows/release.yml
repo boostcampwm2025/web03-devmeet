@@ -1,20 +1,49 @@
-name: NCP 서버 배포
+name: Gitops에 만들 image build + gitops pr 생성
 
 on: 
-  push:
-    branches: 
-      - main
+  pull_request:
+    # pr이 닫혔을때만 작동 ( merge든 여러가지 이유로 닫힐 수 있음 )
+    types: [closed]
+    branches: [main]
 
 concurrency:
   group: main
   cancel-in-progress: true
 
 jobs:
+  main-guards:
+    # pull_request이 오직 merge로 닫히는 경우에만 + dev가 head 브런치 맞으면 성공
+    if: >
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.ref == 'dev'
+    runs-on: ubuntu-22.04
+    # 이 job에서 계산한 값을 다른 job에서 사용할 수 있게 정함
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - name: "dev -> main merge 확인"
+        run: echo "dev -> main merged. run build + gitops PR."    
+
+      - name: Build tag from merge commit sha
+        id: meta
+        shell: bash
+        run: |
+          MERGE_SHA="${{ github.event.pull_request.merge_commit_sha }}"
+          TAG="sha-${MERGE_SHA:0:7}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "MERGE_SHA=$MERGE_SHA" >> "$GITHUB_ENV"
+          echo "MERGE_SHA=$MERGE_SHA 사용"
+          echo "TAG=$TAG 사용"
+
   # 배포용 파일 빌드 후 배포
   main-backend-build:
+    needs: [main-guards]
     name: Docker main 백엔드 빌드
     runs-on: ubuntu-22.04
-
+    # 환경 변수 세팅 ( main-guards에서 지정한 tag를 지정함 )
+    env: 
+      TAG: ${{ needs.main-guards.outputs.tag }}
     steps:
       - name: Checkout Docker backend
         uses: actions/checkout@v5
@@ -40,14 +69,16 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_MAIN_BACKEND_DEPLOY_SERVER_IMG }}:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_MAIN_BACKEND_DEPLOY_SERVER_IMG }}:${{github.sha}}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_MAIN_BACKEND_DEPLOY_SERVER_IMG }}:${{env.TAG}}
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_MAIN_BACKEND_DEPLOY_SERVER_IMG }}:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_MAIN_BACKEND_DEPLOY_SERVER_IMG }}:buildcache,mode=max
   
   tool-backend-build:
+    needs: [main-guards]
     name: Docker tool 백엔드 빌드
     runs-on: ubuntu-22.04
-
+    env:
+      TAG: ${{ needs.main-guards.outputs.tag }}
     steps:
       - name: Checkout Docker backend
         uses: actions/checkout@v5
@@ -76,7 +107,7 @@ jobs:
           # docker image 관리
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_TOOL_BACKEND_DEPLOY_SERVER_IMG }}:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_TOOL_BACKEND_DEPLOY_SERVER_IMG }}:${{github.sha}}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_TOOL_BACKEND_DEPLOY_SERVER_IMG }}:${{env.TAG}}
 
           # caching 작업 - 모든 빌드단계 레이어 캐싱 즉 max를 설정해서 용량은 많이 쓰지만 성능은 높인다. 
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_TOOL_BACKEND_DEPLOY_SERVER_IMG }}:buildcache
@@ -84,9 +115,11 @@ jobs:
 
 
   frontend-build:
+    needs: [main-guards]
     name: Docker 프론트엔드 빌드
     runs-on: ubuntu-22.04
-
+    env:
+      TAG: ${{ needs.main-guards.outputs.tag }}
     steps:
       - name: Checkout Docker frontend
         uses: actions/checkout@v5
@@ -118,59 +151,74 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_FRONTEND_DEPLOY_SERVER_IMG }}:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_FRONTEND_DEPLOY_SERVER_IMG }}:${{ github.sha }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_FRONTEND_DEPLOY_SERVER_IMG }}:${{env.TAG}}
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_FRONTEND_DEPLOY_SERVER_IMG }}:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_FRONTEND_DEPLOY_SERVER_IMG }}:buildcache,mode=max
   
-  # blue-green으로 배포하려고 하는데 문제는 용량이...
-  deploy:
-    name: NCP 서버 배포
+  # argo cd가 감지하게 하는 gitops 배포 방식
+  deploy: 
+    name: GitOps - docker hub 이미지 customize 
     runs-on: ubuntu-22.04
     needs:
+      - main-guards
       - main-backend-build
       - tool-backend-build
       - frontend-build
-    
+    env:
+      TAG: ${{ needs.main-guards.outputs.tag }}
+
+    permissions:
+      # 같은 레포에 푸시 하기 위해 뒤에 sha 태그 변경을 push해야 하는데 그때 권한을 이걸로 준다. 
+      contents: write 
+      pull-requests: write  
+
     steps:
-      - name: Checkout Deploy Server
+      - name: Checkout repo
         uses: actions/checkout@v5
-
-      - name: SSH로 접속 후 파일 전송
-        uses: appleboy/scp-action@v1
         with:
-          host: ${{ secrets.DEPLOY_SERVER_HOST }}
-          username: ${{ secrets.DEPLOY_SERVER_USER }}
-          key: ${{ secrets.DEPLOY_SERVER_SSH_KEY }}
-          source: ./deploy/https/*
-          target: /root/deploy
-          strip_components: 2
+          ref: main
 
-      - name: SSH로 접속 후 배포
-        uses: appleboy/ssh-action@v1.2.0
-        with: 
-          host: ${{ secrets.DEPLOY_SERVER_HOST }}
-          username: ${{ secrets.DEPLOY_SERVER_USER }}
-          key: ${{ secrets.DEPLOY_SERVER_SSH_KEY }}
-          script: |
-            mkdir -p /root/deploy
-            cd /root/deploy
+      # yaml을 편집하기 위한 도구
+      - name: yq 설치
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          yq --version
 
-            # env 파일
-            cat << 'EOF' > .env.backend
-            ${{ secrets.NODE_BACKEND_ENV_DEPLOY_SERVER }}
-            EOF
+      - name: kustomization.yaml에 이미지 태그 업데이트 하기
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          FILE="deploy/https/curr/kustomization.yaml"
 
-            # compose용 환경변수 
-            cat << EOF > compose.env
-            MAIN_BACKEND_IMG=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_MAIN_BACKEND_DEPLOY_SERVER_IMG }}
-            FRONTEND_IMG=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_FRONTEND_DEPLOY_SERVER_IMG }}
-            EOF
-            
-            # 최신 이미지 pull후 build 후 실행
-            docker compose --env-file compose.env -f docker-compose.yml pull
-            docker compose --env-file compose.env -f docker-compose.yml up -d --remove-orphans
-            docker image prune -a -f
+          # kustomization.yaml 존재를 체크한다.
+          test -f "$FILE"
 
-            # 상태창 확인
-            docker ps
-            echo "서버 배포 완료"
+          # newTag를 변환
+          TAG="sha-${SHA:0:7}"
+
+          # kustomize.yaml에 newTag를 그대로 바꾼다. 
+          yq -i '
+            (.images[] | select(.name=="docker.io/logankimdoing/frontend-deploy-server-img").newTag) = strenv(TAG) |
+            (.images[] | select(.name=="docker.io/logankimdoing/main-backend-deploy-server-img").newTag) = strenv(TAG) |
+            (.images[] | select(.name=="docker.io/logankimdoing/tool-backend-deploy-server-img").newTag) = strenv(TAG)
+          ' "$FILE"
+
+          echo "tag 업데이트: $TAG"
+          # 변한 파일 
+          cat "$FILE"
+      
+      # Argo cd가 확인할 수 있게 태그가 변경된 yaml에 대한 pr을 올림 ( pr에 pr은 스팁 )
+      - name: pr 생성 (GitOps)
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(gitops): kustomization image 태그 업데이트 sha-${{ env.TAG }} [skip gitops]"
+          title: "🚚 chore(gitops): 깃허브 kustomization에 이미지 태그 변경 sha-${{ env.TAG }}"
+          body: "Kustomization 이미지 태그를 변경해서 argo cd가 인식하도록 한다."
+          branch: "gitops/bump-images-${{ env.TAG }}"
+          base: main
+          add-paths: |
+            deploy/https/curr/kustomization.yaml
+          labels: |
+            gitops

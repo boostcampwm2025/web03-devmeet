@@ -1,2 +1,5 @@
 **/.env*
 
+*.dec.yaml
+*.dec.yml
+*-secret.yaml

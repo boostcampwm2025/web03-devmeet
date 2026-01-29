@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer # cluster 전체에서 사용할 수 있음
+metadata:
+  name: letsencrypt-staging 
+spec:
+  acme:
+    email: naxtto@naver.com
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx

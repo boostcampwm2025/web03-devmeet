@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: devmeet
+data:
+  NEXT_PUBLIC_SERVER_URL: "https://www.devmeet.p-e.kr"
+  NEXT_PUBLIC_API_SERVER_URL: "https://www.devmeet.p-e.kr/api"
+  NEXT_PUBLIC_TOOL_BACKEND_URL: "https://www.devmeet.p-e.kr"
+  NEXT_PUBLIC_TOOL_BACKEND_WEBSOCKET_PREFIX: "/tool/ws"
+  NEXT_PUBLIC_TOOL_BACKEND_WEBSOCKET_CODEEDITOR: "/codeeditor"
+  NEXT_PUBLIC_TOOL_BACKEND_WEBSOCKET_WHITEBOARD: "/whiteboard"

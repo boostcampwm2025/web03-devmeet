@@ -1,0 +1,55 @@
+# control plane에 etc에 저장된 설계도이다. 
+apiVersion: apps/v1
+kind: Deployment # controller의 리소스라고 할 수 있다. 
+metadata:
+  name: frontend # namespace에 저장되는 이름
+  namespace: devmeet 
+spec:
+  # pod가 항상 1개가 떠야 있어야 한다는 뜻이다. 
+  replicas: 1
+  # 내가 관리하는 Pod의 정체성을 의미한다. (selector가) 이 controller는 app=frontend 라벨이 붙은 pod를 관리한다.  
+  selector:
+    matchLabels:
+      app: frontend
+  # 새로 만드는 pod에 app=frontend 라벨을 붙이겠다는 의미이다. 
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      # 스케줄러에게 node-role=edge 라벨이 붙은 노드만 배치하라고 설정할 수 있다. 
+      nodeSelector:
+        node-role: edge
+      # taint 즉 알아서 배정하는 것을 막아주는 건데 그 예외규칙에 들어가기 위한 toleration이라고 할 수 있다. edge노드에서 frontend pod는 올라갈수 있다는 의미이다. 
+      tolerations:
+        - key: "dedicated"
+          operator: "Equal"
+          value: "edge"
+          effect: "NoSchedule"
+      # pod안에 어떤 container를 실행할것인지에 대해서 정한다. 
+      containers:
+        - name: frontend
+          image: docker.io/logankimdoing/frontend-deploy-server-img
+          imagePullPolicy: Always # pod가 새로 생길때 마다 pull을 항상 시도하라 
+          # configMap 환경변수를 통째로 주입한다. ( backend는 secret도 있다. )
+          envFrom:
+            - configMapRef:
+                name: frontend-config
+          # container가 리슨하는 port이고 http로 리슨한다는 의미 ( ingress에서 쉐이킹을하고 같은 서버니 괜찮다. )
+          ports:
+            - name: http
+              containerPort: 3000
+          readinessProbe:
+            # Pod가 뜨고 5초 기다린 후 10초 마다 성공 여부를 확인한다. 그래서 성공한 pod만 트래픽을 보내준다. 
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          # 프로세스가 살아있는지 확인하고 죽었으면 재시작 해주는 요소이다. pod가뜨고 20초 후에 그리고 20초 마다 체크를 한다. 
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 20

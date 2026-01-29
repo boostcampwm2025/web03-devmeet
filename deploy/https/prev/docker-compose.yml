@@ -1,0 +1,66 @@
+services:
+  # backend는 test-server docker-compose.yml와 거의 동일
+  main-backend-app-1:
+    container_name: main-backend-app-1
+    image: "${MAIN_BACKEND_IMG}:latest"
+    env_file:
+      - ./.env.backend
+    networks:
+      - clobby-network
+  
+  main-backend-app-2:
+    container_name: main-backend-app-2
+    image: "${MAIN_BACKEND_IMG}:latest"
+    env_file:
+      - ./.env.backend
+    networks:
+      - clobby-network
+
+  main-backend-app-3:
+    container_name: main-backend-app-3
+    image: "${MAIN_BACKEND_IMG}:latest"
+    env_file:
+      - ./.env.backend
+    networks:
+      - clobby-network
+
+  main-backend-nginx:
+    container_name: main-backend-nginx
+    image: nginx:latest
+    volumes:
+      - ./nginx.backend.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - main-backend-app-1
+      - main-backend-app-2
+      - main-backend-app-3
+    networks:
+      - clobby-network
+    restart: unless-stopped
+
+  # frontend도 거의 비슷
+  frontend:
+    container_name: frontend
+    image: "${FRONTEND_IMG}:latest"
+    networks:
+      - clobby-network
+
+  # gateway가 다르다. 
+  gateway:
+    image: nginx:latest
+    container_name: gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.gateway.conf:/etc/nginx/conf.d/default.conf:ro # gateway 임으로 기본 설정을 유지하면서 몇개만 변경
+      - /etc/certbot/www:/var/www/certbot
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - main-backend-nginx
+      - frontend
+    networks:
+      - clobby-network
+
+networks:
+  clobby-network:
+    driver: bridge

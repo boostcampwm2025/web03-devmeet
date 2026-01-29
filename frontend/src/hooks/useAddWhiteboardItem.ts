@@ -2,6 +2,7 @@ import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
 import { useItemActions } from '@/hooks/useItemActions';
 import { getCenterWorldPos } from '@/utils/coordinate';
 import { ShapeType } from '@/types/whiteboard';
+import { StackIconInfo } from '@/constants/stackList';
 
 export const useAddWhiteboardItem = () => {
   const {
@@ -12,17 +13,29 @@ export const useAddWhiteboardItem = () => {
     addImage,
     addVideo,
     addYoutube,
+    addStack,
   } = useItemActions();
 
-  // Local Store 상태
-  const stagePos = useWhiteboardLocalStore((state) => state.stagePos);
-  const stageScale = useWhiteboardLocalStore((state) => state.stageScale);
-  const viewportWidth = useWhiteboardLocalStore((state) => state.viewportWidth);
-  const viewportHeight = useWhiteboardLocalStore(
-    (state) => state.viewportHeight,
-  );
-
   const getViewportCenter = () => {
+    const stageRef = useWhiteboardLocalStore.getState().stageRef;
+    const stage = stageRef?.current;
+
+    if (!stage) {
+      const { stagePos, stageScale, viewportWidth, viewportHeight } =
+        useWhiteboardLocalStore.getState();
+      return getCenterWorldPos(
+        stagePos,
+        stageScale,
+        viewportWidth,
+        viewportHeight,
+      );
+    }
+
+    const stagePos = stage.position();
+    const stageScale = stage.scaleX();
+    const { viewportWidth, viewportHeight } =
+      useWhiteboardLocalStore.getState();
+
     return getCenterWorldPos(
       stagePos,
       stageScale,
@@ -88,6 +101,19 @@ export const useAddWhiteboardItem = () => {
       // 선택한 파일 선정
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
+
+      // GIF 파일 업로드 제한
+      if (file.type === 'image/gif') {
+        alert('GIF 파일은 업로드할 수 없습니다.');
+        return;
+      }
+
+      // 용량 제한 로직 추가
+      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB를 바이트 단위로 계산
+      if (file.size > MAX_FILE_SIZE) {
+        alert('이미지 용량은 10MB를 초과할 수 없습니다.');
+        return;
+      }
 
       // 파일 읽기
       const reader = new FileReader();
@@ -220,6 +246,23 @@ export const useAddWhiteboardItem = () => {
     });
   };
 
+  // Stack Item 추가 핸들러
+  const handleAddStack = (icon: StackIconInfo) => {
+    const worldPos = getViewportCenter();
+    const width = 240;
+    const height = 240;
+
+    addStack({
+      src: icon.src,
+      stackName: icon.name,
+      category: icon.category,
+      x: worldPos.x - width / 2,
+      y: worldPos.y - height / 2,
+      width,
+      height,
+    });
+  };
+
   return {
     handleAddText,
     handleAddArrow,
@@ -228,5 +271,6 @@ export const useAddWhiteboardItem = () => {
     handleAddImage,
     handleAddVideo,
     handleAddYoutube,
+    handleAddStack,
   };
 };

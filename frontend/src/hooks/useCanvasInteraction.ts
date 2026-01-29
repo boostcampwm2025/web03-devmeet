@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { KonvaEventObject } from 'konva/lib/Node';
 import { useWhiteboardSharedStore } from '@/store/useWhiteboardSharedStore';
 import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
@@ -18,6 +19,10 @@ export const useCanvasInteraction = (
   const canvasHeight = useWhiteboardSharedStore((state) => state.canvasHeight);
   const setStageScale = useWhiteboardLocalStore((state) => state.setStageScale);
   const setStagePos = useWhiteboardLocalStore((state) => state.setStagePos);
+
+  // 스로틀링을 위한 ref
+  const lastDragUpdateRef = useRef(0);
+  const DRAG_UPDATE_INTERVAL = 16; // 60fps (16ms)
 
   // stage 위치를 화면 범위 내로 제한
   const constrainStagePosition = (
@@ -75,8 +80,14 @@ export const useCanvasInteraction = (
         y: pointer.y - mousePointTo.y * newScale,
       };
 
+      const constrainedPos = constrainStagePosition(newPos, newScale);
+
+      stage.scale({ x: newScale, y: newScale });
+      stage.position(constrainedPos);
+      stage.batchDraw();
+
       setStageScale(newScale);
-      setStagePos(constrainStagePosition(newPos, newScale));
+      setStagePos(constrainedPos);
     } else if (e.evt.shiftKey) {
       // shift키 있으면 좌우 스크롤
       const currentPos = stage.position();
@@ -88,7 +99,12 @@ export const useCanvasInteraction = (
         y: currentPos.y,
       };
 
-      setStagePos(constrainStagePosition(newPos, currentScale));
+      const constrainedPos = constrainStagePosition(newPos, currentScale);
+
+      stage.position(constrainedPos);
+      stage.batchDraw();
+
+      setStagePos(constrainedPos);
     } else {
       // Ctrl 키가 없으면 캔버스 위아래 스크롤
       const currentPos = stage.position();
@@ -99,7 +115,12 @@ export const useCanvasInteraction = (
         y: currentPos.y - e.evt.deltaY, // 위 아래 이동
       };
 
-      setStagePos(constrainStagePosition(newPos, currentScale));
+      const constrainedPos = constrainStagePosition(newPos, currentScale);
+
+      stage.position(constrainedPos);
+      stage.batchDraw();
+
+      setStagePos(constrainedPos);
     }
   };
 
@@ -107,14 +128,36 @@ export const useCanvasInteraction = (
     const stage = e.target.getStage();
     if (!stage) return;
 
-    stage.position(constrainStagePosition(stage.position(), stage.scaleX()));
+    const constrainedPos = constrainStagePosition(
+      stage.position(),
+      stage.scaleX(),
+    );
+
+    // 위치가 실제로 변경되었는지 확인
+    const currentPos = stage.position();
+    const hasChanged =
+      Math.abs(currentPos.x - constrainedPos.x) > 0.01 ||
+      Math.abs(currentPos.y - constrainedPos.y) > 0.01;
+
+    if (hasChanged) {
+      stage.position(constrainedPos);
+      stage.batchDraw();
+    }
+
+    // 스로틀링: 16ms마다만 store 업데이트
+    const now = Date.now();
+    if (now - lastDragUpdateRef.current >= DRAG_UPDATE_INTERVAL) {
+      setStagePos(constrainedPos);
+      lastDragUpdateRef.current = now;
+    }
   };
 
   const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
     const stage = e.target.getStage();
     if (!stage) return;
 
-    setStagePos(stage.position());
+    const finalPos = stage.position();
+    setStagePos(finalPos);
   };
 
   return {

@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1 # 이 컨트롤러가 주기적으로 certificate 리소스를 체크하고 갱신이 필요하면 갱신을 이룬다. 
+kind: ClusterIssuer 
+metadata:
+  name: letsencrypt-prod # ACME 계정 키
+spec:
+  acme:
+    email: naxtto@naver.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          class: nginx # 해결하기 위한 임시 리소스를 생성하고 접근 후 새 인증서를 발급한다. 

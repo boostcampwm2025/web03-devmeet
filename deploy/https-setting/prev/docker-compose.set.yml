@@ -1,0 +1,29 @@
+# 세팅을 위한 docker compose 
+services:
+
+  frontend:
+    container_name: frontend
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    networks:
+      - clobby-network
+
+  setting-nginx:
+    container_name: setting-nginx
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.setting.conf:/etc/nginx/nginx.conf:ro
+      - /etc/certbot/www:/var/www/certbot
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - frontend
+    networks:
+      - clobby-network
+    restart: unless-stopped
+
+networks:
+  clobby-network:
+    driver: bridge

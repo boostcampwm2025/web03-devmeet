@@ -22,7 +22,11 @@ export interface TextItem extends BaseItem {
   wrap: TextWrap;
   rotation: number;
   width: number;
-  parentPolygonId?: string;
+}
+
+export interface ArrowBinding {
+  elementId: string;
+  position: { x: number; y: number };
 }
 
 export interface ArrowItem extends BaseItem {
@@ -36,6 +40,8 @@ export interface ArrowItem extends BaseItem {
   startHeadType?: ArrowHeadType;
   endHeadType?: ArrowHeadType;
   chevronSpacing?: number;
+  startBinding?: ArrowBinding | null;
+  endBinding?: ArrowBinding | null;
 }
 
 export interface LineItem extends BaseItem {
@@ -72,6 +78,14 @@ export interface ShapeItem extends BaseItem {
   opacity?: number;
   dash?: number[];
   cornerRadius?: number;
+  // 텍스트 속성
+  text?: string;
+  fontSize?: number;
+  fontFamily?: string;
+  fontStyle?: string;
+  textDecoration?: string;
+  textColor?: string;
+  textAlign?: TextAlignment;
 }
 
 // Image Item
@@ -106,6 +120,7 @@ export interface VideoItem extends BaseItem {
   dash?: number[];
 }
 
+// youtube Item
 export interface YoutubeItem extends BaseItem {
   type: 'youtube';
   // 원본 유튜브 URL
@@ -122,4 +137,18 @@ export interface YoutubeItem extends BaseItem {
   cornerRadius?: number;
   opacity?: number;
   dash?: number[];
+}
+
+// stack item
+export interface StackItem extends BaseItem {
+  type: 'stack';
+  src: string;
+  stackName: string;
+  category: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  opacity: number;
 }

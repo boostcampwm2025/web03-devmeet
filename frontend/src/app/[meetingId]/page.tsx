@@ -5,6 +5,7 @@ import MeetingLobby from '@/components/meeting/MeetingLobby';
 import MeetingRoom from '@/components/meeting/MeetingRoom';
 import { useMeetingSocket } from '@/hooks/useMeetingSocket';
 import { useMeetingSocketStore } from '@/store/useMeetingSocketStore';
+import { useMeetingStore } from '@/store/useMeetingStore';
 import { useUserStore } from '@/store/useUserStore';
 import { MeetingInfoResponse } from '@/types/meeting';
 import { api } from '@/utils/apiClient';
@@ -15,17 +16,16 @@ import { useEffect, useRef, useState } from 'react';
 interface JoinError {
   title: string;
   message: string;
+  isPasswordError?: boolean;
 }
 
 export default function MeetingPage() {
   const { socket } = useMeetingSocket();
   const { setMediasoupTransports } = useMeetingSocketStore();
   const { isLoggedIn, setTempUser } = useUserStore();
+  const { meetingInfo, setMeetingInfo } = useMeetingStore();
 
   const { meetingId } = useParams<{ meetingId: string }>();
-  const [meetingInfo, setMeetingInfo] = useState<MeetingInfoResponse | null>(
-    null,
-  );
 
   const passwordRef = useRef<HTMLInputElement>(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -33,6 +33,10 @@ export default function MeetingPage() {
   const [isJoined, setIsJoined] = useState<boolean>(false);
 
   const router = useRouter();
+
+  useEffect(() => {
+    setMeetingInfo({ meetingId });
+  }, [meetingId]);
 
   const onJoin = (nickname: string) => {
     setTempUser({ nickname });
@@ -52,7 +56,11 @@ export default function MeetingPage() {
   const onPasswordConfirm = () => {
     const value = passwordRef.current?.value;
     if (!value) {
-      setJoinError({ title: '입장 실패', message: '비밀번호를 입력해주세요' });
+      setJoinError({
+        title: '입장 실패',
+        message: '비밀번호를 입력해주세요',
+        isPasswordError: true,
+      });
       return;
     }
 
@@ -78,9 +86,11 @@ export default function MeetingPage() {
     const onRoomJoined = async ({
       ok,
       user_id,
+      is_hosted,
     }: {
       ok: boolean;
       user_id: string;
+      is_hosted: boolean;
     }) => {
       if (ok) {
         // 비회원인 경우 임시 id 저장
@@ -89,6 +99,7 @@ export default function MeetingPage() {
         // SDP / ICE / DTLS 초기화 진행
         const transports = await initMediasoupTransports(socket);
         setMediasoupTransports(socket, transports);
+        setMeetingInfo({ isHosted: is_hosted });
 
         // 회의실로 이동
         setIsPasswordModalOpen(false);
@@ -142,7 +153,7 @@ export default function MeetingPage() {
     <main className="min-h-screen">
       {!isJoined ? (
         <>
-          <MeetingLobby meetingInfo={meetingInfo} onJoin={onJoin} />
+          <MeetingLobby onJoin={onJoin} />
           {!joinError && isPasswordModalOpen && (
             <Modal
               title="비밀번호 입력"
@@ -166,7 +177,7 @@ export default function MeetingPage() {
               cancelText="확인"
               onCancel={() => {
                 setJoinError(null);
-                setIsPasswordModalOpen(true);
+                if (joinError.isPasswordError) setIsPasswordModalOpen(true);
               }}
               isLightMode
             >
@@ -175,7 +186,7 @@ export default function MeetingPage() {
           )}
         </>
       ) : (
-        <MeetingRoom meetingId={meetingId} />
+        <MeetingRoom />
       )}
     </main>
   );

@@ -1,0 +1,66 @@
+# (ingree-nginx) www.devmeet.p-e.kr -> LB -> 내부 service 전달 
+apiVersion: networking.k8s.io/v1
+kind: Ingress # L7(http, https) 라우팅 리소스 이다. 
+metadata:
+  name: devmeet-gateway
+  namespace: devmeet # 현재 속하는 namespace 
+  annotations:
+    # 이 ingress는 letsencrypt-prod 이슈어로 부터 재발급을 받는다.
+    # issuer, 도메인, secret 이름이 동일한 경우 재발급이 일어나지 않는다. ( 그래서 issuer 변경이나, domain 변경으로 자동으로 재발급 가능하다. )
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+
+    # 이 ingress에 tls 설정이 존재하고 유효한 인증서가 존재할 경우 http를 https로 리다이렉트 해주라는 설정이다. 
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # tls 준비 상태와 무관하게 무조건 검증을 하라는 옵션이다. ( 이거 하나만 있어도 원래라면 리다이렉트 이지만 두개가 있으면 비교적 안정적이라고 한다. )
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+    # 이 도메인은 무조건 https만 사용하라는 보안정책이다.
+    # 아래는 hsts 헤더를 추가한다. 
+    nginx.ingress.kubernetes.io/hsts: "true"
+    # 이 헤더를 받은 브라우저는 max-age동안 http로 접근하는 모든 시도를 https로 강제하게 한다. ( 그래서 이 시간 동안 다시 접속할때는 http로 접속하는게 아닌 https로 접속해서 리다이렉트 자체를 하지 않게 한다. )
+    nginx.ingress.kubernetes.io/hsts-max-age: "31536000" # 1년 (초에 개념이다.)
+    # 이 도메인의 모든 서브 도메인에 적용을 함 예를 들어서 api.devmeet.p-e.kr, foo.bar.devemeet.p-e.kr 등등
+    nginx.ingress.kubernetes.io/hsts-include-subdomains: "true"
+
+    # 클라이언트가 보낼수 있는 요청 바디 최대 크기 이다. ( 10m로 고정 )
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    # proxy-buffering을 off 해서 nginx가 중간에 쌓지 말고 바로 클라이언트로 흘려보내라는 의미이다. 보통 on이 기본이고 on일경우 백엔드 응답을 기다리고 보낸다 하지만 우리는 실시간 서비스가 주가 되다 보니 이를 꺼서 더 좋은 성능으로 쓰고자 하였다. 
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    # 읽고 쓰는 기다리는 최대 시간 
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: nginx # ingress 자체는 리소스이지 트래픽을 처리하지 못한다 실제로 처리하는 controller가 필요하다 여기서는 ingress-nginx를 설정
+  # ingrss에서 tls가 일어난다 즉 클라이언트 <-> ingress에서 https tls 핸드세이킹은 마무리가 된다고 생각할 수 있다. 
+  tls:
+    - hosts:
+        - www.devmeet.p-e.kr
+      secretName: devmeet-tls
+  # cluster 내부는 http 요청이다. 
+  rules:
+    # ingress는 이 Host헤더 즉 클라이언트 요청에 host 헤더를 보고 규칙을 정한다. 
+    - host: www.devmeet.p-e.kr
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: main-backend-svc
+                # 이 서비스의 포트로 매핑해라 예를 들어서 http://main-backend-svc:8080으로 매핑
+                port:
+                  number: 8080
+          - path: /tool
+            pathType: Prefix
+            backend:
+              service:
+                name: tool-backend-svc
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-svc
+                port:
+                  number: 80

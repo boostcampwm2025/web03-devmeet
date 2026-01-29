@@ -30,7 +30,7 @@ export const useWhiteboardSocket = () => {
           token: ticket,
           type: type,
         },
-        query: { room_code : meetingId }
+        query: { room_code: meetingId },
       });
 
       // 이벤트 리스너 설정
@@ -45,18 +45,18 @@ export const useWhiteboardSocket = () => {
 
       // 연결 실패 시
       newSocket.on('connect_error', (err) => {
-        console.error('Whiteboard 연결 실패 : ', err.message);
+        // console.error('Whiteboard 연결 실패 : ', err.message);
       });
 
       // 연결 해제 시
       newSocket.on('disconnect', (reason) => {
-        console.log('Whiteboard 연결 끊김 : ', reason);
+        // console.log('Whiteboard 연결 끊김 : ', reason);
         setWhiteboardSocket(null);
       });
 
       // 백엔드에서 보내주는 권한 확인 메시지
       newSocket.on('whiteboard:permission', (data) => {
-        console.log('Whiteboard 권한 확인:', data);
+        // console.log('Whiteboard 권한 확인:', data);
       });
     },
     [setWhiteboardSocket, setIsOpen],

@@ -23,15 +23,9 @@ export default function AudioView({
     const audioEl = audioRef.current;
     if (!audioEl) return;
 
+    // 스피커 장치 변경
     if ('setSinkId' in HTMLAudioElement.prototype) {
-      audioEl
-        .setSinkId(media.speakerId)
-        .then(() => {
-          console.log(`[${userId}] 스피커 변경 성공: ${media.speakerId}`);
-        })
-        .catch((error) => {
-          console.error(`[${userId}] 스피커 설정 에러:`, error);
-        });
+      audioEl.setSinkId(media.speakerId);
     }
   }, [media.speakerId, userId]);
 

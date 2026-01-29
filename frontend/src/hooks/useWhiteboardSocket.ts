@@ -104,7 +104,7 @@ export const useWhiteboardSocket = () => {
 
     if (whiteboardSocket) {
       // 소켓 연결 해제
-      whiteboardSocket.disconnect();
+      whiteboardSocket.emit("whiteboard:disconnect");
       // 스토어 비우기
       setWhiteboardSocket(null);
     }

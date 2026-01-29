@@ -38,3 +38,30 @@ export class HttpMetricsInterceptor implements NestInterceptor {
 };
 
 // websocket용 intercepter
+@Injectable()
+export class WsMetricsInterceptor implements NestInterceptor {
+
+  constructor(private readonly prom: PrometheusService) {};
+
+  intercept(context: ExecutionContext, next: CallHandler<any>): Observable<any> {
+    
+    // websocket과 관련된 컨텍스트
+    const ws = context.switchToWs();
+    const client = ws.getClient();          
+    const handler = context.getHandler()?.name ?? 'unknown'; // SubscribeMessage()를 의미한다.
+
+    // namespace 관련
+    const ns = client?.nsp?.name ?? 'unknown';
+    const event = handler;
+
+    // 총 소요시간
+    const start = process.hrtime.bigint();
+    return next.handle().pipe(
+      finalize(() => {
+        const durationSec = Number(process.hrtime.bigint() - start) / 1e9;
+        this.prom.wsEventDuration.labels(ns, event, 'ok').observe(durationSec);
+      }),
+    );
+  };
+  
+};

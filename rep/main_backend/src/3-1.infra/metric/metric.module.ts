@@ -1,7 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 import { PrometheusService } from "./prometheus/prometheus.service";
 import { ConfigService } from "@nestjs/config";
-import { HttpMetricsInterceptor } from "./prometheus/prometheus.intercepter";
+import { HttpMetricsInterceptor, WsMetricsInterceptor } from "./prometheus/prometheus.intercepter";
 
 
 @Global()
@@ -9,11 +9,13 @@ import { HttpMetricsInterceptor } from "./prometheus/prometheus.intercepter";
   providers : [
     ConfigService,
     PrometheusService,
-    HttpMetricsInterceptor
+    HttpMetricsInterceptor,
+    WsMetricsInterceptor
   ],
   exports : [
     PrometheusService,
-    HttpMetricsInterceptor
+    HttpMetricsInterceptor,
+    WsMetricsInterceptor
   ]
 })
 export class PrometheusModule {};

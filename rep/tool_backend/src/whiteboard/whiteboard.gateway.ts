@@ -17,6 +17,7 @@ import { EVENT_STREAM_NAME } from '@/infra/event-stream/event-stream.constants';
 import { WHITEBOARD_WEBSOCKET } from '@/infra/websocket/websocket.constants';
 import { WhiteboardWebsocket } from '@/infra/websocket/whiteboard/whiteboard.service';
 import { WhiteboardRepository } from '@/infra/memory/tool';
+import { error } from 'console';
 
 @WebSocketGateway({
   namespace: process.env.NODE_BACKEND_WEBSOCKET_WHITEBOARD,
@@ -215,6 +216,15 @@ export class WhiteboardWebsocketGateway implements OnGatewayInit, OnGatewayConne
       this.logger.error(`Awareness Update Error: ${error.message}`);
     }
   }
+
+  @SubscribeMessage(WHITEBOARD_EVENT_NAME.DISCONNECT_WHITEBOARD)
+  disconnectWhiteboard(@ConnectedSocket() client: Socket) {
+    try {
+      this.whiteboardSocket.disconnectWhiteboardRoom(client.data.payload.room_id)
+    } catch (err) {
+      this.logger.error(`Whiteboard Disconnect Error : ${err}`)
+    };  
+  };
 
   // 요소 생성
   @SubscribeMessage(WHITEBOARD_EVENT_NAME.CREATE_ELEMENT)

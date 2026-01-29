@@ -111,7 +111,7 @@ export default function ToolbarContainer() {
       <div className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-white p-2 shadow-sm">
         <NavButton
           icon={CursorIcon}
-          label="선택"
+          label="선택 (V)"
           isActive={activeTool === 'select'}
           onClick={() => toggleCursorMode('select')}
           bgColor="bg-white"
@@ -121,7 +121,7 @@ export default function ToolbarContainer() {
 
         <NavButton
           icon={HandIcon}
-          label="화면 이동"
+          label="화면 이동 (H)"
           isActive={activeTool === 'move'}
           onClick={() => toggleCursorMode('move')}
           bgColor="bg-white"

@@ -78,7 +78,7 @@ export class SignalingWebsocketGateway
     private readonly jwtGuard: JwtWsGuard,
     private readonly signalingService: SignalingWebsocketService,
     @Inject(SIGNALING_WEBSOCKET) private readonly signalingSocket: SignalingWebsocket,
-    private readonly prom : PrometheusService, // 프로메테우스 관련 tjqltm
+    private readonly prom : PrometheusService, // 프로메테우스 관련 
   ) {}
 
   // onGatewayInit으로 websocket 연결됐을때 사용할 함수

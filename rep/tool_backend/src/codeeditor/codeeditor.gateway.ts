@@ -1,5 +1,5 @@
 import { AuthType, ToolBackendPayload } from '@/guards/guard.type';
-import { Inject, Logger, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Inject, Logger, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -17,14 +17,17 @@ import { KafkaService } from '@/infra/event-stream/kafka/event-stream.service';
 import { EVENT_STREAM_NAME } from '@/infra/event-stream/event-stream.constants';
 import { CODEEDITOR_WEBSOCKET } from '@/infra/websocket/websocket.constants';
 import { CodeeditorWebsocket } from '@/infra/websocket/codeeditor/codeeditor.service';
-import * as Y from 'yjs';
 import {
   CodeeditorRepository,
   YjsSyncReqPayload,
   YjsSyncServerPayload,
   YjsUpdateClientPayload,
 } from '@/infra/memory/tool';
+import { WsMetricsInterceptor } from '@/infra/metric/prometheus/prometheus.intercepter';
+import { PrometheusService } from '@/infra/metric/prometheus/prometheus.service';
 
+
+@UseInterceptors(WsMetricsInterceptor)
 @WebSocketGateway({
   namespace: process.env.NODE_BACKEND_WEBSOCKET_CODEEDITOR,
   path: process.env.NODE_BACKEND_WEBSOCKET_PREFIX,
@@ -46,6 +49,7 @@ export class CodeeditorWebsocketGateway implements OnGatewayInit, OnGatewayConne
     private readonly kafkaService: KafkaService,
     private readonly codeeditorRepo: CodeeditorRepository,
     @Inject(CODEEDITOR_WEBSOCKET) private readonly codeeditorSocket: CodeeditorWebsocket,
+    private readonly prom : PrometheusService,
   ) {}
 
   // 연결을 했을때
@@ -74,6 +78,11 @@ export class CodeeditorWebsocketGateway implements OnGatewayInit, OnGatewayConne
 
   // 연결 완료 후
   async handleConnection(client: Socket) {
+    // 연결과 관련된 네임스페이스
+    const ns : string = client.nsp.name; // 여기서는 /signal이 될 예정이다.
+    this.prom.wsConnectionsCurrent.labels(ns).inc();
+    this.prom.wsConnectionsTotal.labels(ns).inc();
+
     const payload: ToolBackendPayload = client.data.payload;
     if (!payload) {
       client.disconnect(true);
@@ -111,6 +120,11 @@ export class CodeeditorWebsocketGateway implements OnGatewayInit, OnGatewayConne
   }
 
   async handleDisconnect(client: Socket) {
+    // 연결과 관련된 네임스페이스
+    const ns = client.nsp.name;
+    this.prom.wsConnectionsCurrent.labels(ns).dec();
+    this.prom.wsDisconnectsTotal.labels(ns).inc();
+
     const roomName = client.data.roomName;
     if (!roomName) return;
 

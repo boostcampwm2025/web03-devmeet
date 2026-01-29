@@ -22,12 +22,9 @@ export default function MeetingPage() {
   const { socket } = useMeetingSocket();
   const { setMediasoupTransports } = useMeetingSocketStore();
   const { isLoggedIn, setTempUser } = useUserStore();
+  const { meetingInfo, setMeetingInfo } = useMeetingStore();
 
   const { meetingId } = useParams<{ meetingId: string }>();
-
-  const [meetingInfo, setMeetingInfo] = useState<MeetingInfoResponse | null>(
-    null,
-  );
 
   const passwordRef = useRef<HTMLInputElement>(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -37,7 +34,7 @@ export default function MeetingPage() {
   const router = useRouter();
 
   useEffect(() => {
-    useMeetingStore.getState().setMeetingId(meetingId);
+    setMeetingInfo({ meetingId });
   }, [meetingId]);
 
   const onJoin = (nickname: string) => {
@@ -148,7 +145,7 @@ export default function MeetingPage() {
     <main className="min-h-screen">
       {!isJoined ? (
         <>
-          <MeetingLobby meetingInfo={meetingInfo} onJoin={onJoin} />
+          <MeetingLobby onJoin={onJoin} />
           {!joinError && isPasswordModalOpen && (
             <Modal
               title="비밀번호 입력"

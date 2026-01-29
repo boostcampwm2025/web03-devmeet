@@ -1,6 +1,7 @@
 import { useMeetingSocketStore } from '@/store/useMeetingSocketStore';
 import { useMeetingStore } from '@/store/useMeetingStore';
 import { createProduceHelper } from '@/utils/createProduceHelpers';
+import { processAudioTrack, stopNoiseSuppressor } from '@/utils/noiseFilter';
 import { useMemo } from 'react';
 
 export const useProduce = () => {
@@ -28,19 +29,31 @@ export const useProduce = () => {
       // audio produce에 대한 락 설정
       setIsProducing('audio', true);
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioTrack = stream.getAudioTracks()[0];
+      const constraints = {
+        echoCancellation: true,
+        autoGainControl: true,
+        sampleRate: 48000,
+        channelCount: 1,
+      };
 
-      const audioProducer = await helpers.produceMic(audioTrack);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: constraints,
+      });
+      const audioTrack = stream.getAudioTracks()[0];
+      const filteredAudioTrack = await processAudioTrack(audioTrack);
+
+      const audioProducer = await helpers.produceMic(filteredAudioTrack);
       setProducer('audioProducer', audioProducer);
       setMedia({ audioOn: true });
 
       // 중간에 연결이 끊겼을 때의 핸들링
       audioProducer.on('trackended', () => {
         stopAudioProduce();
+        stopNoiseSuppressor();
       });
     } catch (error) {
       console.error('마이크 시작 실패:', error);
+      stopNoiseSuppressor();
     } finally {
       // 락 해제
       setIsProducing('audio', false);

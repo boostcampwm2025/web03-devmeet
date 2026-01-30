@@ -25,8 +25,8 @@ resources:
 # 사용되는 이미지들
 images:
   - name: docker.io/logankimdoing/frontend-deploy-server-img
-    newTag: sha-492f097
+    newTag: sha-c4c7ceb
   - name: docker.io/logankimdoing/main-backend-deploy-server-img
-    newTag: sha-492f097
+    newTag: sha-c4c7ceb
   - name: docker.io/logankimdoing/tool-backend-deploy-server-img
-    newTag: sha-492f097
+    newTag: sha-c4c7ceb

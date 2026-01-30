@@ -231,6 +231,15 @@ export class WhiteboardWebsocketGateway
     }
   }
 
+  @SubscribeMessage(WHITEBOARD_EVENT_NAME.DISCONNECT_WHITEBOARD)
+  disconnectWhiteboard(@ConnectedSocket() client: Socket) {
+    try {
+      this.whiteboardSocket.disconnectWhiteboardRoom(client.data.payload.room_id);
+    } catch (err) {
+      this.logger.error(`Whiteboard Disconnect Error : ${err}`);
+    }
+  }
+
   // 요소 생성
   @SubscribeMessage(WHITEBOARD_EVENT_NAME.CREATE_ELEMENT)
   handleCreate(@ConnectedSocket() client: Socket, @MessageBody() data: any) {

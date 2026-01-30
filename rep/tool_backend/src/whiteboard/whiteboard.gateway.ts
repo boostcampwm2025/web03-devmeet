@@ -1,5 +1,5 @@
 import { AuthType, ToolBackendPayload } from '@/guards/guard.type';
-import { Inject, Logger } from '@nestjs/common';
+import { Inject, Logger, UseInterceptors } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -19,7 +19,10 @@ import { WHITEBOARD_WEBSOCKET } from '@/infra/websocket/websocket.constants';
 import { WhiteboardWebsocket } from '@/infra/websocket/whiteboard/whiteboard.service';
 import { WhiteboardRepository } from '@/infra/memory/tool';
 import { PrometheusService } from '@/infra/metric/prometheus/prometheus.service';
+import { WsMetricsInterceptor } from '@/infra/metric/prometheus/prometheus.intercepter';
 
+
+@UseInterceptors(WsMetricsInterceptor)
 @WebSocketGateway({
   namespace: process.env.NODE_BACKEND_WEBSOCKET_WHITEBOARD,
   path: process.env.NODE_BACKEND_WEBSOCKET_PREFIX,

@@ -145,10 +145,10 @@ export const useProduce = () => {
       // screen에 경우는 video의 설정을 적어서 보내준다.
       stream = await navigator.mediaDevices.getDisplayMedia({
         video: {
-          frameRate: { max: 15 }, // 이건 고정하는게 좋다.
-          width: { max: 1280 }, // 이부분은 나중에 회의실 등 상황에 따라서 조정이 가능하다 ( 이거 보다 크면 다운스케일 적용 회의 방이나 분위기에 따라 다름 )
-          height: { max: 720 }, // 마찬 가지
-        },
+          frameRate: { ideal: 15, max: 15 },
+          width:  { ideal: 1280, max: 1920 }, // 화면 공유쪽 테스팅 진행
+          height: { ideal: 720,  max: 1080 },
+        }, 
         audio: true,
       });
 

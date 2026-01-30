@@ -1,5 +1,5 @@
 import { AuthType, ToolBackendPayload } from '@/guards/guard.type';
-import { Inject, Logger } from '@nestjs/common';
+import { Inject, Logger, UseInterceptors } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -18,7 +18,11 @@ import { EVENT_STREAM_NAME } from '@/infra/event-stream/event-stream.constants';
 import { WHITEBOARD_WEBSOCKET } from '@/infra/websocket/websocket.constants';
 import { WhiteboardWebsocket } from '@/infra/websocket/whiteboard/whiteboard.service';
 import { WhiteboardRepository } from '@/infra/memory/tool';
+import { PrometheusService } from '@/infra/metric/prometheus/prometheus.service';
+import { WsMetricsInterceptor } from '@/infra/metric/prometheus/prometheus.intercepter';
 
+
+@UseInterceptors(WsMetricsInterceptor)
 @WebSocketGateway({
   namespace: process.env.NODE_BACKEND_WEBSOCKET_WHITEBOARD,
   path: process.env.NODE_BACKEND_WEBSOCKET_PREFIX,
@@ -40,6 +44,7 @@ export class WhiteboardWebsocketGateway
     private readonly kafkaService: KafkaService,
     private readonly whiteboardRepo: WhiteboardRepository,
     @Inject(WHITEBOARD_WEBSOCKET) private readonly whiteboardSocket: WhiteboardWebsocket,
+    private readonly prom : PrometheusService
   ) {}
 
   // 초기화 및 인증 미들웨어
@@ -78,6 +83,10 @@ export class WhiteboardWebsocketGateway
   // 시점: afterInit의 미들웨어(next())가 성공적으로 호출된 직후 실행
   // 역할: 소켓을 특정 그룹(Room)에 넣고 필요한 초기 설정과 로그 작성
   async handleConnection(client: Socket) {
+    const ns : string = client.nsp.name; // 여기서는 /signal이 될 예정이다.
+    this.prom.wsConnectionsCurrent.labels(ns).inc();
+    this.prom.wsConnectionsTotal.labels(ns).inc();
+
     const payload: ToolBackendPayload = client.data.payload;
     if (!payload) {
       client.disconnect(true);
@@ -107,6 +116,15 @@ export class WhiteboardWebsocketGateway
 
   // 연결 해제 처리
   handleDisconnect(client: Socket) {
+    // 연결이 끊겼을때 설정할 수 있다.
+    const ns = client.nsp.name;
+    this.prom.wsConnectionsCurrent.labels(ns).dec();
+    const reason =
+      (client as any).disconnectReason ??          
+      (client as any).conn?.closeReason ??         
+      'unknown';
+    this.prom.wsDisconnectsTotal.labels(ns, reason).inc();
+
     const payload: ToolBackendPayload = client.data.payload;
     const roomName = client.data.roomName;
 

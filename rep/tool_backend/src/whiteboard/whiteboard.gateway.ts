@@ -41,7 +41,6 @@ export class WhiteboardWebsocketGateway
     private readonly kafkaService: KafkaService,
     private readonly whiteboardRepo: WhiteboardRepository,
     @Inject(WHITEBOARD_WEBSOCKET) private readonly whiteboardSocket: WhiteboardWebsocket,
-    private readonly prom : PrometheusService,
   ) {}
 
   // 초기화 및 인증 미들웨어

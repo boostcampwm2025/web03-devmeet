@@ -1,5 +1,5 @@
 import { AuthType, ToolBackendPayload } from '@/guards/guard.type';
-import { Inject, Logger, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Inject, Logger, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -25,7 +25,10 @@ import {
   YjsUpdateClientPayload,
 } from '@/infra/memory/tool';
 import { PrometheusService } from '@/infra/metric/prometheus/prometheus.service';
+import { WsMetricsInterceptor } from '@/infra/metric/prometheus/prometheus.intercepter';
 
+
+@UseInterceptors(WsMetricsInterceptor)
 @WebSocketGateway({
   namespace: process.env.NODE_BACKEND_WEBSOCKET_CODEEDITOR,
   path: process.env.NODE_BACKEND_WEBSOCKET_PREFIX,

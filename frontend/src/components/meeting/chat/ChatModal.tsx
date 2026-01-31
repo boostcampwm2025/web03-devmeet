@@ -1,6 +1,6 @@
 import { CloseIcon } from '@/assets/icons/common';
 import { FileIcon, SendIcon } from '@/assets/icons/meeting';
-import ChatListItem from '@/components/meeting/ChatListItem';
+import ToastMessage from '@/components/common/ToastMessage';
 import { useChatSender } from '@/hooks/chat/useChatSender';
 import { useFileUpload } from '@/hooks/chat/useFileUpload';
 import { useChatStore } from '@/store/useChatStore';
@@ -11,7 +11,7 @@ import { mapRecvPayloadToChatMessage } from '@/utils/chat';
 import { formatFileSize } from '@/utils/formatter';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
-import ToastMessage from '../common/ToastMessage';
+import { ChatListItem } from './ChatListItem';
 
 type PendingFile = {
   file: File;

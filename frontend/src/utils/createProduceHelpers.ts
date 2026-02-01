@@ -50,29 +50,29 @@ export function createProduceHelper(sendTransport: Transport, device: Device) {
   // 가능하면 VP9 안되면 VP8로 전달
   const produceScreenVideo = (track: MediaStreamTrack) => {
     const vp9 = findVp9Codec();
-
+    // vp9은 조건 부로 써보자
     if (vp9) {
       return sendTransport.produce({
         track,
         appData: { type: 'screen_video' },
         codec: vp9,
         encodings: [
-          { maxBitrate: 1_800_000 }, // cam 보다는 더 높아야 한다. (상황에 따라서 SVC를 사용할 수 있게 해주면 좋다.) ( SVC는 좀 더 나중에 세밀한 조정때 유용하다. )
+          { maxBitrate: 2_500_000 }, // cam 보다는 더 높아야 한다. (상황에 따라서 SVC를 사용할 수 있게 해주면 좋다.) ( SVC는 좀 더 나중에 세밀한 조정때 유용하다. )
         ],
         codecOptions: { videoGoogleStartBitrate: 400 },
       });
-    }
+    } // vp9은 실험을 통해서 진행을 해야 한다.
 
     return sendTransport.produce({
       track,
       appData: { type: 'screen_video' },
       encodings: [
         {
-          maxBitrate: 1_500_000, // codec이 safari 같은 경우 VP9이 오류가 많아서 VP8로 하고 가장 높은 화질 하나의 레이어로 처리 ( 가장 좋은건 화면 공유는 VP9으로 진행한다. )
+          maxBitrate: 2_500_000, // codec이 safari 같은 경우 호환이 안될수 있기때문에 일단 v8로 진행을 한다. 
         },
       ],
       codecOptions: {
-        videoGoogleStartBitrate: 400, // 화면공유에 시작 비트레이트는 낮게
+        videoGoogleStartBitrate: 1000, // 화면공유에 시작 비트레이트는 낮게
       },
     });
   };

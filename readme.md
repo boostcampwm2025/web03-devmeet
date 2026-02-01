@@ -392,6 +392,10 @@ pnpm start:dev
 - 작성자: Kuma (차지태)
 - [🔗 링크](https://github.com/boostcampwm2025/web03-devmeet/wiki/%5BFE%5D-React%E2%80%90Konva-%EB%9D%BC%EC%9D%B4%EB%B8%8C%EB%9F%AC%EB%A6%AC-%ED%99%98%EA%B2%BD%EC%97%90%EC%84%9C%EC%9D%98-SVG-%EB%A0%8C%EB%8D%94%EB%A7%81-%EC%9D%B4%EC%8A%88-%EB%B0%8F-%ED%95%B4%EA%B2%B0-%EB%B0%A9%EC%95%88)
 
+### [n8n] 코드 리뷰 자동화
+- 작성자: Kuma (차지태)
+- [🔗 링크](https://github.com/boostcampwm2025/web03-devmeet/wiki/%5BCode-Review%5D-n8n%EC%9C%BC%EB%A1%9C-%EC%BD%94%EB%93%9C%EB%A6%AC%EB%B7%B0-%EA%B0%9C%EC%84%A0-%EB%B0%8F-%EB%B3%B4%EC%99%84%ED%95%98%EA%B8%B0)
+
 ### [FE] canvas 재렌더링 문제 및 개선
 
 - 작성자: Andrew (이선우)

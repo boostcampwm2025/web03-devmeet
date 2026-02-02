@@ -70,11 +70,11 @@ export function createProduceHelper(sendTransport: Transport, device: Device) {
       appData: { type: 'screen_video' },
       encodings: [
         {
-          maxBitrate: 2_500_000, // codec이 safari 같은 경우 호환이 안될수 있기때문에 일단 v8로 진행을 한다. 
+          maxBitrate: 3_500_000, // codec이 safari 같은 경우 호환이 안될수 있기때문에 일단 v8로 진행을 한다. 
         },
       ],
       codecOptions: {
-        videoGoogleStartBitrate: 1000, // 화면공유에 시작 비트레이트는 낮게
+        videoGoogleStartBitrate: 800, // 화면공유에 시작 비트레이트는 낮게
       },
     });
   };

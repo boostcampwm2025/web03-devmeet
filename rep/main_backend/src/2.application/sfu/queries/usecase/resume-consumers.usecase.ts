@@ -43,6 +43,11 @@ export class ResumeConsumersUsecase<T> {
 
       try {
         await consumer.resume();
+
+        if (consumer.appData.target === "main" && consumer.appData.type === "cam" && consumer.type === 'simulcast') {
+          consumer.setPriority(255);
+          await consumer.setPreferredLayers({ spatialLayer: 2, temporalLayer: 2 });
+        };
       } catch (err) {
         this.logger.error(err);
       }

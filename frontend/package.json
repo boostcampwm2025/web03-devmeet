@@ -17,6 +17,7 @@
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "@sapphi-red/web-noise-suppressor": "^0.3.5",
+    "@sentry/nextjs": "^10",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.26",
     "konva": "^10.0.12",

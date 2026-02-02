@@ -12,6 +12,7 @@ import {
 } from '@/constants/drawingPresets';
 
 import type { CursorMode, DrawingItem } from '@/types/whiteboard';
+import { useWhiteboardSharedStore } from './useWhiteboardSharedStore';
 
 interface LocalState {
   selectedIds: string[];
@@ -251,6 +252,87 @@ export const useWhiteboardLocalStore = create<LocalStore>((set, get) => ({
 
   // 선택 박스 완료
   finishSelectionBox: () => {
+    const state = get();
+    const box = state.selectionBox;
+
+    if (!box || !box.visible) {
+      set({ selectionBox: null });
+      return;
+    }
+
+    // 선택 박스 크기 계산
+    const boxRect = {
+      x: Math.min(box.x1, box.x2),
+      y: Math.min(box.y1, box.y2),
+      width: Math.abs(box.x2 - box.x1),
+      height: Math.abs(box.y2 - box.y1),
+    };
+
+    // 너무 작으면 (5px 미만) 선택 안함
+    if (boxRect.width < 5 && boxRect.height < 5) {
+      set({ selectionBox: null });
+      return;
+    }
+
+    // 교차하는 아이템 찾기
+    const items = useWhiteboardSharedStore.getState().items;
+    const intersectedIds: string[] = [];
+
+    items.forEach((item) => {
+      let itemRect: { x: number; y: number; width: number; height: number };
+
+      // 아이템 타입별 바운딩 박스 계산
+      if (
+        item.type === 'arrow' ||
+        item.type === 'line' ||
+        item.type === 'drawing'
+      ) {
+        // Points 기반 아이템
+        const xs = item.points.filter((_, i) => i % 2 === 0);
+        const ys = item.points.filter((_, i) => i % 2 === 1);
+        itemRect = {
+          x: Math.min(...xs),
+          y: Math.min(...ys),
+          width: Math.max(...xs) - Math.min(...xs),
+          height: Math.max(...ys) - Math.min(...ys),
+        };
+      } else if ('width' in item && 'height' in item) {
+        // 일반 아이템 (x, y, width, height)
+        itemRect = {
+          x: item.x,
+          y: item.y,
+          width: item.width || 0,
+          height: item.height || 0,
+        };
+      } else {
+        // width/height 없는 아이템은 넘김
+        return;
+      }
+
+      // 교차 판정
+      const intersects = !(
+        boxRect.x + boxRect.width < itemRect.x ||
+        boxRect.x > itemRect.x + itemRect.width ||
+        boxRect.y + boxRect.height < itemRect.y ||
+        boxRect.y > itemRect.y + itemRect.height
+      );
+
+      if (intersects) {
+        intersectedIds.push(item.id);
+      }
+    });
+
+    // 선택 적용
+    if (intersectedIds.length > 0) {
+      set({ selectedIds: intersectedIds });
+
+      // Awareness 업데이트 (일단 첫 번째만)
+      const callback = state.awarenessCallback;
+      if (callback) {
+        callback(intersectedIds[0]);
+      }
+    }
+
     set({ selectionBox: null });
   },
 }));

@@ -93,22 +93,29 @@ export const useAddWhiteboardItem = () => {
     file: File,
     position?: { x: number; y: number },
   ) => {
-    // GIF 파일 업로드 제한
+    // 형식 체크
     if (file.type === 'image/gif') {
       alert('GIF 파일은 업로드할 수 없습니다.');
+      // 로직 즉시 종료
       return;
     }
 
-    // 용량 제한 (10MB)
-    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    // 용량 체크 FileReader 시작 전에 차단
+    const MAX_FILE_SIZE = 7 * 1024 * 1024; // 7MB
     if (file.size > MAX_FILE_SIZE) {
-      alert('이미지 용량은 10MB를 초과할 수 없습니다.');
+      alert(
+        `이미지 용량이 너무 큽니다. (최대 7MB, 현재: ${(file.size / (1024 * 1024)).toFixed(2)}MB)`,
+      );
       return;
     }
 
-    // 파일 읽기
+    // 검증을 통과한 경우에만 메모리 로드 시작
     const reader = new FileReader();
-    // 파일 읽기 완료 후 실행
+
+    reader.onerror = () => {
+      alert('파일을 읽는 중 오류가 발생했습니다.');
+    };
+
     reader.onload = (readerEvent) => {
       const src = readerEvent.target?.result as string;
 
@@ -151,7 +158,13 @@ export const useAddWhiteboardItem = () => {
           ...finalPos,
         });
       };
+
+      img.onerror = () => {
+        alert('이미지 객체를 생성할 수 없습니다.');
+      };
     };
+
+    // 검증 완료 후 읽기 시작
     reader.readAsDataURL(file);
   };
 

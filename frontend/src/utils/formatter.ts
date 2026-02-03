@@ -14,6 +14,10 @@ export const formatFileSize = (bytes: number, decimals: number = 2): string => {
 export const formatTimestamp = (timestamp: string) => {
   const date = new Date(timestamp);
 
+  if (isNaN(date.getTime())) {
+    return '';
+  }
+
   return new Intl.DateTimeFormat('ko-KR', {
     hour: 'numeric',
     minute: 'numeric',

@@ -38,12 +38,8 @@ export class ResumeConsumerUsecase<T> {
 
     // 레이어가 main 일때만 업데이트 하도록 설정 일단은 임시 방편으로 해둔다.
     if (consumer.appData.type === 'cam' && consumer.type === 'simulcast') {
-      const isMain = consumer.appData.target === 'main';
-
-      consumer.setPriority(isMain ? 255 : 10);
-      await consumer.setPreferredLayers({
-        spatialLayer: isMain ? 2 : 1,
-      });
+      consumer.setPriority(255);
+      await consumer.setPreferredLayers({ spatialLayer: 2, temporalLayer: 2 });
     };
     
     // encoding 할게 있을때 설정

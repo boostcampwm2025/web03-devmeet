@@ -45,12 +45,8 @@ export class ResumeConsumersUsecase<T> {
         await consumer.resume();
 
         if (consumer.appData.type === 'cam' && consumer.type === 'simulcast') {
-          const isMain = consumer.appData.target === 'main';
-
-          consumer.setPriority(isMain ? 255 : 10);
-          await consumer.setPreferredLayers({
-            spatialLayer: isMain ? 2 : 1,
-          });
+          consumer.setPriority(10);
+          await consumer.setPreferredLayers({ spatialLayer: 2, temporalLayer: 2 });
         };
 
         if (consumer.appData.type === 'screen_video') {

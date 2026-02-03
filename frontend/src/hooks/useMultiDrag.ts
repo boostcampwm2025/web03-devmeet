@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useRef, useCallback } from 'react';
 import type { WhiteboardItem } from '@/types/whiteboard';
 import { useItemActions } from '@/hooks/useItemActions';
 
@@ -10,32 +10,40 @@ interface UseMultiDragProps {
 export function useMultiDrag({ selectedIds, items }: UseMultiDragProps) {
   const { updateItem, performTransaction } = useItemActions();
 
-  const [multiDragStartPos, setMultiDragStartPos] = useState<
-    Map<string, { x: number; y: number }>
-  >(new Map());
-  const [multiDragDelta, setMultiDragDelta] = useState<{
-    dx: number;
-    dy: number;
-  } | null>(null);
+  const multiDragStartPosRef = useRef<Map<string, { x: number; y: number }>>(
+    new Map(),
+  );
+  const multiDragDeltaRef = useRef<{ dx: number; dy: number } | null>(null);
 
-  // 드래그 시작 - 초기 위치 저장
   const startMultiDrag = useCallback(
     (draggedItemId: string) => {
       if (selectedIds.length <= 1 || !selectedIds.includes(draggedItemId)) {
         return;
       }
 
+      const itemsMap = new Map(items.map((item) => [item.id, item]));
       const newStartPos = new Map<string, { x: number; y: number }>();
+
       selectedIds.forEach((id) => {
-        const targetItem = items.find((it) => it.id === id);
-        if (targetItem && 'x' in targetItem && 'y' in targetItem) {
+        const targetItem = itemsMap.get(id);
+        if (!targetItem) return;
+
+        if ('x' in targetItem && 'y' in targetItem) {
           newStartPos.set(id, {
             x: targetItem.x,
             y: targetItem.y,
           });
+        } else if (
+          targetItem.type === 'arrow' ||
+          targetItem.type === 'line' ||
+          targetItem.type === 'drawing'
+        ) {
+          newStartPos.set(id, { x: 0, y: 0 });
         }
       });
-      setMultiDragStartPos(newStartPos);
+
+      multiDragStartPosRef.current = newStartPos;
+      multiDragDeltaRef.current = null;
     },
     [selectedIds, items],
   );
@@ -47,32 +55,32 @@ export function useMultiDrag({ selectedIds, items }: UseMultiDragProps) {
         return false;
       }
 
-      const startPos = multiDragStartPos.get(draggedItemId);
+      const startPos = multiDragStartPosRef.current.get(draggedItemId);
       if (startPos) {
         const dx = x - startPos.x;
         const dy = y - startPos.y;
-        setMultiDragDelta({ dx, dy });
+        multiDragDeltaRef.current = { dx, dy };
         return true;
       }
       return false;
     },
-    [selectedIds, multiDragStartPos],
+    [selectedIds],
   );
 
-  // 드래그 종료 - 한번에 업데이트
   const finishMultiDrag = useCallback(() => {
-    if (!multiDragDelta || selectedIds.length <= 1) {
+    const delta = multiDragDeltaRef.current;
+    if (!delta || selectedIds.length <= 1) {
       return;
     }
 
-    const { dx, dy } = multiDragDelta;
+    const { dx, dy } = delta;
+    const itemsMap = new Map(items.map((item) => [item.id, item]));
 
     performTransaction(() => {
       selectedIds.forEach((itemId) => {
-        const item = items.find((it) => it.id === itemId);
+        const item = itemsMap.get(itemId);
         if (!item) return;
 
-        // Point 아이템 (arrow, line, drawing)
         if (
           item.type === 'arrow' ||
           item.type === 'line' ||
@@ -82,11 +90,29 @@ export function useMultiDrag({ selectedIds, items }: UseMultiDragProps) {
             i % 2 === 0 ? p + dx : p + dy,
           );
 
-          updateItem(itemId, { points: newPoints });
+          if (item.type === 'arrow') {
+            const updates: Partial<typeof item> = { points: newPoints };
+
+            if (
+              item.startBinding?.elementId &&
+              !selectedIds.includes(item.startBinding.elementId)
+            ) {
+              updates.startBinding = null;
+            }
+            if (
+              item.endBinding?.elementId &&
+              !selectedIds.includes(item.endBinding.elementId)
+            ) {
+              updates.endBinding = null;
+            }
+
+            updateItem(itemId, updates);
+          } else {
+            updateItem(itemId, { points: newPoints });
+          }
           return;
         }
 
-        // 일반 아이템 (x, y 업데이트)
         if ('x' in item && 'y' in item) {
           updateItem(itemId, {
             x: item.x + dx,
@@ -96,42 +122,42 @@ export function useMultiDrag({ selectedIds, items }: UseMultiDragProps) {
       });
     });
 
-    setMultiDragStartPos(new Map());
-    setMultiDragDelta(null);
-  }, [multiDragDelta, selectedIds, items, updateItem, performTransaction]);
+    multiDragStartPosRef.current = new Map();
+    multiDragDeltaRef.current = null;
+  }, [selectedIds, items, updateItem, performTransaction]);
 
   // 멀티 드래그 중인지 확인
   const isMultiDragging = useCallback(
     (itemId: string) => {
       return (
-        multiDragDelta !== null &&
+        multiDragDeltaRef.current !== null &&
         selectedIds.length > 1 &&
         selectedIds.includes(itemId)
       );
     },
-    [multiDragDelta, selectedIds],
+    [selectedIds],
   );
 
   // 아이템의 드래그 중 위치 계산
   const getMultiDragPosition = useCallback(
     (itemId: string) => {
-      if (!multiDragDelta || !selectedIds.includes(itemId)) {
+      const delta = multiDragDeltaRef.current;
+      if (!delta || !selectedIds.includes(itemId)) {
         return null;
       }
 
-      const startPos = multiDragStartPos.get(itemId);
+      const startPos = multiDragStartPosRef.current.get(itemId);
       if (!startPos) return null;
 
       return {
-        x: startPos.x + multiDragDelta.dx,
-        y: startPos.y + multiDragDelta.dy,
+        x: startPos.x + delta.dx,
+        y: startPos.y + delta.dy,
       };
     },
-    [multiDragDelta, selectedIds, multiDragStartPos],
+    [selectedIds],
   );
 
   return {
-    multiDragDelta,
     startMultiDrag,
     updateMultiDrag,
     finishMultiDrag,

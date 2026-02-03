@@ -5,6 +5,7 @@ import { Line } from 'react-konva';
 import Konva from 'konva';
 import { useItemInteraction } from '@/hooks/useItemInteraction';
 import { usePointsAnimation } from '@/hooks/useItemAnimation';
+import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
 import type { LineItem as LineItemType } from '@/types/whiteboard';
 
 interface LineItemProps {
@@ -39,6 +40,9 @@ export default function LineItem({
   const { isInteractive } = useItemInteraction();
 
   const [isDragging, setIsDragging] = useState(false);
+  const selectedIds = useWhiteboardLocalStore((state) => state.selectedIds);
+  const isMultiSelected =
+    selectedIds.length > 1 && selectedIds.includes(lineItem.id);
 
   const ref = usePointsAnimation({
     points: lineItem.points,
@@ -82,6 +86,13 @@ export default function LineItem({
       onDragEnd={(e) => {
         if (!isInteractive) return;
         setIsDragging(false);
+
+        if (isMultiSelected) {
+          e.target.position({ x: 0, y: 0 });
+          onDragEnd?.();
+          return;
+        }
+
         const pos = e.target.position();
         const newPoints = lineItem.points.map((p, i) =>
           i % 2 === 0 ? p + pos.x : p + pos.y,

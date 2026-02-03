@@ -391,7 +391,6 @@ export default function Canvas() {
 
   const handleItemChange = useCallback(
     (id: string, newAttributes: Partial<WhiteboardItem>) => {
-      // 멀티 드래그 중에는 개별 업데이트 넘김
       if (isMultiDragging(id)) {
         return;
       }
@@ -399,7 +398,6 @@ export default function Canvas() {
       performTransaction(() => {
         updateItem(id, newAttributes);
 
-        // 도형에 연결된 화살표 업데이트
         const isGeometryChanged = GEOMETRY_KEYS.some(
           (key) => key in newAttributes,
         );
@@ -408,11 +406,15 @@ export default function Canvas() {
         const changedItem = items.find((item) => item.id === id);
         if (!changedItem || changedItem.type !== 'shape') return;
 
+        if (selectedIds.length > 1 && selectedIds.includes(id)) {
+          return;
+        }
+
         const updatedShape = { ...changedItem, ...newAttributes } as ShapeItem;
         updateBoundArrows(id, updatedShape, items, updateItem);
       });
     },
-    [items, updateItem, performTransaction, isMultiDragging],
+    [items, updateItem, performTransaction, isMultiDragging, selectedIds],
   );
 
   const handleTransformMoveItem = useCallback(
@@ -424,31 +426,52 @@ export default function Canvas() {
       h: number,
       rotation: number,
     ) => {
-      setLocalDraggingId(id);
-      setLocalDraggingPos({ x, y, width: w, height: h, rotation });
+      setLocalDraggingId((prev) => (prev === id ? prev : id));
+      setLocalDraggingPos((prev) => {
+        if (
+          prev &&
+          prev.x === x &&
+          prev.y === y &&
+          prev.width === w &&
+          prev.height === h &&
+          prev.rotation === rotation
+        ) {
+          return prev;
+        }
+        return { x, y, width: w, height: h, rotation };
+      });
     },
     [],
   );
 
   const handleDragMoveItem = useCallback(
     (id: string, x: number, y: number) => {
-      setLocalDraggingId(id);
-
-      // 멀티 드래그 업데이트
       const isMulti = updateMultiDrag(id, x, y);
-      if (!isMulti) {
-        setLocalDraggingPos((prev) => (prev ? { ...prev, x, y } : { x, y }));
+
+      if (isMulti) return;
+
+      const hasArrowBinding = items.some(
+        (item) =>
+          item.type === 'arrow' &&
+          (item.startBinding?.elementId === id ||
+            item.endBinding?.elementId === id),
+      );
+
+      if (hasArrowBinding) {
+        setLocalDraggingId((prev) => (prev === id ? prev : id));
+        setLocalDraggingPos((prev) => {
+          if (prev && prev.x === x && prev.y === y) return prev;
+          return { x, y };
+        });
       }
     },
-    [updateMultiDrag],
+    [updateMultiDrag, items],
   );
 
   const handleDragEndItem = useCallback(() => {
     setIsDraggingArrow(false);
     setLocalDraggingId(null);
     setLocalDraggingPos(null);
-
-    // 멀티 드래그 종료
     finishMultiDrag();
   }, [finishMultiDrag]);
 
@@ -515,108 +538,83 @@ export default function Canvas() {
           />
 
           {/* 아이템 렌더링 */}
-          {(() => {
-            const draggingTargetShape =
-              localDraggingId && localDraggingPos
-                ? (items.find((it) => it.id === localDraggingId) as ShapeItem)
-                : null;
+          {visibleItems.map((item) => {
+            let displayItem = item;
 
-            return visibleItems.map((item) => {
-              let displayItem = item;
-              const multiDragPos = getMultiDragPosition(item.id);
-              if (multiDragPos && 'x' in item && 'y' in item) {
-                displayItem = {
-                  ...item,
-                  x: multiDragPos.x,
-                  y: multiDragPos.y,
-                } as WhiteboardItem;
-              } else if (localDraggingId === item.id && localDraggingPos) {
-                displayItem = {
-                  ...item,
-                  x: localDraggingPos.x,
-                  y: localDraggingPos.y,
-                } as WhiteboardItem;
-              }
+            const multiDragPos = getMultiDragPosition(item.id);
+            if (multiDragPos && 'x' in item && 'y' in item) {
+              displayItem = {
+                ...item,
+                x: multiDragPos.x,
+                y: multiDragPos.y,
+              } as WhiteboardItem;
+            }
 
-              // 화살표인 경우, 부착 대상이 드래그 중인지 확인하고 계산
-              if (
-                item.type === 'arrow' &&
-                localDraggingId &&
-                localDraggingPos &&
-                draggingTargetShape
-              ) {
+            if (
+              !multiDragPos &&
+              item.type === 'arrow' &&
+              localDraggingId &&
+              localDraggingPos &&
+              (item.startBinding?.elementId === localDraggingId ||
+                item.endBinding?.elementId === localDraggingId)
+            ) {
+              const targetShape = items.find(
+                (it) => it.id === localDraggingId,
+              ) as ShapeItem;
+              if (targetShape) {
                 const tempPoints = getDraggingArrowPoints(
                   item as ArrowItem,
                   localDraggingId,
                   localDraggingPos.x,
                   localDraggingPos.y,
-                  draggingTargetShape,
+                  targetShape,
                   localDraggingPos.width,
                   localDraggingPos.height,
                   localDraggingPos.rotation,
                 );
-                if (tempPoints && Array.isArray(tempPoints)) {
+                if (tempPoints) {
                   displayItem = {
                     ...displayItem,
                     points: tempPoints,
                   } as WhiteboardItem;
                 }
               }
+            }
 
-              // 핸들 드래그 중인 화살표
-              if (
-                displayItem.id === singleSelectedId &&
-                (displayItem.type === 'arrow' || displayItem.type === 'line') &&
-                draggingPoints &&
-                Array.isArray(draggingPoints)
-              ) {
-                displayItem = {
-                  ...displayItem,
-                  points: draggingPoints,
-                } as WhiteboardItem;
-              }
+            if (
+              displayItem.id === singleSelectedId &&
+              (displayItem.type === 'arrow' || displayItem.type === 'line') &&
+              draggingPoints
+            ) {
+              displayItem = {
+                ...displayItem,
+                points: draggingPoints,
+              } as WhiteboardItem;
+            }
 
-              return (
-                <RenderItem
-                  key={item.id}
-                  item={displayItem}
-                  isSelected={selectedIds.includes(item.id)}
-                  onSelect={handleSelectItem}
-                  onChange={(newAttributes) =>
-                    handleItemChange(item.id, newAttributes)
+            return (
+              <RenderItem
+                key={item.id}
+                item={displayItem}
+                isSelected={selectedIds.includes(item.id)}
+                onSelect={handleSelectItem}
+                onChange={(newAttributes) =>
+                  handleItemChange(item.id, newAttributes)
+                }
+                onArrowDblClick={handleArrowDblClick}
+                onShapeDblClick={handleShapeDblClick}
+                onDragStart={() => {
+                  if (item.type === 'arrow' || item.type === 'line') {
+                    setIsDraggingArrow(true);
                   }
-                  onArrowDblClick={handleArrowDblClick}
-                  onShapeDblClick={handleShapeDblClick}
-                  onDragStart={() => {
-                    if (item.type === 'arrow' || item.type === 'line') {
-                      setIsDraggingArrow(true);
-                    }
-                    setLocalDraggingId(item.id);
-
-                    startMultiDrag(item.id);
-
-                    const geoItem = item as {
-                      x: number;
-                      y: number;
-                      width?: number;
-                      height?: number;
-                      rotation?: number;
-                    };
-                    setLocalDraggingPos({
-                      x: geoItem.x,
-                      y: geoItem.y,
-                      width: geoItem.width,
-                      height: geoItem.height,
-                      rotation: geoItem.rotation,
-                    });
-                  }}
-                  onDragMove={handleDragMoveItem}
-                  onTransformMove={handleTransformMoveItem}
-                  onDragEnd={handleDragEndItem}
-                />
-              );
-            });
-          })()}
+                  startMultiDrag(item.id);
+                }}
+                onDragMove={handleDragMoveItem}
+                onTransformMove={handleTransformMoveItem}
+                onDragEnd={handleDragEndItem}
+              />
+            );
+          })}
           {isArrowOrLineSelected && selectedItem && !isDraggingArrow && (
             <ArrowHandles
               arrow={selectedItem as ArrowItem}

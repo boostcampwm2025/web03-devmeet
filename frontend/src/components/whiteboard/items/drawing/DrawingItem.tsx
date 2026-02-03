@@ -78,6 +78,13 @@ export default function DrawingItem({
       onDragEnd={(e) => {
         if (!isInteractive) return;
         setIsDragging(false);
+
+        if (isMultiSelected) {
+          e.target.position({ x: 0, y: 0 });
+          onDragEnd?.();
+          return;
+        }
+
         const pos = e.target.position();
         const newPoints = drawingItem.points.map((p, i) =>
           i % 2 === 0 ? p + pos.x : p + pos.y,

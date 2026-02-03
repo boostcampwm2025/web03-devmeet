@@ -8,6 +8,7 @@ import CustomArrowHead from './CustomArrowHead';
 import { useItemInteraction } from '@/hooks/useItemInteraction';
 import { useCursorStyle } from '@/hooks/useCursorStyle';
 import { usePointsAnimation } from '@/hooks/useItemAnimation';
+import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
 
 interface CustomArrowProps {
   item: ArrowItem;
@@ -33,6 +34,10 @@ export default function CustomArrow({
   const [isDragging, setIsDragging] = useState(false);
   const startHeadType = item.startHeadType ?? 'none';
   const endHeadType = item.endHeadType ?? 'triangle';
+
+  const selectedIds = useWhiteboardLocalStore((state) => state.selectedIds);
+  const isMultiSelected =
+    selectedIds.length > 1 && selectedIds.includes(item.id);
 
   // 아이템 인터랙션 상태
   const { isInteractive, isDraggable, isListening } = useItemInteraction();
@@ -134,6 +139,13 @@ export default function CustomArrow({
       onDragEnd={(e) => {
         if (!isInteractive) return;
         setIsDragging(false);
+
+        if (isMultiSelected) {
+          e.target.position({ x: 0, y: 0 });
+          onDragEnd?.();
+          return;
+        }
+
         const pos = e.target.position();
         const newPoints = item.points.map((p, i) =>
           i % 2 === 0 ? p + pos.x : p + pos.y,

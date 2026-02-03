@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ResumeConsumerDto } from '../dto';
 import { SelectDataFromCache } from '@app/ports/cache/cache.inbound';
-import type { ConsumerRepositoryPort } from '../../ports';
+import type { ConsumerRepositoryPort, ConsumerTimerRepositoryPort } from '../../ports';
 import { SfuErrorMessage } from '@error/application/sfu/sfu.error';
 import { Consumer } from 'mediasoup/types';
 
@@ -11,10 +11,12 @@ type ResumeConsumerUsecaseProps<T> = {
 
 @Injectable()
 export class ResumeConsumerUsecase<T> {
+  private readonly logger = new Logger(ResumeConsumerUsecase.name);
   private readonly selectConsumerInfoFromCache: ResumeConsumerUsecaseProps<T>['selectConsumerInfoFromCache'];
 
   constructor(
     private readonly consumerRepo: ConsumerRepositoryPort,
+    private readonly consumerTimerRepo : ConsumerTimerRepositoryPort,
     { selectConsumerInfoFromCache }: ResumeConsumerUsecaseProps<T>,
   ) {
     this.selectConsumerInfoFromCache = selectConsumerInfoFromCache;
@@ -38,13 +40,37 @@ export class ResumeConsumerUsecase<T> {
 
     // 레이어가 main 일때만 업데이트 하도록 설정 일단은 임시 방편으로 해둔다.
     if (consumer.appData.type === 'cam' && consumer.type === 'simulcast') {
-      consumer.setPriority(255);
-      await consumer.setPreferredLayers({ spatialLayer: 2, temporalLayer: 2 });
+      consumer.setPriority(200);
+      await consumer.setPreferredLayers({ spatialLayer: 1 });
+      await consumer.requestKeyFrame();
+
+      // 0.3 이후에 가져오기
+      const consumer_id : string = dto.consumer_id;
+      this.consumerTimerRepo.clear(consumer_id);
+
+      const t = setTimeout(async () => {
+        try {
+          const c = this.consumerRepo.get(consumer_id);
+          if (!c || c.closed || c.paused) return;
+          if (c.appData?.type !== 'cam' || c.type !== 'simulcast') return;
+
+          await c.setPreferredLayers({ spatialLayer: 2 });
+          await c.requestKeyFrame();
+        } catch (err) {
+          this.logger.debug(err);
+        } finally {
+          if (this.consumerTimerRepo.get(consumer_id) === t) {
+            this.consumerTimerRepo.delete(consumer_id);
+          };
+        };
+      }, 300);
+
+      this.consumerTimerRepo.set(consumer_id, t); // consumer_id에 따른 데이터 저장
     };
     
     // encoding 할게 있을때 설정
     if (consumer.appData.type === 'screen_video') {
-      consumer.setPriority(300); // 가장 우선순위를 높게 해준다.
+      consumer.setPriority(255); // 가장 우선순위를 높게 해준다.
     };
   };
 };

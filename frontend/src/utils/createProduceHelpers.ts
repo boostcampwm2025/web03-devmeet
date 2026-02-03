@@ -38,12 +38,12 @@ export function createProduceHelper(sendTransport: Transport, device: Device) {
       appData: { type: 'cam'},
       // simulcast 방식 ( 아래로 갈수록 고화질 )
       encodings: [
-        { rid: 'r0', scaleResolutionDownBy: 4, maxBitrate: 150_000 },
-        { rid: 'r1', scaleResolutionDownBy: 2, maxBitrate: 500_000 },
-        { rid: 'r2', scaleResolutionDownBy: 1, maxBitrate: 1_200_000 },
+        { rid: 'r0', scaleResolutionDownBy: 4, maxBitrate: 250_000 },
+        { rid: 'r1', scaleResolutionDownBy: 2, maxBitrate: 700_000 },
+        { rid: 'r2', scaleResolutionDownBy: 1, maxBitrate: 1_500_000 },
       ],
       codecOptions: {
-        videoGoogleStartBitrate: 400,
+        videoGoogleStartBitrate: 600,
       },
     });
   };

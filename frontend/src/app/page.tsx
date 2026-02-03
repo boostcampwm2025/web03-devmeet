@@ -4,6 +4,7 @@ import { motion, Variants } from 'framer-motion';
 import ParticipateMeetingForm from '@/components/landing/ParticipateMeetingForm';
 import StartMeetingButton from '@/components/landing/StartMeetingButton';
 import Header from '@/components/layout/Header';
+import { LogoIcon } from '@/assets/icons/common';
 
 export default function Home() {
   /** 공통 easing (자연스러운 ease-out) */
@@ -68,16 +69,15 @@ export default function Home() {
               </span>
             </motion.div>
 
-            <motion.h1
-              variants={fadeInUp}
-              className="mb-8 text-7xl leading-[0.9] font-black tracking-tighter md:text-9xl"
-            >
-              <span className="text-[#0084D1]">dev:</span>meet
-            </motion.h1>
+            <LogoIcon
+              className="mb-6 h-16 w-auto text-neutral-50 lg:h-30"
+              width="100%"
+              height="100%"
+            />
 
             <motion.h2
               variants={fadeInUp}
-              className="mb-6 text-4xl font-extrabold tracking-tight md:text-6xl"
+              className="mb-6 text-4xl font-extrabold tracking-tight text-neutral-50 lg:text-6xl"
             >
               One Flow,
               <br />
@@ -88,7 +88,7 @@ export default function Home() {
 
             <motion.p
               variants={fadeInUp}
-              className="max-w-md text-lg leading-relaxed text-neutral-400 md:text-xl"
+              className="max-w-md text-lg leading-relaxed text-neutral-400 lg:text-xl"
             >
               코드와 설계, 대화의 맥락이 하나로 이어지는 공간
             </motion.p>

@@ -10,17 +10,82 @@ interface UseSelectionBoxProps {
 export function useSelectionBox({ stageRef, enabled }: UseSelectionBoxProps) {
   const isDrawingRef = useRef(false);
 
-  const startSelectionBox = useWhiteboardLocalStore(
-    (state) => state.startSelectionBox,
-  );
-  const updateSelectionBox = useWhiteboardLocalStore(
-    (state) => state.updateSelectionBox,
-  );
-  const finishSelectionBox = useWhiteboardLocalStore(
-    (state) => state.finishSelectionBox,
+  const selectMultiple = useWhiteboardLocalStore(
+    (state) => state.selectMultiple,
   );
 
-  // 캔버스 좌표로 변환
+  const startSelectionBox = useCallback((x: number, y: number) => {
+    useWhiteboardLocalStore.setState({
+      selectionBox: {
+        visible: true,
+        x1: x,
+        y1: y,
+        x2: x,
+        y2: y,
+      },
+    });
+  }, []);
+
+  const updateSelectionBox = useCallback((x: number, y: number) => {
+    const state = useWhiteboardLocalStore.getState();
+    if (!state.selectionBox) return;
+
+    useWhiteboardLocalStore.setState({
+      selectionBox: {
+        ...state.selectionBox,
+        x2: x,
+        y2: y,
+      },
+    });
+  }, []);
+
+  const finishSelectionBox = useCallback(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const state = useWhiteboardLocalStore.getState();
+    const box = state.selectionBox;
+
+    if (!box || !box.visible) {
+      useWhiteboardLocalStore.setState({ selectionBox: null });
+      return;
+    }
+
+    const boxRect = {
+      x: Math.min(box.x1, box.x2),
+      y: Math.min(box.y1, box.y2),
+      width: Math.abs(box.x2 - box.x1),
+      height: Math.abs(box.y2 - box.y1),
+    };
+
+    // 너무 작으면 선택 안함
+    if (boxRect.width < 5 && boxRect.height < 5) {
+      useWhiteboardLocalStore.setState({ selectionBox: null });
+      return;
+    }
+
+    const itemNodes = stage.find('.whiteboard-item');
+    const intersectedIds: string[] = [];
+
+    itemNodes.forEach((node) => {
+      const itemRect = node.getClientRect({
+        relativeTo: stage,
+        skipTransform: false,
+        skipShadow: true,
+      });
+
+      if (Konva.Util.haveIntersection(boxRect, itemRect)) {
+        intersectedIds.push(node.id());
+      }
+    });
+
+    if (intersectedIds.length > 0) {
+      selectMultiple(intersectedIds);
+    }
+
+    useWhiteboardLocalStore.setState({ selectionBox: null });
+  }, [stageRef, selectMultiple]);
+
   const getCanvasPoint = useCallback(
     (clientX: number, clientY: number) => {
       const stage = stageRef.current;
@@ -29,13 +94,11 @@ export function useSelectionBox({ stageRef, enabled }: UseSelectionBoxProps) {
       const container = stage.container();
       const rect = container.getBoundingClientRect();
 
-      // 스크린 좌표 → Stage 좌표
-      const stageX = clientX - rect.left;
-      const stageY = clientY - rect.top;
+      const screenX = clientX - rect.left;
+      const screenY = clientY - rect.top;
 
-      // Stage 좌표 → Canvas 좌표
       const transform = stage.getAbsoluteTransform().copy().invert();
-      return transform.point({ x: stageX, y: stageY });
+      return transform.point({ x: screenX, y: screenY });
     },
     [stageRef],
   );
@@ -68,7 +131,6 @@ export function useSelectionBox({ stageRef, enabled }: UseSelectionBoxProps) {
     };
   }, [enabled, updateSelectionBox, finishSelectionBox, getCanvasPoint]);
 
-  // 선택 박스 시작
   const startSelection = useCallback(
     (point: { x: number; y: number }) => {
       isDrawingRef.current = true;

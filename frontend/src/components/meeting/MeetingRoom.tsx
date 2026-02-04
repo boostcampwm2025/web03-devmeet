@@ -1,7 +1,7 @@
 'use client';
 
 import CodeEditor from '@/components/code-editor/CodeEditor';
-import ChatModal from '@/components/meeting/ChatModal';
+import ChatModal from './chat/ChatModal';
 import { GlobalAudioPlayer } from '@/components/meeting/GlobalAudioPlayer';
 import InfoModal from '@/components/meeting/InfoModal';
 import MeetingMenu from '@/components/meeting/MeetingMenu';

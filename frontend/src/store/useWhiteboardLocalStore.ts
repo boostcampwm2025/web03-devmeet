@@ -12,9 +12,10 @@ import {
 } from '@/constants/drawingPresets';
 
 import type { CursorMode, DrawingItem } from '@/types/whiteboard';
+import { useWhiteboardSharedStore } from './useWhiteboardSharedStore';
 
 interface LocalState {
-  selectedId: string | null;
+  selectedIds: string[];
   editingTextId: string | null;
   cursorMode: CursorMode;
   stageScale: number;
@@ -24,13 +25,25 @@ interface LocalState {
   currentDrawing: DrawingItem | null;
   drawingStroke: string;
   drawingSize: DrawingSize;
-  awarenessCallback: ((selectedId: string | null) => void) | null;
+  awarenessCallback: ((selectedIds: string[]) => void) | null;
   cursorCallback: ((cursor: { x: number; y: number } | null) => void) | null;
   stageRef: React.RefObject<Konva.Stage | null> | null;
+  selectionBox: {
+    visible: boolean;
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  } | null;
 }
 
 interface LocalActions {
-  selectItem: (id: string | null) => void;
+  selectOnly: (id: string) => void;
+  selectMultiple: (ids: string[]) => void;
+  toggleSelection: (id: string) => void;
+  addToSelection: (id: string) => void;
+  removeFromSelection: (id: string) => void;
+  clearSelection: () => void;
   setEditingTextId: (id: string | null) => void;
   setCursorMode: (mode: CursorMode) => void;
   setStageScale: (scale: number) => void;
@@ -42,7 +55,7 @@ interface LocalActions {
   continueDrawing: (x: number, y: number) => void;
   finishDrawing: () => void;
   setAwarenessCallback: (
-    callback: ((selectedId: string | null) => void) | null,
+    callback: ((selectedIds: string[]) => void) | null,
   ) => void;
   setCursorCallback: (
     callback: ((cursor: { x: number; y: number } | null) => void) | null,
@@ -55,17 +68,76 @@ type LocalStore = LocalState & LocalActions;
 // 개인 UI 상태(선택/편집 상태, 커서 모드, 뷰포트 (줌/팬), 임시 그리기)
 export const useWhiteboardLocalStore = create<LocalStore>((set, get) => ({
   // Select 초기값
-  selectedId: null,
+  selectedIds: [],
   awarenessCallback: null,
   cursorCallback: null,
-  selectItem: (id) => {
-    set({ selectedId: id });
-    // Awareness 업데이트
+
+  // 단일 선택
+  selectOnly: (id) => {
+    set({ selectedIds: [id] });
     const callback = get().awarenessCallback;
     if (callback) {
-      callback(id);
+      callback([id]);
     }
   },
+
+  // 멀티 선택
+  selectMultiple: (ids) => {
+    set({ selectedIds: ids });
+    const callback = get().awarenessCallback;
+    if (callback) {
+      callback(ids);
+    }
+  },
+
+  // 토글 선택 (Ctrl+클릭)
+  toggleSelection: (id) => {
+    const current = get().selectedIds;
+    const newIds = current.includes(id)
+      ? current.filter((i) => i !== id)
+      : [...current, id];
+
+    set({ selectedIds: newIds });
+    const callback = get().awarenessCallback;
+    if (callback) {
+      callback(newIds);
+    }
+  },
+
+  // 선택 추가 (Shift+클릭)
+  addToSelection: (id) => {
+    const current = get().selectedIds;
+    if (current.includes(id)) return;
+
+    const newIds = [...current, id];
+    set({ selectedIds: newIds });
+    const callback = get().awarenessCallback;
+    if (callback) {
+      callback(newIds);
+    }
+  },
+
+  // 선택 제거
+  removeFromSelection: (id) => {
+    const current = get().selectedIds;
+    const newIds = current.filter((i) => i !== id);
+
+    set({ selectedIds: newIds });
+    const callback = get().awarenessCallback;
+    if (callback) {
+      callback(newIds);
+    }
+  },
+
+  // 전체 선택 해제
+  clearSelection: () => {
+    set({ selectedIds: [] });
+    const callback = get().awarenessCallback;
+    if (callback) {
+      callback([]);
+    }
+  },
+
   setAwarenessCallback: (callback) => set({ awarenessCallback: callback }),
   setCursorCallback: (callback) => set({ cursorCallback: callback }),
 
@@ -144,4 +216,7 @@ export const useWhiteboardLocalStore = create<LocalStore>((set, get) => ({
 
   // 그리기 완료
   finishDrawing: () => set({ currentDrawing: null }),
+
+  // 선택 박스 초기값
+  selectionBox: null,
 }));

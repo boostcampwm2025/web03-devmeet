@@ -161,7 +161,7 @@ export const useWhiteboardYjs = (socket: Socket | null) => {
           color: randomColor,
         },
         cursor: null,
-        selectedId: null,
+        selectedIds: [],
       });
     };
     socket.on('init-user', onInitUser);
@@ -199,15 +199,15 @@ export const useWhiteboardYjs = (socket: Socket | null) => {
     socket.on('disconnect', onDisconnect);
 
     // -------------------------
-    // selection 콜백 (기존 의도 유지)
+    // selection 콜백
     // -------------------------
-    const updateAwarenessSelection = (selectedId: string | null) => {
+    const updateAwarenessSelection = (selectedIds: string[]) => {
       const currentState = awareness.getLocalState();
       if (!currentState) return;
 
       awareness.setLocalState({
         ...currentState,
-        selectedId,
+        selectedIds,
       });
     };
     useWhiteboardLocalStore
@@ -432,7 +432,7 @@ export const useWhiteboardYjs = (socket: Socket | null) => {
             name: state.user.name,
             color: state.user.color,
             cursor: state.cursor || null,
-            selectedId: state.selectedId || null,
+            selectedIds: state.selectedIds || [],
           });
         }
       });

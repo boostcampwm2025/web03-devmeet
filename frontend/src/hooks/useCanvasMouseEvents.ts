@@ -6,6 +6,7 @@ import { useEraser } from '@/hooks/useEraser';
 
 interface UseCanvasMouseEventsProps {
   onDeselect: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
+  onSelectionBoxStart?: (point: { x: number; y: number }) => void;
 }
 
 // 캔버스 좌표 추출 (마우스/터치 통합 사용 위함)
@@ -22,6 +23,7 @@ function getCanvasPoint(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) {
 
 export function useCanvasMouseEvents({
   onDeselect,
+  onSelectionBoxStart,
 }: UseCanvasMouseEventsProps) {
   const cursorMode = useWhiteboardLocalStore((state) => state.cursorMode);
   const lastCursorUpdateRef = useRef(0);
@@ -54,6 +56,16 @@ export function useCanvasMouseEvents({
       handleDrawingStart(e, point);
     } else if (cursorMode === 'eraser') {
       handleEraserStart(e, point);
+    } else if (cursorMode === 'select') {
+      const stage = e.target.getStage();
+      const clickedOnEmpty = e.target === stage || e.target.hasName('bg-rect');
+
+      if (clickedOnEmpty) {
+        onDeselect(e);
+        if (onSelectionBoxStart) {
+          onSelectionBoxStart(point);
+        }
+      }
     } else {
       onDeselect(e);
     }
@@ -64,11 +76,11 @@ export function useCanvasMouseEvents({
   ) => {
     updateCursor(e);
 
+    const point = getCanvasPoint(e);
+    if (!point) return;
+
     if (cursorMode === 'eraser') {
-      const point = getCanvasPoint(e);
-      if (point) {
-        handleEraserMove(e, point);
-      }
+      handleEraserMove(e, point);
     }
   };
 

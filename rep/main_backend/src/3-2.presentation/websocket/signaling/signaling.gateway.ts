@@ -40,6 +40,7 @@ import {
   PauseProducerValidate,
   ResumeConsumersValidate,
   ResumeConsumerValidate,
+  resumeProducerValidate,
   SendMessageValidate,
   SocketPayload,
   UploadFileValidate,
@@ -51,7 +52,6 @@ import { SIGNALING_WEBSOCKET } from '@infra/websocket/websocket.constants';
 import { SignalingWebsocket } from '@infra/websocket/signaling/signaling.service';
 import { PrometheusService } from '@infra/metric/prometheus/prometheus.service';
 import { WsMetricsInterceptor } from '@infra/metric/prometheus/prometheus.intercepter';
-
 
 @UseInterceptors(WsMetricsInterceptor)
 @WebSocketGateway({
@@ -78,7 +78,7 @@ export class SignalingWebsocketGateway
     private readonly jwtGuard: JwtWsGuard,
     private readonly signalingService: SignalingWebsocketService,
     @Inject(SIGNALING_WEBSOCKET) private readonly signalingSocket: SignalingWebsocket,
-    private readonly prom : PrometheusService,
+    private readonly prom: PrometheusService,
   ) {}
 
   // onGatewayInit으로 websocket 연결됐을때 사용할 함수
@@ -111,7 +111,7 @@ export class SignalingWebsocketGateway
 
   // 연결하자 마자 바로 해야 하는 하는 것 정의 가능 -> access_token을 보내준다.
   async handleConnection(client: Socket) {
-    const ns : string = client.nsp.name; // 여기서는 /signal이 될 예정이다.
+    const ns: string = client.nsp.name; // 여기서는 /signal이 될 예정이다.
     this.prom.wsConnectionsCurrent.labels(ns).inc();
     this.prom.wsConnectionsTotal.labels(ns).inc();
     const access_token: string = client.data.user.access_token;
@@ -124,9 +124,7 @@ export class SignalingWebsocketGateway
     const ns = client.nsp.name;
     this.prom.wsConnectionsCurrent.labels(ns).dec();
     const reason =
-      (client as any).disconnectReason ??          
-      (client as any).conn?.closeReason ??         
-      'unknown';
+      (client as any).disconnectReason ?? (client as any).conn?.closeReason ?? 'unknown';
     this.prom.wsDisconnectsTotal.labels(ns, reason).inc();
 
     const user = client.data.user;
@@ -479,6 +477,22 @@ export class SignalingWebsocketGateway
     }
   }
 
+  // 카메라 or 마이크를 ON할때 사용한다.
+  @SubscribeMessage(WEBSOCKET_SIGNALING_EVENT_NAME.PRODUCE_ON)
+  async resumeProduceGateway(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() validate: resumeProducerValidate,
+  ) {
+    try {
+      const producerInfo = await this.signalingService.resumeProduce(client, validate);
+
+      return { producerInfo };
+    } catch (err) {
+      this.logger.error(err);
+      throw new WsException({ message: err.message ?? '에러 발생', status: err.status ?? 500 });
+    }
+  }
+
   // 카메라 or 마이크를 OFF할때 사용한다. -> 대신 카메라가 존재해야 한다.
   @SubscribeMessage(WEBSOCKET_SIGNALING_EVENT_NAME.PRODUCE_OFF)
   async pauseProduceGateway(
@@ -546,7 +560,7 @@ export class SignalingWebsocketGateway
       // 모든 방에 정보를 알려야 한다.
       const roomMessage: MessageResultProps = {
         ...result,
-        thumbnail_url: result.thumnail_url,
+        thumbnail_url: result.thumbnail_url,
         message: undefined,
         type: 'file',
       };

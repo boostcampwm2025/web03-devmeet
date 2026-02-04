@@ -65,6 +65,11 @@ export function useEraser() {
   ) => {
     if (cursorMode !== 'eraser') return;
 
+    // 두 손가락 터치는 무시
+    if ('touches' in e.evt && e.evt.touches.length >= 2) {
+      return;
+    }
+
     const stage = e.target.getStage();
     if (!stage) return;
 
@@ -93,6 +98,19 @@ export function useEraser() {
     stageRef.current = null;
   }, [isErasing, erasedIds, deleteItems]);
 
+  // 지우개 취소 (핀치 줌 시작 시)
+  const cancelErasing = useCallback(() => {
+    if (!isErasing) return;
+
+    if (erasedIds.size > 0) {
+      deleteItems(Array.from(erasedIds));
+    }
+
+    setIsErasing(false);
+    setErasedIds(new Set());
+    stageRef.current = null;
+  }, [isErasing, erasedIds, deleteItems]);
+
   usePointerTracking({
     isActive: isErasing,
     stageRef,
@@ -102,6 +120,7 @@ export function useEraser() {
 
   return {
     handleEraserStart,
+    cancelErasing,
     isErasing,
   };
 }

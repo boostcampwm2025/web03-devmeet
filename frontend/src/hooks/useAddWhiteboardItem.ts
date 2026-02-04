@@ -139,10 +139,15 @@ export const useAddWhiteboardItem = () => {
         }
 
         // 좌표가 전달되지 않았다면 중앙 좌표 계산
-        const finalPos = position || {
-          x: getViewportCenter().x - w / 2,
-          y: getViewportCenter().y - h / 2,
-        };
+        const finalPos = position
+          ? {
+              x: position.x - w / 2,
+              y: position.y - h / 2,
+            }
+          : {
+              x: getViewportCenter().x - w / 2,
+              y: getViewportCenter().y - h / 2,
+            };
 
         addImage({
           src,

@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import Konva from 'konva';
 import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
 import { useItemActions } from '@/hooks/useItemActions';
+import { usePointerTracking } from '@/hooks/usePointerTracking';
 
 export function useDrawing() {
   const currentDrawing = useWhiteboardLocalStore(
@@ -34,62 +35,32 @@ export function useDrawing() {
     startDrawing(point.x, point.y);
   };
 
-  // window 레벨에서 마우스/터치 이벤트 처리 (Stage 밖에서도 그리기 유지)
-  useEffect(() => {
-    if (!isDrawing || !stageRef.current) return;
-
-    const stage = stageRef.current;
-    const container = stage.container();
-    const rect = container.getBoundingClientRect();
-
-    const handleGlobalMouseMove = (e: MouseEvent) => {
-      // 브라우저 좌표를 캔버스 좌표로 변환
-      const screenX = e.clientX - rect.left;
-      const screenY = e.clientY - rect.top;
-      const x = (screenX - stage.x()) / stage.scaleX();
-      const y = (screenY - stage.y()) / stage.scaleY();
-
+  const handleMove = useCallback(
+    (x: number, y: number) => {
       continueDrawing(x, y);
-    };
+    },
+    [continueDrawing],
+  );
 
-    const handleGlobalTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 0) return;
-      const touch = e.touches[0];
-      const screenX = touch.clientX - rect.left;
-      const screenY = touch.clientY - rect.top;
-      const x = (screenX - stage.x()) / stage.scaleX();
-      const y = (screenY - stage.y()) / stage.scaleY();
+  const handleEnd = useCallback(() => {
+    setIsDrawing(false);
 
-      continueDrawing(x, y);
-    };
+    // 그리기 완료 시 아이템 추가
+    const drawing = useWhiteboardLocalStore.getState().currentDrawing;
+    if (drawing && drawing.points.length >= 4) {
+      addDrawing(drawing);
+    }
 
-    const handleGlobalEnd = () => {
-      setIsDrawing(false);
+    finishDrawing();
+    stageRef.current = null;
+  }, [addDrawing, finishDrawing]);
 
-      // 그리기 완료 시 아이템 추가
-      const drawing = useWhiteboardLocalStore.getState().currentDrawing;
-      if (drawing && drawing.points.length >= 4) {
-        addDrawing(drawing);
-      }
-
-      finishDrawing();
-      stageRef.current = null;
-    };
-
-    window.addEventListener('mousemove', handleGlobalMouseMove);
-    window.addEventListener('mouseup', handleGlobalEnd);
-    window.addEventListener('touchmove', handleGlobalTouchMove, {
-      passive: false,
-    });
-    window.addEventListener('touchend', handleGlobalEnd);
-
-    return () => {
-      window.removeEventListener('mousemove', handleGlobalMouseMove);
-      window.removeEventListener('mouseup', handleGlobalEnd);
-      window.removeEventListener('touchmove', handleGlobalTouchMove);
-      window.removeEventListener('touchend', handleGlobalEnd);
-    };
-  }, [isDrawing, continueDrawing, finishDrawing, addDrawing]);
+  usePointerTracking({
+    isActive: isDrawing,
+    stageRef,
+    onMove: handleMove,
+    onEnd: handleEnd,
+  });
 
   return {
     handleDrawingStart,

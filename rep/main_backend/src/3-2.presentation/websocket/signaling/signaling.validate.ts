@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsDefined,
   IsIn,
   IsInt,
@@ -87,6 +88,10 @@ export class OnProduceValidate {
   @IsNotEmpty()
   @IsObject()
   rtpParameters: RtpParameters;
+
+  @IsOptional()
+  @IsBoolean()
+  resume?: boolean;
 }
 
 // 구독할때 사용하는 validate
@@ -179,6 +184,18 @@ export class DisConnectToolTypeValidate {
   @IsNotEmpty()
   @IsIn(['whiteboard', 'codeeditor'])
   tool: 'whiteboard' | 'codeeditor';
+}
+
+// producer를 다시 활성화 하기 위한 validate
+export class resumeProducerValidate {
+  @IsNotEmpty()
+  @IsString()
+  producer_id: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @IsIn(['audio', 'video'])
+  kind: 'audio' | 'video';
 }
 
 // producer를 멈추기 위한 validate

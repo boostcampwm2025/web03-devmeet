@@ -1,38 +1,17 @@
 import {
+  INITIAL_MEDIA_STATE,
+  INITIAL_MEETING_INFO,
+  VISIBLE_COUNT,
+} from '@/constants/meeting';
+import {
   MediaState,
   MediaType,
-  MeetingInfoResponse,
+  MeetingInfo,
   MeetingMemberInfo,
   MemberStream,
 } from '@/types/meeting';
+import { reorderMembers } from '@/utils/meeting';
 import { create } from 'zustand';
-
-const INITIAL_MEDIA_STATE: MediaState = {
-  videoOn: false,
-  audioOn: false,
-  screenShareOn: false,
-  cameraPermission: 'unknown',
-  micPermission: 'unknown',
-  speakerId: '',
-  micId: '',
-  cameraId: '',
-};
-
-const INITIAL_MEETING_INFO: MeetingInfo = {
-  title: '',
-  host_nickname: '',
-  current_participants: 0,
-  max_participants: 0,
-  has_password: false,
-  meetingId: '',
-};
-
-const VISIBLE_COUNT = 5;
-
-type MeetingInfo = MeetingInfoResponse & {
-  meetingId: string;
-  isHosted?: boolean;
-};
 
 interface MeetingState {
   media: MediaState;
@@ -61,7 +40,11 @@ interface MeetingActions {
   addMember: (member: MeetingMemberInfo) => void;
   removeMember: (userId: string) => void;
   setScreenSharer: (sharer: { id: string; nickname: string } | null) => void;
-  setSpeaking: (userId: string, isSpeaking: boolean) => void;
+  setSpeaking: (
+    userId: string,
+    isSpeaking: boolean,
+    visibleCount: number,
+  ) => void;
   togglePin: (userId: string) => void;
   setMeetingInfo: (info: Partial<MeetingInfo>) => void;
   setSpeakerId: (speakerId: string) => void;
@@ -89,6 +72,7 @@ interface MeetingActions {
     state: boolean,
   ) => void;
   setIsCodeEditorOpening: (state: boolean) => void;
+  moveToFront: (userId: string) => void;
 }
 
 export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
@@ -127,6 +111,8 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
     }),
   addMember: (member) =>
     set((state) => {
+      if (!member?.user_id) return state;
+
       const userId = member.user_id;
       const existingStream = state.memberStreams[member.user_id] || {};
 
@@ -178,11 +164,10 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
       };
     }),
   setScreenSharer: (sharer) => set(() => ({ screenSharer: sharer })),
-  setSpeaking: (userId, isSpeaking) =>
+  setSpeaking: (userId, isSpeaking, visibleCount) =>
     set((state) => {
       const lastSpeakerUpdate = isSpeaking ? { lastSpeakerId: userId } : {};
 
-      // 말하기를 멈췄을 때나, 고정된 유저는 계산에서 제외
       if (!isSpeaking && state.pinnedMemberIds.includes(userId)) {
         return {
           speakingMembers: { ...state.speakingMembers, [userId]: isSpeaking },
@@ -190,10 +175,11 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
       }
 
       const currentIndex = state.orderedMemberIds.indexOf(userId);
+      const firstPageMemberCapacity = visibleCount - 1;
       let nextOrderedIds = state.orderedMemberIds;
 
       // 발언한 사람이 첫 페이지에 존재하는지 확인
-      if (isSpeaking && currentIndex > VISIBLE_COUNT - 1) {
+      if (isSpeaking && currentIndex > firstPageMemberCapacity - 1) {
         const otherIds = state.orderedMemberIds.filter(
           (id) => !state.pinnedMemberIds.includes(id) && id !== userId,
         );
@@ -258,4 +244,25 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
   setHasNewChat: (state) => set({ hasNewChat: state }),
   setIsOpen: (type, state) => set({ [type]: state }),
   setIsCodeEditorOpening: (state) => set({ isCodeEditorOpening: state }),
+  moveToFront: (userId) =>
+    set((state) => {
+      if (state.pinnedMemberIds.includes(userId)) return state;
+
+      // 현재 순서에서 해당 유저 제외
+      const remainingIds = state.orderedMemberIds.filter((id) => id !== userId);
+
+      // 고정된 멤버들의 수 계산
+      const pinnedCount = state.pinnedMemberIds.length;
+
+      // [고정 멤버들] -> [카메라 켠 유저] -> [나머지 멤버들] 순서로 재배치
+      const nextOrderedIds = [
+        ...state.orderedMemberIds.slice(0, pinnedCount),
+        userId,
+        ...remainingIds.filter(
+          (id) => !state.orderedMemberIds.slice(0, pinnedCount).includes(id),
+        ),
+      ];
+
+      return { orderedMemberIds: nextOrderedIds };
+    }),
 }));

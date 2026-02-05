@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
 import { useItemActions } from '@/hooks/useItemActions';
 import { useWhiteboardHistory } from '@/hooks/useWhiteboardHistory';
+import { useWhiteboardClipboard } from '@/hooks/useWhiteboardClipboard';
 import { CursorMode } from '@/types/whiteboard/base';
 
 interface UseCanvasShortcutsProps {
@@ -15,23 +16,46 @@ export const useCanvasShortcuts = ({
   selectedHandleIndex,
   deleteControlPoint,
 }: UseCanvasShortcutsProps) => {
-  const selectedId = useWhiteboardLocalStore((state) => state.selectedId);
+  const selectedIds = useWhiteboardLocalStore((state) => state.selectedIds);
+  const selectedId = selectedIds[0] ?? null;
   const editingTextId = useWhiteboardLocalStore((state) => state.editingTextId);
   const cursorMode = useWhiteboardLocalStore((state) => state.cursorMode);
   const setCursorMode = useWhiteboardLocalStore((state) => state.setCursorMode);
-  const { deleteItem } = useItemActions();
+  const clearSelection = useWhiteboardLocalStore(
+    (state) => state.clearSelection,
+  );
+  const { deleteItem, deleteItems } = useItemActions();
   const { undo, redo } = useWhiteboardHistory();
+  const { copy, paste } = useWhiteboardClipboard();
 
   const previousModeRef = useRef<CursorMode | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
+
+      // 입력창이나 수정 가능한 영역에서는 단축키 동작 방지
       if (
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.isContentEditable
       ) {
+        return;
+      }
+
+      const isMod = e.ctrlKey || e.metaKey;
+
+      // 복사 단축키 (Ctrl+C)
+      if (isMod && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        copy();
+        return;
+      }
+
+      // 붙여넣기 단축키 (Ctrl+V)
+      if (isMod && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        paste();
         return;
       }
 
@@ -61,7 +85,7 @@ export const useCanvasShortcuts = ({
 
       // Redo 단축키 (Ctrl+Shift+Z 또는 Ctrl+Y)
       if (
-        (e.ctrlKey || e.metaKey) &&
+        isMod &&
         ((e.shiftKey && e.key.toLowerCase() === 'z') ||
           e.key.toLowerCase() === 'y')
       ) {
@@ -71,28 +95,33 @@ export const useCanvasShortcuts = ({
       }
 
       // Undo 단축키 (Ctrl+Z)
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        !e.shiftKey &&
-        e.key.toLowerCase() === 'z'
-      ) {
+      if (isMod && !e.shiftKey && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         undo();
         return;
       }
 
-      if (!selectedId || editingTextId) return;
+      if (selectedIds.length === 0 || editingTextId) return;
 
       // 삭제 단축기 (Delete / Backspace)
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
 
-        if (isArrowOrLineSelected && selectedHandleIndex !== null) {
+        if (
+          selectedIds.length === 1 &&
+          isArrowOrLineSelected &&
+          selectedHandleIndex !== null
+        ) {
           const deleted = deleteControlPoint();
           if (deleted) return;
         }
 
-        deleteItem(selectedId);
+        if (selectedIds.length === 1 && selectedId) {
+          deleteItem(selectedId);
+        } else {
+          deleteItems(selectedIds);
+        }
+        clearSelection();
       }
     };
 
@@ -113,14 +142,19 @@ export const useCanvasShortcuts = ({
     };
   }, [
     selectedId,
+    selectedIds,
     editingTextId,
     cursorMode,
     setCursorMode,
     deleteItem,
+    deleteItems,
     isArrowOrLineSelected,
     selectedHandleIndex,
     deleteControlPoint,
+    clearSelection,
     undo,
     redo,
+    copy,
+    paste,
   ]);
 };

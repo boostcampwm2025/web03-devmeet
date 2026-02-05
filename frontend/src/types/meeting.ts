@@ -85,6 +85,7 @@ export interface ProducerInfo {
   type: MediaType;
   nickname: string;
   is_paused: boolean;
+  is_restart : boolean;
 }
 
 export type MemberStream = Partial<Record<MediaType, MediaStream>>;
@@ -103,3 +104,17 @@ export interface MeetingInfoResponse {
   max_participants: number;
   has_password: boolean;
 }
+
+export interface MemberListItemProps {
+  id: string;
+  name: string;
+  audio: boolean;
+  video: boolean;
+  profileImg: string | null;
+  reverseDropdown?: boolean;
+}
+
+export type MeetingInfo = MeetingInfoResponse & {
+  meetingId: string;
+  isHosted?: boolean;
+};

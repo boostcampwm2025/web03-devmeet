@@ -22,8 +22,15 @@ export default function MemberVideoBar() {
   }, [width]);
   const firstPageMemberCount = membersPerPage - 1;
 
-  const { members, setMemberStream, removeMemberStream, orderedMemberIds } =
-    useMeetingStore();
+  const {
+    members,
+    setMemberStream,
+    removeMemberStream,
+    orderedMemberIds,
+    pinnedMemberIds,
+    lastSpeakerId,
+  } = useMeetingStore();
+
   const { socket, recvTransport, device, addConsumers } =
     useMeetingSocketStore();
   const [currentPage, setCurrentPage] = useState(1);
@@ -46,7 +53,6 @@ export default function MemberVideoBar() {
   // 현재 페이지에 보여야 할 멤버 리스트 계산
   const visibleMembers = useMemo(() => {
     const isFirstPage = currentPage === 1;
-
     const start = isFirstPage
       ? 0
       : (currentPage - 2) * membersPerPage + firstPageMemberCount;
@@ -54,6 +60,40 @@ export default function MemberVideoBar() {
 
     return sortedMembers.slice(start, end);
   }, [sortedMembers, currentPage, firstPageMemberCount, membersPerPage]);
+
+  const mainDisplayMember = useMemo(() => {
+    // 고정된 멤버
+    const firstPinnedId = pinnedMemberIds[0];
+    if (firstPinnedId && members[firstPinnedId]) return members[firstPinnedId];
+
+    // 최근 발언자
+    if (lastSpeakerId && members[lastSpeakerId]) {
+      return members[lastSpeakerId];
+    }
+
+    // 목록의 첫 번째 유저 (보통 visibleMembers에 포함되지만, 페이지 넘기면 아닐 수 있음)
+    const firstOrderedId = orderedMemberIds[0];
+    if (firstOrderedId && members[firstOrderedId])
+      return members[firstOrderedId];
+
+    return null;
+  }, [pinnedMemberIds, lastSpeakerId, orderedMemberIds, members]);
+
+  // 실제로 영상을 수신해야(Resume) 할 멤버 합집합 계산
+  // (상단 바에 보이는 멤버들 + 메인에 보이는 멤버)
+  const targetStreamMembers = useMemo(() => {
+    const targets = [...visibleMembers];
+
+    // 메인 멤버가 존재하고, 현재 visible 리스트에 없다면 추가
+    if (
+      mainDisplayMember &&
+      !targets.find((m) => m.user_id === mainDisplayMember.user_id)
+    ) {
+      targets.push(mainDisplayMember);
+    }
+
+    return targets;
+  }, [visibleMembers, mainDisplayMember]);
 
   const hasPrevPage = currentPage > 1;
   const hasNextPage = currentPage < totalPages;
@@ -70,7 +110,7 @@ export default function MemberVideoBar() {
         pauseConsumerIds,
         visibleStreamTracks,
         hiddenUserIds,
-      } = getVideoConsumerIds(members, visibleMembers, currentConsumers);
+      } = getVideoConsumerIds(members, targetStreamMembers, currentConsumers);
 
       const allResumeIds = [...resumeConsumerIds];
 
@@ -127,7 +167,16 @@ export default function MemberVideoBar() {
     };
 
     syncVideoStreams();
-  }, [visibleMembers, socket, recvTransport, device]);
+  }, [
+    targetStreamMembers,
+    socket,
+    recvTransport,
+    device,
+    members,
+    setMemberStream,
+    removeMemberStream,
+    addConsumers,
+  ]);
 
   const onPrevClick = () => {
     if (!hasPrevPage) return;

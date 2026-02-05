@@ -17,10 +17,10 @@ import { useWindowSize } from '@/hooks/useWindowSize';
 export default function MemberVideoBar() {
   const { width } = useWindowSize();
 
-  const MEMBERS_PER_PAGE = useMemo(() => {
+  const membersPerPage = useMemo(() => {
     return getMembersPerPage(width);
   }, [width]);
-  const firstPageMemberCount = MEMBERS_PER_PAGE - 1;
+  const firstPageMemberCount = membersPerPage - 1;
 
   const { members, setMemberStream, removeMemberStream, orderedMemberIds } =
     useMeetingStore();
@@ -32,10 +32,8 @@ export default function MemberVideoBar() {
   const totalPages = useMemo(() => {
     const memberCount = Object.values(members).length;
     if (memberCount <= firstPageMemberCount) return 1;
-    return (
-      1 + Math.ceil((memberCount - firstPageMemberCount) / MEMBERS_PER_PAGE)
-    );
-  }, [members, firstPageMemberCount, MEMBERS_PER_PAGE]);
+    return 1 + Math.ceil((memberCount - firstPageMemberCount) / membersPerPage);
+  }, [members, firstPageMemberCount, membersPerPage]);
 
   if (currentPage > totalPages) {
     setCurrentPage(totalPages);
@@ -51,11 +49,11 @@ export default function MemberVideoBar() {
 
     const start = isFirstPage
       ? 0
-      : (currentPage - 2) * MEMBERS_PER_PAGE + firstPageMemberCount;
-    const end = isFirstPage ? firstPageMemberCount : start + MEMBERS_PER_PAGE;
+      : (currentPage - 2) * membersPerPage + firstPageMemberCount;
+    const end = isFirstPage ? firstPageMemberCount : start + membersPerPage;
 
     return sortedMembers.slice(start, end);
-  }, [sortedMembers, currentPage, firstPageMemberCount, MEMBERS_PER_PAGE]);
+  }, [sortedMembers, currentPage, firstPageMemberCount, membersPerPage]);
 
   const hasPrevPage = currentPage > 1;
   const hasNextPage = currentPage < totalPages;

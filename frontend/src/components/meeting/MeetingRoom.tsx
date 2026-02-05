@@ -46,6 +46,7 @@ export default function MeetingRoom() {
   const {
     setMembers,
     addMember,
+    newAddMember,
     removeMember,
     setMemberStream,
     removeMemberStream,
@@ -170,6 +171,7 @@ export default function MeetingRoom() {
               type: info.type,
               nickname: info.nickname,
               is_paused: false,
+              is_restart : false,
             };
 
             try {
@@ -261,6 +263,7 @@ export default function MeetingRoom() {
         nickname: producerNickname,
         is_paused: isPaused,
         producer_id: producerId,
+        is_restart
       } = producerInfo;
 
       const existingConsumer =
@@ -302,9 +305,37 @@ export default function MeetingRoom() {
         }
       }
     };
+
+    const onCameraProduced = async (producerInfo: ProducerInfo) => {
+      const {
+        user_id: userId,
+        type: producerType,
+        producer_id: producerId,
+        is_restart
+      } = producerInfo;
+
+      const existingConsumer =
+        useMeetingSocketStore.getState().consumers[producerId];
+
+      if ( !existingConsumer ) return;
+      await socket.emitWithAck('signaling:ws:resume', {
+        consumer_id: existingConsumer.id,
+      });
+      const stream = new MediaStream([existingConsumer.track]);
+      setMemberStream(userId, producerType, stream);
+      
+      // 
+      if ( is_restart && producerType === "cam" ) {
+        // 유저가 cam을 켰을때 addMember에 들어갈 요소 추가
+        const member = useMeetingStore.getState().members[userId];
+        newAddMember(member);
+      };
+    };
+    socket.on("room:camera_on", onCameraProduced);
     socket.on('room:alert_produced', onAlertProduced);
 
     return () => {
+      socket.off("room:camera_on", onCameraProduced);
       socket.off('room:alert_produced', onAlertProduced);
     };
   }, [socket, device, recvTransport]);

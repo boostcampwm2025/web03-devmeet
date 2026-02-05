@@ -366,16 +366,11 @@ export default function Canvas() {
   );
 
   // 마우스 이벤트 통합 훅
-  const {
-    handlePointerDown,
-    handlePointerMove,
-    currentDrawing,
-    cancelDrawing,
-    cancelErasing,
-  } = useCanvasMouseEvents({
-    onDeselect: handleCheckDeselect,
-    onSelectionBoxStart: startSelection,
-  });
+  const { handlePointerDown, handlePointerMove, cancelDrawing, cancelErasing } =
+    useCanvasMouseEvents({
+      onDeselect: handleCheckDeselect,
+      onSelectionBoxStart: startSelection,
+    });
 
   // 핀치 줌 훅
   const {
@@ -559,6 +554,8 @@ export default function Canvas() {
         onTouchEnd={handleTouchEnd}
       >
         <Layer
+          name="main-layer"
+          className="main-layer"
           clipX={0}
           clipY={0}
           clipWidth={canvasWidth}
@@ -679,18 +676,6 @@ export default function Canvas() {
               stroke="#0096FF"
               strokeWidth={3}
               cornerRadius={3}
-            />
-          )}
-
-          {/* 그리는 중인 선 */}
-          {currentDrawing && (
-            <Line
-              points={currentDrawing.points}
-              stroke={currentDrawing.stroke}
-              strokeWidth={currentDrawing.strokeWidth}
-              tension={0.5}
-              lineCap="round"
-              lineJoin="round"
             />
           )}
 

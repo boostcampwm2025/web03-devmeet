@@ -98,4 +98,51 @@ describe("codeeditor service 함수의 단위 테스트 진행", () => {
     expect(service.normalizeToBuffers({} as any)).toBeNull();
   });
 
+  test("appendUpdatesToStream: updates 만큼 xAdd 호출하고 마지막 ID를 반환한다", async () => {
+    (redisMock.xAdd as jest.Mock)
+      .mockResolvedValueOnce('1-0')
+      .mockResolvedValueOnce('2-0');
+
+    const last = await service.appendUpdatesToStream(
+      'room-1',
+      [new Uint8Array([1]), new Uint8Array([2])],
+      'user-1',
+    );
+
+    expect(redisMock.xAdd).toHaveBeenCalledTimes(2);
+    expect(last).toBe('2-0');    
+  });
+
+  test('maybeSnapShot: seq % SNAPSHOT_N !== 0 이면 아무것도 안 한다', async () => {
+    repoMock.ensure.mockReturnValue({ seq: 1 }); // SNAPSHOT_N=300이면 미충족
+    await service.maybeSnapShot('room-1');
+
+    expect(repoMock.encodeSnapshot).not.toHaveBeenCalled();
+    expect(redisMock.multi).not.toHaveBeenCalled();
+  });
+
+  test('maybeSnapShot: 조건 충족 시 snapshot 저장 + xTrim을 multi로 실행한다', async () => {
+    repoMock.ensure.mockReturnValue({ seq: 300 }); // 조건 충족
+    repoMock.encodeSnapshot.mockReturnValue(new Uint8Array([7, 8])); // snap
+
+    (redisMock.xRevRange as jest.Mock).mockResolvedValue([{ id: '99-0', message: {} }]);
+
+    const txMock = {
+      hSet: jest.fn().mockReturnThis(),
+      xTrim: jest.fn().mockReturnThis(),
+      exec: jest.fn().mockResolvedValue([1, 1]),
+    };
+    (redisMock.multi as jest.Mock).mockReturnValue(txMock);
+
+    await service.maybeSnapShot('room-1');
+
+    expect(repoMock.encodeSnapshot).toHaveBeenCalledWith('room-1');
+    expect(redisMock.xRevRange).toHaveBeenCalledTimes(1);
+    expect(redisMock.multi).toHaveBeenCalledTimes(1);
+
+    expect(txMock.hSet).toHaveBeenCalledTimes(1);
+    expect(txMock.xTrim).toHaveBeenCalledTimes(1);
+    expect(txMock.exec).toHaveBeenCalledTimes(1);
+  });
+
 });

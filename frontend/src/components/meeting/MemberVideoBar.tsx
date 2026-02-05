@@ -251,7 +251,7 @@ export default function MemberVideoBar() {
     };
 
     const onAlertProduced = (producerInfo: ProducerInfo) => {
-      if (producerInfo.type === 'cam') {
+      if (producerInfo.type === 'cam' && producerInfo.is_restart) {
         checkAndMoveToFront(producerInfo.user_id);
       }
     };

@@ -153,12 +153,92 @@ describe('useMeetingStore', () => {
 
     act(() => {
       addMember(createMember());
-      setSpeaking('user1', true);
+      setSpeaking('user1', true, 6);
     });
 
     const state = useMeetingStore.getState();
 
     expect(state.speakingMembers['user1']).toBe(true);
     expect(state.lastSpeakerId).toBe('user1');
+  });
+
+  describe('producer metadata (memberProducers)', () => {
+    it('setMembers 초기화 시 cam/mic 필드가 복사된다', () => {
+      const { setMembers } = useMeetingStore.getState();
+      const member: MeetingMemberInfo = createMember({
+        cam: {
+          provider_id: 'cam-1',
+          kind: 'video',
+          type: 'cam',
+          is_paused: false,
+        },
+        mic: {
+          provider_id: 'mic-1',
+          kind: 'audio',
+          type: 'mic',
+          is_paused: true,
+        },
+      });
+
+      act(() => {
+        setMembers([member]);
+      });
+
+      const state = useMeetingStore.getState();
+      expect(state.memberProducers['user1']?.cam).toEqual(member.cam);
+      expect(state.memberProducers['user1']?.mic).toEqual(member.mic);
+    });
+
+    it('addMember는 새로운 엔트리를 생성하고 cam/mic을 채운다', () => {
+      const { addMember } = useMeetingStore.getState();
+      const member: MeetingMemberInfo = createMember({
+        user_id: 'user2',
+        cam: {
+          provider_id: 'cam-2',
+          kind: 'video',
+          type: 'cam',
+          is_paused: false,
+        },
+      });
+
+      act(() => {
+        addMember(member);
+      });
+
+      const state = useMeetingStore.getState();
+      expect(state.memberProducers['user2']?.cam).toEqual(member.cam);
+    });
+
+    it('setMemberProducer는 필드만 업데이트 한다', () => {
+      const { setMemberProducer, setMembers } = useMeetingStore.getState();
+      const member: MeetingMemberInfo = createMember({ user_id: 'user3' });
+
+      act(() => {
+        setMembers([member]);
+        setMemberProducer('user3', 'cam', {
+          provider_id: 'cam-x',
+          kind: 'video',
+          type: 'cam',
+          is_paused: true,
+        });
+      });
+
+      const state = useMeetingStore.getState();
+      expect(state.memberProducers['user3']?.cam?.provider_id).toBe('cam-x');
+      expect(state.memberProducers['user3']?.cam?.is_paused).toBe(true);
+    });
+
+    it('removeMember는 관련 producer 정보도 삭제한다', () => {
+      const { addMember, removeMember } = useMeetingStore.getState();
+      const member: MeetingMemberInfo = createMember({ user_id: 'user4' });
+
+      act(() => {
+        addMember(member);
+        removeMember('user4');
+      });
+
+      const state = useMeetingStore.getState();
+      expect(state.memberProducers['user4']).toBeUndefined();
+    });
   });
 });

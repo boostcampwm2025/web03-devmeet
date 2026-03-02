@@ -51,7 +51,7 @@ export interface ProviderToolInfo {
 }
 
 // 회의 멤버 관련 타입
-interface MemberProviderInfo {
+export interface MemberProviderInfo {
   provider_id: string;
   kind: 'audio' | 'video';
   type: 'mic' | 'cam';
@@ -85,7 +85,7 @@ export interface ProducerInfo {
   type: MediaType;
   nickname: string;
   is_paused: boolean;
-  is_restart : boolean;
+  is_restart: boolean;
 }
 
 export type MemberStream = Partial<Record<MediaType, MediaStream>>;

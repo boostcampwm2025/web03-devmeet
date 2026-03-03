@@ -54,7 +54,7 @@ export default function InteractionLayer({
 
   return (
     <>
-      {/* 화살표 드래그 중 실시간 임시 렌더링 (60fps 최적화) */}
+      {/* 화살표 드래그 중 임시 렌더링 */}
       {draggingPoints && selectedItem && (
         <RenderItem
           item={

@@ -43,6 +43,7 @@ import RemoteSelectionIndicator from '@/components/whiteboard/remote/RemoteSelec
 import ArrowHandles from '@/components/whiteboard/items/arrow/ArrowHandles';
 import SelectionBox from '@/components/whiteboard/SelectionBox';
 import Portal from '@/components/common/Portal';
+import BackgroundLayer from '@/components/whiteboard/layers/BackgroundLayer';
 
 const GEOMETRY_KEYS = ['x', 'y', 'width', 'height', 'rotation'] as const;
 
@@ -600,17 +601,9 @@ export default function Canvas() {
           clipWidth={canvasWidth}
           clipHeight={canvasHeight}
         >
-          {/* Canvas 경계 */}
-          <Rect
-            name="bg-rect"
-            x={0}
-            y={0}
-            width={canvasWidth}
-            height={canvasHeight}
-            fill="white"
-            stroke="gray"
-            strokeWidth={2}
-            listening={true}
+          <BackgroundLayer
+            canvasWidth={canvasWidth}
+            canvasHeight={canvasHeight}
           />
 
           {/* 아이템 렌더링 */}

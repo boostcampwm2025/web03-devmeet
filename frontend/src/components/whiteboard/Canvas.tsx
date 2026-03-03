@@ -34,13 +34,12 @@ import { usePinchZoom } from '@/hooks/usePinchZoom';
 import TextArea from '@/components/whiteboard/items/text/TextArea';
 import ShapeTextArea from '@/components/whiteboard/items/shape/ShapeTextArea';
 import ItemTransformer from '@/components/whiteboard/controls/ItemTransformer';
-import RemoteSelectionLayer from '@/components/whiteboard/remote/RemoteSelectionLayer';
-import RemoteSelectionIndicator from '@/components/whiteboard/remote/RemoteSelectionIndicator';
 import ArrowHandles from '@/components/whiteboard/items/arrow/ArrowHandles';
 import SelectionBox from '@/components/whiteboard/SelectionBox';
 import Portal from '@/components/common/Portal';
 import BackgroundLayer from '@/components/whiteboard/layers/BackgroundLayer';
 import ItemRenderingLayer from '@/components/whiteboard/layers/ItemRenderingLayer';
+import CollaborationLayer from '@/components/whiteboard/layers/CollaborationLayer';
 
 const GEOMETRY_KEYS = ['x', 'y', 'width', 'height', 'rotation'] as const;
 
@@ -654,22 +653,10 @@ export default function Canvas() {
           {/* 선택 박스 */}
           <SelectionBox />
 
-          {/* 내 멀티 선택 개별 박스 */}
-          {selectedIds.length > 1 &&
-            selectedIds.map((itemId) => (
-              <RemoteSelectionIndicator
-                key={`my-selection-${itemId}`}
-                selectedId={itemId}
-                userColor="#0369A1"
-                items={items}
-                stageRef={stageRef}
-              />
-            ))}
-
-          {/* 다른 사용자의 선택 표시 */}
-          <RemoteSelectionLayer
+          <CollaborationLayer
             myUserId={myUserId}
-            selectedId={singleSelectedId}
+            selectedIds={selectedIds}
+            singleSelectedId={singleSelectedId}
             items={items}
             stageRef={stageRef}
           />

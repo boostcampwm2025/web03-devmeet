@@ -3,7 +3,7 @@
 import { useRef, useState, useMemo, useEffect, useCallback } from 'react';
 
 import Konva from 'konva';
-import { Stage, Layer, Rect, Line } from 'react-konva';
+import { Stage, Layer, Rect } from 'react-konva';
 
 import type {
   WhiteboardItem,
@@ -16,10 +16,7 @@ import { useWhiteboardSharedStore } from '@/store/useWhiteboardSharedStore';
 import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
 import { useWhiteboardAwarenessStore } from '@/store/useWhiteboardAwarenessStore';
 import { cn } from '@/utils/cn';
-import {
-  updateBoundArrows,
-  getDraggingArrowPoints,
-} from '@/utils/arrowBinding';
+import { updateBoundArrows } from '@/utils/arrowBinding';
 import { getViewportRect, filterVisibleItems } from '@/utils/viewport';
 
 import { useItemActions } from '@/hooks/useItemActions';
@@ -34,7 +31,6 @@ import { useSelectionBox } from '@/hooks/useSelectionBox';
 import { useMultiDrag } from '@/hooks/useMultiDrag';
 import { usePinchZoom } from '@/hooks/usePinchZoom';
 
-import RenderItem from '@/components/whiteboard/items/RenderItem';
 import TextArea from '@/components/whiteboard/items/text/TextArea';
 import ShapeTextArea from '@/components/whiteboard/items/shape/ShapeTextArea';
 import ItemTransformer from '@/components/whiteboard/controls/ItemTransformer';
@@ -44,6 +40,7 @@ import ArrowHandles from '@/components/whiteboard/items/arrow/ArrowHandles';
 import SelectionBox from '@/components/whiteboard/SelectionBox';
 import Portal from '@/components/common/Portal';
 import BackgroundLayer from '@/components/whiteboard/layers/BackgroundLayer';
+import ItemRenderingLayer from '@/components/whiteboard/layers/ItemRenderingLayer';
 
 const GEOMETRY_KEYS = ['x', 'y', 'width', 'height', 'rotation'] as const;
 
@@ -607,83 +604,26 @@ export default function Canvas() {
           />
 
           {/* 아이템 렌더링 */}
-          {visibleItems.map((item) => {
-            let displayItem = item;
-
-            const multiDragPos = getMultiDragPosition(item.id);
-            if (multiDragPos && 'x' in item && 'y' in item) {
-              displayItem = {
-                ...item,
-                x: multiDragPos.x,
-                y: multiDragPos.y,
-              } as WhiteboardItem;
-            }
-
-            if (
-              !multiDragPos &&
-              item.type === 'arrow' &&
-              localDraggingId &&
-              localDraggingPos &&
-              (item.startBinding?.elementId === localDraggingId ||
-                item.endBinding?.elementId === localDraggingId)
-            ) {
-              const targetShape = items.find(
-                (it) => it.id === localDraggingId,
-              ) as ShapeItem;
-              if (targetShape) {
-                const tempPoints = getDraggingArrowPoints(
-                  item as ArrowItem,
-                  localDraggingId,
-                  localDraggingPos.x,
-                  localDraggingPos.y,
-                  targetShape,
-                  localDraggingPos.width,
-                  localDraggingPos.height,
-                  localDraggingPos.rotation,
-                );
-                if (tempPoints) {
-                  displayItem = {
-                    ...displayItem,
-                    points: tempPoints,
-                  } as WhiteboardItem;
-                }
-              }
-            }
-
-            if (
-              displayItem.id === singleSelectedId &&
-              (displayItem.type === 'arrow' || displayItem.type === 'line') &&
-              draggingPoints
-            ) {
-              displayItem = {
-                ...displayItem,
-                points: draggingPoints,
-              } as WhiteboardItem;
-            }
-
-            return (
-              <RenderItem
-                key={item.id}
-                item={displayItem}
-                isSelected={selectedIds.includes(item.id)}
-                onSelect={handleSelectItem}
-                onChange={(newAttributes) =>
-                  handleItemChange(item.id, newAttributes)
-                }
-                onArrowDblClick={handleArrowDblClick}
-                onShapeDblClick={handleShapeDblClick}
-                onDragStart={() => {
-                  if (item.type === 'arrow' || item.type === 'line') {
-                    setIsDraggingArrow(true);
-                  }
-                  startMultiDrag(item.id);
-                }}
-                onDragMove={handleDragMoveItem}
-                onTransformMove={handleTransformMoveItem}
-                onDragEnd={handleDragEndItem}
-              />
-            );
-          })}
+          <ItemRenderingLayer
+            items={items}
+            visibleItems={visibleItems}
+            selectedIds={selectedIds}
+            singleSelectedId={singleSelectedId}
+            draggingPoints={draggingPoints}
+            isDraggingArrow={isDraggingArrow}
+            localDraggingId={localDraggingId}
+            localDraggingPos={localDraggingPos}
+            getMultiDragPosition={getMultiDragPosition}
+            handleSelectItem={handleSelectItem}
+            handleItemChange={handleItemChange}
+            handleArrowDblClick={handleArrowDblClick}
+            handleShapeDblClick={handleShapeDblClick}
+            setIsDraggingArrow={setIsDraggingArrow}
+            startMultiDrag={startMultiDrag}
+            handleDragMoveItem={handleDragMoveItem}
+            handleTransformMoveItem={handleTransformMoveItem}
+            handleDragEndItem={handleDragEndItem}
+          />
           {isArrowOrLineSelected && selectedItem && !isDraggingArrow && (
             <ArrowHandles
               arrow={selectedItem as ArrowItem}

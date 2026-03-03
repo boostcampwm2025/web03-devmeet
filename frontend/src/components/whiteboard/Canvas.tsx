@@ -5,12 +5,7 @@ import { useRef, useState, useMemo, useEffect, useCallback } from 'react';
 import Konva from 'konva';
 import { Stage, Layer, Rect } from 'react-konva';
 
-import type {
-  WhiteboardItem,
-  TextItem,
-  ArrowItem,
-  ShapeItem,
-} from '@/types/whiteboard';
+import type { WhiteboardItem, ArrowItem, ShapeItem } from '@/types/whiteboard';
 
 import { useWhiteboardSharedStore } from '@/store/useWhiteboardSharedStore';
 import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
@@ -31,15 +26,13 @@ import { useSelectionBox } from '@/hooks/useSelectionBox';
 import { useMultiDrag } from '@/hooks/useMultiDrag';
 import { usePinchZoom } from '@/hooks/usePinchZoom';
 
-import TextArea from '@/components/whiteboard/items/text/TextArea';
-import ShapeTextArea from '@/components/whiteboard/items/shape/ShapeTextArea';
 import ItemTransformer from '@/components/whiteboard/controls/ItemTransformer';
 import ArrowHandles from '@/components/whiteboard/items/arrow/ArrowHandles';
 import SelectionBox from '@/components/whiteboard/SelectionBox';
-import Portal from '@/components/common/Portal';
 import BackgroundLayer from '@/components/whiteboard/layers/BackgroundLayer';
 import ItemRenderingLayer from '@/components/whiteboard/layers/ItemRenderingLayer';
 import CollaborationLayer from '@/components/whiteboard/layers/CollaborationLayer';
+import TextEditorLayer from '@/components/whiteboard/layers/TextEditorLayer';
 
 const GEOMETRY_KEYS = ['x', 'y', 'width', 'height', 'rotation'] as const;
 
@@ -251,15 +244,6 @@ export default function Canvas() {
       stage.fire('stageTransformChange');
     },
     [handleWheel],
-  );
-
-  const editingItem = useMemo(
-    () =>
-      items.find((item) => item.id === editingTextId) as
-        | TextItem
-        | ShapeItem
-        | undefined,
-    [items, editingTextId],
   );
 
   const singleSelectedId = selectedIds.length === 1 ? selectedIds[0] : null;
@@ -670,49 +654,14 @@ export default function Canvas() {
         </Layer>
       </Stage>
 
-      {/* 텍스트 편집 모드 */}
-      {editingTextId && editingItem && editingItem.type === 'text' && (
-        <Portal>
-          <TextArea
-            textId={editingTextId}
-            textItem={editingItem as TextItem}
-            stageRef={stageRef}
-            onChange={(newText) => {
-              updateItem(editingTextId, { text: newText });
-            }}
-            onClose={() => {
-              setEditingTextId(null);
-              clearSelection();
-            }}
-          />
-        </Portal>
-      )}
-
-      {/* 도형 텍스트 편집 모드 */}
-      {editingTextId && editingItem && editingItem.type === 'shape' && (
-        <Portal>
-          <ShapeTextArea
-            shapeId={editingTextId}
-            shapeItem={editingItem as ShapeItem}
-            stageRef={stageRef}
-            onChange={(newText) => {
-              updateItem(editingTextId, { text: newText });
-            }}
-            onClose={() => {
-              setEditingTextId(null);
-              clearSelection();
-            }}
-            onSizeChange={(width, height, newY, newX, newText) => {
-              const updates: Partial<ShapeItem> = { width, height };
-              if (newY !== undefined) updates.y = newY;
-              if (newX !== undefined) updates.x = newX;
-              if (newText !== undefined) updates.text = newText;
-
-              updateItem(editingTextId, updates);
-            }}
-          />
-        </Portal>
-      )}
+      <TextEditorLayer
+        editingTextId={editingTextId}
+        items={items}
+        stageRef={stageRef}
+        updateItem={updateItem}
+        setEditingTextId={setEditingTextId}
+        clearSelection={clearSelection}
+      />
     </div>
   );
 }

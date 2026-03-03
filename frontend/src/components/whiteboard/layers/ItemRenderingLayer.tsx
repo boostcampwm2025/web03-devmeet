@@ -3,15 +3,13 @@ import Konva from 'konva';
 
 import type { WhiteboardItem, ShapeItem, ArrowItem } from '@/types/whiteboard';
 import { getDraggingArrowPoints } from '@/utils/arrowBinding';
-
+import { useItemActions } from '@/hooks/useItemActions';
 import RenderItem from '@/components/whiteboard/items/RenderItem';
 
 interface ItemRenderingLayerProps {
   items: WhiteboardItem[];
   visibleItems: WhiteboardItem[];
   selectedIds: string[];
-  singleSelectedId: string | null;
-  draggingPoints: number[] | null;
   isDraggingArrow: boolean;
   localDraggingId: string | null;
   localDraggingPos: {
@@ -30,7 +28,6 @@ interface ItemRenderingLayerProps {
     id: string,
     newAttributes: Partial<WhiteboardItem>,
   ) => void;
-  handleArrowDblClick: (id: string) => void;
   handleShapeDblClick: (id: string) => void;
   setIsDraggingArrow: (isDragging: boolean) => void;
   startMultiDrag: (id: string) => void;
@@ -49,15 +46,12 @@ interface ItemRenderingLayerProps {
 export default function ItemRenderingLayer({
   items,
   visibleItems,
-  singleSelectedId,
-  draggingPoints,
   localDraggingId,
   localDraggingPos,
   getMultiDragPosition,
   selectedIds,
   handleSelectItem,
   handleItemChange,
-  handleArrowDblClick,
   handleShapeDblClick,
   setIsDraggingArrow,
   startMultiDrag,
@@ -65,6 +59,7 @@ export default function ItemRenderingLayer({
   handleTransformMoveItem,
   handleDragEndItem,
 }: ItemRenderingLayerProps) {
+  const { insertArrowControlPoint } = useItemActions();
   return (
     <>
       {visibleItems.map((item) => {
@@ -110,17 +105,6 @@ export default function ItemRenderingLayer({
           }
         }
 
-        if (
-          displayItem.id === singleSelectedId &&
-          (displayItem.type === 'arrow' || displayItem.type === 'line') &&
-          draggingPoints
-        ) {
-          displayItem = {
-            ...displayItem,
-            points: draggingPoints,
-          } as WhiteboardItem;
-        }
-
         return (
           <RenderItem
             key={item.id}
@@ -130,7 +114,7 @@ export default function ItemRenderingLayer({
             onChange={(newAttributes) =>
               handleItemChange(item.id, newAttributes)
             }
-            onArrowDblClick={handleArrowDblClick}
+            onArrowDblClick={insertArrowControlPoint}
             onShapeDblClick={handleShapeDblClick}
             onDragStart={() => {
               if (item.type === 'arrow' || item.type === 'line') {

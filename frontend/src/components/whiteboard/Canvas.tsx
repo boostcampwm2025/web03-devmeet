@@ -1,38 +1,38 @@
 'use client';
 
-import { useRef, useState, useMemo, useEffect, useCallback } from 'react';
+import { useRef, useState, useMemo, useCallback } from 'react';
 
 import Konva from 'konva';
 import { Stage, Layer } from 'react-konva';
 
-import type { WhiteboardItem, ArrowItem, ShapeItem } from '@/types/whiteboard';
+import type { WhiteboardItem, ShapeItem } from '@/types/whiteboard';
 
 import { useWhiteboardSharedStore } from '@/store/useWhiteboardSharedStore';
 import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
+import { useWhiteboardAwarenessStore } from '@/store/useWhiteboardAwarenessStore';
 import { cn } from '@/utils/cn';
 import { updateBoundArrows } from '@/utils/arrowBinding';
-import { getViewportRect, filterVisibleItems } from '@/utils/viewport';
 
 import { useItemActions } from '@/hooks/useItemActions';
 import { useElementSize } from '@/hooks/useElementSize';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useCanvasInteraction } from '@/hooks/useCanvasInteraction';
-import { useArrowHandles } from '@/hooks/useArrowHandles';
-import { useCanvasMouseEvents } from '@/hooks/useCanvasMouseEvents';
 import { useCanvasShortcuts } from '@/hooks/useCanvasShortcuts';
 import { useAddWhiteboardItem } from '@/hooks/useAddWhiteboardItem';
-import { useSelectionBox } from '@/hooks/useSelectionBox';
 import { useMultiDrag } from '@/hooks/useMultiDrag';
-import { usePinchZoom } from '@/hooks/usePinchZoom';
+import { useViewportController } from '@/hooks/useViewportController';
+import { useCanvasGlobalEvents } from '@/hooks/useCanvasGlobalEvents';
 
 import BackgroundLayer from '@/components/whiteboard/layers/BackgroundLayer';
 import ItemRenderingLayer from '@/components/whiteboard/layers/ItemRenderingLayer';
+import CollaborationLayer from '@/components/whiteboard/layers/CollaborationLayer';
 import TextEditorLayer from '@/components/whiteboard/layers/TextEditorLayer';
 import InteractionLayer from '@/components/whiteboard/layers/InteractionLayer';
 
 const GEOMETRY_KEYS = ['x', 'y', 'width', 'height', 'rotation'] as const;
 
 export default function Canvas() {
+  const myUserId = useWhiteboardAwarenessStore((state) => state.myUserId);
   const canvasWidth = useWhiteboardSharedStore((state) => state.canvasWidth);
   const canvasHeight = useWhiteboardSharedStore((state) => state.canvasHeight);
   const items = useWhiteboardSharedStore((state) => state.items);
@@ -52,18 +52,12 @@ export default function Canvas() {
   const setEditingTextId = useWhiteboardLocalStore(
     (state) => state.setEditingTextId,
   );
-  const setViewportSize = useWhiteboardLocalStore(
-    (state) => state.setViewportSize,
-  );
-  const setStageScale = useWhiteboardLocalStore((state) => state.setStageScale);
-  const setStagePos = useWhiteboardLocalStore((state) => state.setStagePos);
   const cursorMode = useWhiteboardLocalStore((state) => state.cursorMode);
 
   const { processImageFile, getCanvasPointFromEvent } = useAddWhiteboardItem();
 
   const stageRef = useRef<Konva.Stage | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const isInitialMount = useRef(true);
   const [isDraggingArrow, setIsDraggingArrow] = useState(false);
   const [isDraggingCanvas, setIsDraggingCanvas] = useState(false);
   const [localDraggingId, setLocalDraggingId] = useState<string | null>(null);
@@ -84,162 +78,32 @@ export default function Canvas() {
     getMultiDragPosition,
   } = useMultiDrag({ selectedIds, items });
 
-  // Viewport culling을 위한 상태
-  const [viewportRect, setViewportRect] = useState<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  } | null>(null);
-
   const size = useElementSize(containerRef);
 
-  // 초기 Stage 위치 설정
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (
-      !stage ||
-      !isInitialMount.current ||
-      size.width === 0 ||
-      size.height === 0
-    )
-      return;
-
-    // 캔버스를 화면 정가운데 배치
-    const centerPos = {
-      x: (size.width - canvasWidth) / 2,
-      y: (size.height - canvasHeight) / 2,
-    };
-
-    stage.scale({ x: 1, y: 1 });
-    stage.position(centerPos);
-    stage.batchDraw();
-    setViewportSize(size.width, size.height);
-    setStagePos(centerPos);
-    setStageScale(1);
-
-    useWhiteboardLocalStore.getState().setStageRef(stageRef);
-
-    isInitialMount.current = false;
-  }, [
-    size.width,
-    size.height,
-    canvasWidth,
-    canvasHeight,
-    setViewportSize,
-    setStagePos,
-    setStageScale,
-  ]);
-
-  // viewport 업데이트
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    const updateViewport = () => {
-      setViewportRect(getViewportRect(stage));
-    };
-
-    // 초기 viewport 설정
-    updateViewport();
-
-    // Stage 이동/줌 시 viewport 업데이트
-    let rafId: number;
-    const throttledUpdate = () => {
-      if (rafId) return;
-      rafId = requestAnimationFrame(() => {
-        updateViewport();
-        rafId = 0;
-      });
-    };
-
-    stage.on('dragmove', throttledUpdate);
-    stage.on('wheel', throttledUpdate);
-
-    return () => {
-      stage.off('dragmove', throttledUpdate);
-      stage.off('wheel', throttledUpdate);
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, []);
-
-  // 화면에 보이는 아이템만 필터링
-  const visibleItems = useMemo(() => {
-    if (!viewportRect) return items;
-    const filtered = filterVisibleItems(items, viewportRect);
-
-    return filtered;
-  }, [items, viewportRect]);
-
-  // 줌 레벨에 따른 pixelRatio 조절
-  const [pixelRatio, setPixelRatio] = useState(window.devicePixelRatio);
-
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    const updatePixelRatio = () => {
-      const scale = stage.scaleX();
-      let ratio: number;
-      if (scale >= 1.5) ratio = window.devicePixelRatio;
-      else if (scale >= 1) ratio = 1.5;
-      else if (scale >= 0.5) ratio = 1;
-      else if (scale >= 0.3) ratio = 0.5;
-      else ratio = 0.25;
-
-      setPixelRatio(ratio);
-    };
-
-    updatePixelRatio();
-
-    stage.on('wheel', updatePixelRatio);
-
-    return () => {
-      stage.off('wheel', updatePixelRatio);
-    };
-  }, []);
-
-  // viewport 크기를 store에 업데이트
-  useEffect(() => {
-    if (size.width > 0 && size.height > 0) {
-      setViewportSize(size.width, size.height);
-    }
-  }, [size.width, size.height, setViewportSize]);
+  // Viewport 관련 로직 (스케일, 줌, 패닝 뷰포트 컬링)
+  const { visibleItems, pixelRatio } = useViewportController({
+    stageRef,
+    size,
+    items,
+  });
 
   const { handleWheel, handleDragMove, handleDragEnd } = useCanvasInteraction(
     size.width,
     size.height,
   );
 
-  const handleWheelWithEvent = useCallback(
-    (e: Konva.KonvaEventObject<WheelEvent>) => {
-      handleWheel(e);
-
-      const stage = stageRef.current;
-      if (!stage) return;
-
-      // wheel 후 커서 위치 업데이트
-      const pointerPos = stage.getPointerPosition();
-      if (pointerPos) {
-        const transform = stage.getAbsoluteTransform().copy().invert();
-        const canvasPos = transform.point(pointerPos);
-
-        const awareness = useWhiteboardSharedStore.getState().awareness;
-        if (awareness) {
-          const currentState = awareness.getLocalState();
-          if (currentState) {
-            awareness.setLocalState({
-              ...currentState,
-              cursor: { x: canvasPos.x, y: canvasPos.y },
-            });
-          }
-        }
-      }
-
-      stage.fire('stageTransformChange');
-    },
-    [handleWheel],
-  );
+  const {
+    isDraggable,
+    handlePointerDown,
+    handlePointerMove,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    handleWheelWithEvent,
+  } = useCanvasGlobalEvents({
+    stageRef,
+    handleWheel,
+  });
 
   const singleSelectedId = selectedIds.length === 1 ? selectedIds[0] : null;
   const selectedItem = useMemo(
@@ -254,51 +118,14 @@ export default function Canvas() {
     !!singleSelectedId &&
     (selectedItem?.type === 'arrow' || selectedItem?.type === 'line');
 
-  // 화살표/선 훅
-  const {
-    selectedHandleIndex,
-    setSelectedHandleIndex,
-    handleHandleClick,
-    handleArrowStartDrag,
-    handleArrowControlPointDrag,
-    handleArrowEndDrag,
-    handleHandleDragEnd,
-    handleArrowDblClick,
-    draggingPoints,
-    snapIndicator,
-    deleteControlPoint,
-  } = useArrowHandles({
-    arrow: isArrowOrLineSelected ? (selectedItem as ArrowItem) : null,
-    items,
-    stageRef,
-    updateItem,
-  });
-
   // 키보드 단축키 훅
   useCanvasShortcuts({
     isArrowOrLineSelected,
-    selectedHandleIndex,
-    deleteControlPoint,
   });
 
   // 도형 더블클릭 핸들러 (텍스트 편집 모드)
   const handleShapeDblClick = (id: string) => {
     setEditingTextId(id);
-  };
-
-  // 선택 해제 핸들러
-  const handleCheckDeselect = (
-    e: Konva.KonvaEventObject<MouseEvent | TouchEvent>,
-  ) => {
-    if (editingTextId) return;
-
-    const clickedOnEmpty =
-      e.target === e.target.getStage() || e.target.hasName('bg-rect');
-
-    if (clickedOnEmpty) {
-      clearSelection();
-      setSelectedHandleIndex(null);
-    }
   };
 
   // 드래그 앤 드롭
@@ -338,16 +165,11 @@ export default function Canvas() {
 
       if (selectedIds.length > 0) {
         clearSelection();
-        setSelectedHandleIndex(null);
+        useWhiteboardLocalStore.getState().setSelectedHandleIndex(null);
       }
     },
     !editingTextId && selectedIds.length > 0,
   );
-
-  const { startSelection, cancelSelection } = useSelectionBox({
-    stageRef,
-    enabled: cursorMode === 'select',
-  });
 
   const handleSelectItem = useCallback(
     (id: string, e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
@@ -376,67 +198,6 @@ export default function Canvas() {
       selectOnly(id);
     },
     [addToSelection, selectOnly, toggleSelection, selectedIds],
-  );
-
-  // 마우스 이벤트 통합 훅
-  const { handlePointerDown, handlePointerMove, cancelDrawing, cancelErasing } =
-    useCanvasMouseEvents({
-      onDeselect: handleCheckDeselect,
-      onSelectionBoxStart: startSelection,
-    });
-
-  // 핀치 줌 훅
-  const {
-    isActive: isPinching,
-    handleTouchStart: handlePinchStart,
-    handleTouchMove: handlePinchMove,
-    handleTouchEnd: handlePinchEnd,
-  } = usePinchZoom({
-    stageRef,
-    onScaleChange: setStageScale,
-    onPositionChange: setStagePos,
-    onPinchStart: () => {
-      // 핀치 시작 시 그리기/지우개/선택박스 취소
-      cancelDrawing();
-      cancelErasing();
-      cancelSelection();
-      // 아이템 선택 해제
-      clearSelection();
-    },
-  });
-
-  // 캔버스 드래그 가능 여부 (핀치 줌 중에는 비활성화함)
-  const isDraggable =
-    useWhiteboardLocalStore((state) => state.cursorMode === 'move') &&
-    !isPinching;
-
-  const handleTouchStart = useCallback(
-    (e: Konva.KonvaEventObject<TouchEvent>) => {
-      if (e.evt.touches.length === 2) {
-        handlePinchStart(e.evt);
-      } else {
-        handlePointerDown(e);
-      }
-    },
-    [handlePinchStart, handlePointerDown],
-  );
-
-  const handleTouchMove = useCallback(
-    (e: Konva.KonvaEventObject<TouchEvent>) => {
-      if (e.evt.touches.length === 2) {
-        handlePinchMove(e.evt);
-      } else {
-        handlePointerMove(e);
-      }
-    },
-    [handlePinchMove, handlePointerMove],
-  );
-
-  const handleTouchEnd = useCallback(
-    (e: Konva.KonvaEventObject<TouchEvent>) => {
-      handlePinchEnd(e.evt);
-    },
-    [handlePinchEnd],
   );
 
   const handleItemChange = useCallback(
@@ -586,21 +347,25 @@ export default function Canvas() {
             items={items}
             visibleItems={visibleItems}
             selectedIds={selectedIds}
-            singleSelectedId={singleSelectedId}
-            draggingPoints={draggingPoints}
             isDraggingArrow={isDraggingArrow}
             localDraggingId={localDraggingId}
             localDraggingPos={localDraggingPos}
             getMultiDragPosition={getMultiDragPosition}
             handleSelectItem={handleSelectItem}
             handleItemChange={handleItemChange}
-            handleArrowDblClick={handleArrowDblClick}
             handleShapeDblClick={handleShapeDblClick}
             setIsDraggingArrow={setIsDraggingArrow}
             startMultiDrag={startMultiDrag}
             handleDragMoveItem={handleDragMoveItem}
             handleTransformMoveItem={handleTransformMoveItem}
             handleDragEndItem={handleDragEndItem}
+          />
+          <CollaborationLayer
+            myUserId={myUserId}
+            items={items}
+            selectedIds={selectedIds}
+            singleSelectedId={singleSelectedId}
+            stageRef={stageRef}
           />
           <InteractionLayer
             isArrowOrLineSelected={isArrowOrLineSelected}
@@ -609,14 +374,7 @@ export default function Canvas() {
             items={items}
             stageRef={stageRef}
             isDraggingArrow={isDraggingArrow}
-            selectedHandleIndex={selectedHandleIndex}
-            draggingPoints={draggingPoints}
-            snapIndicator={snapIndicator}
-            handleHandleClick={handleHandleClick}
-            handleArrowStartDrag={handleArrowStartDrag}
-            handleArrowControlPointDrag={handleArrowControlPointDrag}
-            handleArrowEndDrag={handleArrowEndDrag}
-            handleHandleDragEnd={handleHandleDragEnd}
+            setIsDraggingArrow={setIsDraggingArrow}
           />
         </Layer>
       </Stage>

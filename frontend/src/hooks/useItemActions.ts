@@ -2,11 +2,14 @@ import { v4 as uuidv4 } from 'uuid';
 import * as Y from 'yjs';
 
 import { useWhiteboardSharedStore } from '@/store/useWhiteboardSharedStore';
+import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
 } from '@/components/whiteboard/constants/canvas';
 import { TEXT_SIZE_PRESETS } from '@/constants/textPresets';
+import { pointToSegmentDistance } from '@/utils/arrow';
+import { getWorldPointerPosition } from '@/utils/coordinate';
 
 import type {
   WhiteboardItem,
@@ -342,6 +345,71 @@ export function useItemActions() {
     yItems.doc.transact(fn, yjsOrigin);
   };
 
+  const deleteArrowControlPoint = (arrowId: string, handleIndex: number) => {
+    if (!yItems || !yItems.doc) return false;
+
+    const yMaps = yItems.toArray();
+    const index = yMaps.findIndex((yMap) => yMap.get('id') === arrowId);
+    if (index === -1) return false;
+
+    const store = useWhiteboardSharedStore.getState();
+    const targetItem = store.items.find((item) => item.id === arrowId);
+    if (!targetItem || targetItem.type !== 'arrow') return false;
+
+    if (handleIndex >= 2 && handleIndex < targetItem.points.length - 2) {
+      const newPoints = [...targetItem.points];
+      newPoints.splice(handleIndex, 2);
+
+      if (newPoints.length >= 4) {
+        updateItem(arrowId, { points: newPoints });
+        useWhiteboardLocalStore.getState().setSelectedHandleIndex(null);
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const insertArrowControlPoint = (arrowId: string) => {
+    const store = useWhiteboardSharedStore.getState();
+    const localStore = useWhiteboardLocalStore.getState();
+    const targetItem = store.items.find((item) => item.id === arrowId);
+
+    if (!targetItem || targetItem.type !== 'arrow') return;
+
+    const stage = localStore.stageRef?.current;
+    if (!stage) return;
+
+    const worldPos = getWorldPointerPosition(stage);
+    const worldX = worldPos.x;
+    const worldY = worldPos.y;
+
+    let minDistance = Infinity;
+    let insertIndex = 2;
+
+    for (let i = 0; i < targetItem.points.length - 2; i += 2) {
+      const x1 = targetItem.points[i];
+      const y1 = targetItem.points[i + 1];
+      const x2 = targetItem.points[i + 2];
+      const y2 = targetItem.points[i + 3];
+
+      const distance = pointToSegmentDistance(worldX, worldY, x1, y1, x2, y2);
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        insertIndex = i + 2;
+      }
+    }
+
+    const newPoints = [
+      ...targetItem.points.slice(0, insertIndex),
+      worldX,
+      worldY,
+      ...targetItem.points.slice(insertIndex),
+    ];
+
+    updateItem(arrowId, { points: newPoints });
+  };
+
   return {
     addText,
     addArrow,
@@ -358,5 +426,7 @@ export function useItemActions() {
     bringForward,
     sendBackward,
     performTransaction,
+    deleteArrowControlPoint,
+    insertArrowControlPoint,
   };
 }

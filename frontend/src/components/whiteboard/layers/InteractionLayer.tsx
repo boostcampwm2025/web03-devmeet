@@ -2,11 +2,15 @@ import React from 'react';
 import Konva from 'konva';
 import { Rect } from 'react-konva';
 
-import type { WhiteboardItem, ArrowItem } from '@/types/whiteboard';
+import type { WhiteboardItem, ArrowItem, LineItem } from '@/types/whiteboard';
+
+import { useArrowHandles } from '@/hooks/useArrowHandles';
+import { useItemActions } from '@/hooks/useItemActions';
 
 import ItemTransformer from '@/components/whiteboard/controls/ItemTransformer';
 import ArrowHandles from '@/components/whiteboard/items/arrow/ArrowHandles';
 import SelectionBox from '@/components/whiteboard/SelectionBox';
+import RenderItem from '@/components/whiteboard/items/RenderItem';
 
 interface InteractionLayerProps {
   isArrowOrLineSelected: boolean;
@@ -15,26 +19,7 @@ interface InteractionLayerProps {
   items: WhiteboardItem[];
   stageRef: React.RefObject<Konva.Stage | null>;
   isDraggingArrow: boolean;
-  selectedHandleIndex: number | null;
-  draggingPoints: number[] | null;
-  snapIndicator: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    rotation?: number;
-  } | null;
-  handleHandleClick: (
-    e: Konva.KonvaEventObject<MouseEvent>,
-    index: number,
-  ) => void;
-  handleArrowStartDrag: (e: Konva.KonvaEventObject<DragEvent>) => void;
-  handleArrowControlPointDrag: (
-    pointIndex: number,
-    e: Konva.KonvaEventObject<DragEvent>,
-  ) => void;
-  handleArrowEndDrag: (e: Konva.KonvaEventObject<DragEvent>) => void;
-  handleHandleDragEnd: (handleType: 'start' | 'end' | 'mid') => void;
+  setIsDraggingArrow: (isDragging: boolean) => void;
 }
 
 export default function InteractionLayer({
@@ -44,17 +29,48 @@ export default function InteractionLayer({
   items,
   stageRef,
   isDraggingArrow,
-  selectedHandleIndex,
-  draggingPoints,
-  snapIndicator,
-  handleHandleClick,
-  handleArrowStartDrag,
-  handleArrowControlPointDrag,
-  handleArrowEndDrag,
-  handleHandleDragEnd,
+  setIsDraggingArrow,
 }: InteractionLayerProps) {
+  const { updateItem } = useItemActions();
+  const {
+    selectedHandleIndex,
+    handleHandleClick,
+    handleArrowStartDrag,
+    handleArrowControlPointDrag,
+    handleArrowEndDrag,
+    handleHandleDragEnd,
+    draggingPoints,
+    snapIndicator,
+  } = useArrowHandles({
+    arrow: isArrowOrLineSelected ? (selectedItem as ArrowItem) : null,
+    items,
+    updateItem,
+    setIsDraggingArrow,
+  });
+
   return (
     <>
+      {/* 화살표 드래그 중 실시간 임시 렌더링 (60fps 최적화) */}
+      {draggingPoints && selectedItem && (
+        <RenderItem
+          item={
+            {
+              ...selectedItem,
+              points: draggingPoints,
+            } as ArrowItem | LineItem
+          }
+          isSelected={true}
+          onSelect={() => {}}
+          onChange={() => {}}
+          onArrowDblClick={() => {}}
+          onShapeDblClick={() => {}}
+          onDragStart={() => {}}
+          onDragMove={() => {}}
+          onTransformMove={() => {}}
+          onDragEnd={() => {}}
+        />
+      )}
+
       {/* 화살표 핸들 */}
       {isArrowOrLineSelected && selectedItem && !isDraggingArrow && (
         <ArrowHandles

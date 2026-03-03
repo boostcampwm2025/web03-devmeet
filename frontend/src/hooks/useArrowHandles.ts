@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react';
-import Konva from 'konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import type {
   ArrowItem,
@@ -7,25 +6,27 @@ import type {
   WhiteboardItem,
   ShapeItem,
 } from '@/types/whiteboard';
-import { pointToSegmentDistance } from '@/utils/arrow';
-import { getWorldPointerPosition } from '@/utils/coordinate';
 import { getNearestSnapPoint } from '@/utils/geom';
+import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
 
 interface UseArrowHandlesProps {
   arrow: ArrowItem | LineItem | null;
   items: WhiteboardItem[];
-  stageRef: React.RefObject<Konva.Stage | null>;
   updateItem: (id: string, payload: Partial<WhiteboardItem>) => void;
+  setIsDraggingArrow: (isDragging: boolean) => void;
 }
 
 export function useArrowHandles({
   arrow,
   items,
-  stageRef,
   updateItem,
+  setIsDraggingArrow,
 }: UseArrowHandlesProps) {
-  const [selectedHandleIndex, setSelectedHandleIndex] = useState<number | null>(
-    null,
+  const selectedHandleIndex = useWhiteboardLocalStore(
+    (state) => state.selectedHandleIndex,
+  );
+  const setSelectedHandleIndex = useWhiteboardLocalStore(
+    (state) => state.setSelectedHandleIndex,
   );
 
   // 드래그 중인 points를 로컬 상태로 관리
@@ -45,45 +46,6 @@ export function useArrowHandles({
     elementId: string;
     position: { x: number; y: number };
   } | null>(null);
-
-  // 화살표 더블클릭 - 중간점 추가
-  const handleArrowDblClick = (arrowId: string) => {
-    if (!arrow || !stageRef.current) return;
-
-    const stage = stageRef.current;
-    const worldPos = getWorldPointerPosition(stage);
-
-    const worldX = worldPos.x;
-    const worldY = worldPos.y;
-
-    // 가장 가까운 선분 찾기
-    let minDistance = Infinity;
-    let insertIndex = 2;
-
-    for (let i = 0; i < arrow.points.length - 2; i += 2) {
-      const x1 = arrow.points[i];
-      const y1 = arrow.points[i + 1];
-      const x2 = arrow.points[i + 2];
-      const y2 = arrow.points[i + 3];
-
-      const distance = pointToSegmentDistance(worldX, worldY, x1, y1, x2, y2);
-
-      if (distance < minDistance) {
-        minDistance = distance;
-        insertIndex = i + 2;
-      }
-    }
-
-    // 중간 point 삽입
-    const newPoints = [
-      ...arrow.points.slice(0, insertIndex),
-      worldX,
-      worldY,
-      ...arrow.points.slice(insertIndex),
-    ];
-
-    updateItem(arrowId, { points: newPoints });
-  };
 
   // 화살표 핸들 클릭
   const handleHandleClick = (
@@ -165,7 +127,10 @@ export function useArrowHandles({
 
   // 화살표 시작점 드래그
   const handleArrowStartDrag = (e: KonvaEventObject<DragEvent>) => {
+    e.cancelBubble = true;
     if (!arrow) return;
+    setIsDraggingArrow(true);
+    setDraggingPoints([...arrow.points]);
 
     const { x, y } = e.target.position();
     // 부착 체크
@@ -235,6 +200,7 @@ export function useArrowHandles({
     setDraggingPoints(null);
     setSnapIndicator(null);
     currentSnapTarget.current = null;
+    setIsDraggingArrow(false);
   };
 
   // 화살표 중간점 삭제
@@ -268,7 +234,6 @@ export function useArrowHandles({
     handleArrowControlPointDrag,
     handleArrowEndDrag,
     handleHandleDragEnd,
-    handleArrowDblClick,
     deleteControlPoint,
     draggingPoints,
     snapIndicator,

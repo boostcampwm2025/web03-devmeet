@@ -34,6 +34,7 @@ interface LocalState {
     x2: number;
     y2: number;
   } | null;
+  selectedHandleIndex: number | null;
 }
 
 interface LocalActions {
@@ -60,6 +61,7 @@ interface LocalActions {
     callback: ((cursor: { x: number; y: number } | null) => void) | null,
   ) => void;
   setStageRef: (ref: React.RefObject<Konva.Stage | null>) => void;
+  setSelectedHandleIndex: (index: number | null) => void;
 }
 
 type LocalStore = LocalState & LocalActions;
@@ -139,6 +141,10 @@ export const useWhiteboardLocalStore = create<LocalStore>((set, get) => ({
 
   setAwarenessCallback: (callback) => set({ awarenessCallback: callback }),
   setCursorCallback: (callback) => set({ cursorCallback: callback }),
+
+  // 화살표 핸들 선택
+  selectedHandleIndex: null,
+  setSelectedHandleIndex: (index) => set({ selectedHandleIndex: index }),
 
   // Text Editing 초기값
   editingTextId: null,

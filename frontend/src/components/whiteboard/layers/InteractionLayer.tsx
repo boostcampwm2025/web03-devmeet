@@ -44,7 +44,9 @@ export default function InteractionLayer({
     draggingPoints,
     snapIndicator,
   } = useArrowHandles({
-    arrow: isArrowOrLineSelected ? (selectedItem as ArrowItem) : null,
+    arrow: isArrowOrLineSelected
+      ? (selectedItem as ArrowItem | LineItem)
+      : null,
     items,
     updateItem,
     setIsDraggingArrow: setIsDraggingHandle,
@@ -76,7 +78,7 @@ export default function InteractionLayer({
       {/* 화살표 핸들 */}
       {isArrowOrLineSelected && selectedItem && !isDraggingArrow && (
         <ArrowHandles
-          arrow={selectedItem as ArrowItem}
+          arrow={selectedItem as ArrowItem | LineItem}
           selectedHandleIndex={selectedHandleIndex}
           onHandleClick={handleHandleClick}
           onDragStart={handleHandleDragStart}

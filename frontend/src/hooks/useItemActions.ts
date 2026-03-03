@@ -354,7 +354,11 @@ export function useItemActions() {
 
     const store = useWhiteboardSharedStore.getState();
     const targetItem = store.items.find((item) => item.id === arrowId);
-    if (!targetItem || targetItem.type !== 'arrow') return false;
+    if (
+      !targetItem ||
+      (targetItem.type !== 'arrow' && targetItem.type !== 'line')
+    )
+      return false;
 
     if (handleIndex >= 2 && handleIndex < targetItem.points.length - 2) {
       const newPoints = [...targetItem.points];
@@ -374,7 +378,11 @@ export function useItemActions() {
     const localStore = useWhiteboardLocalStore.getState();
     const targetItem = store.items.find((item) => item.id === arrowId);
 
-    if (!targetItem || targetItem.type !== 'arrow') return;
+    if (
+      !targetItem ||
+      (targetItem.type !== 'arrow' && targetItem.type !== 'line')
+    )
+      return;
 
     const stage = localStore.stageRef?.current;
     if (!stage) return;

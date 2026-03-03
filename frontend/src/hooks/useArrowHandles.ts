@@ -126,10 +126,18 @@ export function useArrowHandles({
   };
 
   // 핸들 드래그 시작
-  const handleHandleDragStart = () => {
+  const handleHandleDragStart = (handleType: 'start' | 'end' | 'mid') => {
     if (!arrow) return;
     setIsDraggingArrow(true);
     setDraggingPoints([...arrow.points]);
+
+    if (arrow.type === 'arrow') {
+      if (handleType === 'start') {
+        currentSnapTarget.current = arrow.startBinding || null;
+      } else if (handleType === 'end') {
+        currentSnapTarget.current = arrow.endBinding || null;
+      }
+    }
   };
 
   // 화살표 시작점 드래그
@@ -184,19 +192,12 @@ export function useArrowHandles({
 
     const updates: Partial<ArrowItem> = { points: draggingPoints };
 
-    // 바인딩 정보 업데이트
-    if (handleType === 'start') {
-      if (currentSnapTarget.current) {
+    // 바인딩 정보 업데이트 (Arrow 타입일 경우에만)
+    if (arrow.type === 'arrow') {
+      if (handleType === 'start') {
         updates.startBinding = currentSnapTarget.current;
-      } else {
-        // 빈 공간에 놓으면 바인딩 해제
-        updates.startBinding = null;
-      }
-    } else if (handleType === 'end') {
-      if (currentSnapTarget.current) {
+      } else if (handleType === 'end') {
         updates.endBinding = currentSnapTarget.current;
-      } else {
-        updates.endBinding = null;
       }
     }
 

@@ -3,13 +3,12 @@
 import { useRef, useState, useMemo, useEffect, useCallback } from 'react';
 
 import Konva from 'konva';
-import { Stage, Layer, Rect } from 'react-konva';
+import { Stage, Layer } from 'react-konva';
 
 import type { WhiteboardItem, ArrowItem, ShapeItem } from '@/types/whiteboard';
 
 import { useWhiteboardSharedStore } from '@/store/useWhiteboardSharedStore';
 import { useWhiteboardLocalStore } from '@/store/useWhiteboardLocalStore';
-import { useWhiteboardAwarenessStore } from '@/store/useWhiteboardAwarenessStore';
 import { cn } from '@/utils/cn';
 import { updateBoundArrows } from '@/utils/arrowBinding';
 import { getViewportRect, filterVisibleItems } from '@/utils/viewport';
@@ -26,13 +25,10 @@ import { useSelectionBox } from '@/hooks/useSelectionBox';
 import { useMultiDrag } from '@/hooks/useMultiDrag';
 import { usePinchZoom } from '@/hooks/usePinchZoom';
 
-import ItemTransformer from '@/components/whiteboard/controls/ItemTransformer';
-import ArrowHandles from '@/components/whiteboard/items/arrow/ArrowHandles';
-import SelectionBox from '@/components/whiteboard/SelectionBox';
 import BackgroundLayer from '@/components/whiteboard/layers/BackgroundLayer';
 import ItemRenderingLayer from '@/components/whiteboard/layers/ItemRenderingLayer';
-import CollaborationLayer from '@/components/whiteboard/layers/CollaborationLayer';
 import TextEditorLayer from '@/components/whiteboard/layers/TextEditorLayer';
+import InteractionLayer from '@/components/whiteboard/layers/InteractionLayer';
 
 const GEOMETRY_KEYS = ['x', 'y', 'width', 'height', 'rotation'] as const;
 
@@ -62,7 +58,6 @@ export default function Canvas() {
   const setStageScale = useWhiteboardLocalStore((state) => state.setStageScale);
   const setStagePos = useWhiteboardLocalStore((state) => state.setStagePos);
   const cursorMode = useWhiteboardLocalStore((state) => state.cursorMode);
-  const myUserId = useWhiteboardAwarenessStore((state) => state.myUserId);
 
   const { processImageFile, getCanvasPointFromEvent } = useAddWhiteboardItem();
 
@@ -250,7 +245,7 @@ export default function Canvas() {
   const selectedItem = useMemo(
     () =>
       singleSelectedId
-        ? items.find((item) => item.id === singleSelectedId)
+        ? items.find((item) => item.id === singleSelectedId) || null
         : null,
     [items, singleSelectedId],
   );
@@ -607,49 +602,21 @@ export default function Canvas() {
             handleTransformMoveItem={handleTransformMoveItem}
             handleDragEndItem={handleDragEndItem}
           />
-          {isArrowOrLineSelected && selectedItem && !isDraggingArrow && (
-            <ArrowHandles
-              arrow={selectedItem as ArrowItem}
-              selectedHandleIndex={selectedHandleIndex}
-              onHandleClick={handleHandleClick}
-              onStartDrag={handleArrowStartDrag}
-              onControlPointDrag={handleArrowControlPointDrag}
-              onEndDrag={handleArrowEndDrag}
-              onDragEnd={handleHandleDragEnd}
-              draggingPoints={draggingPoints}
-            />
-          )}
-
-          {/* 부착 표시 */}
-          {snapIndicator && (
-            <Rect
-              x={snapIndicator.x}
-              y={snapIndicator.y}
-              width={snapIndicator.width}
-              height={snapIndicator.height}
-              rotation={snapIndicator.rotation}
-              stroke="#0096FF"
-              strokeWidth={3}
-              cornerRadius={3}
-            />
-          )}
-
-          {/* 선택 박스 */}
-          <SelectionBox />
-
-          <CollaborationLayer
-            myUserId={myUserId}
-            selectedIds={selectedIds}
-            singleSelectedId={singleSelectedId}
-            items={items}
-            stageRef={stageRef}
-          />
-
-          {/* 내 Transformer */}
-          <ItemTransformer
+          <InteractionLayer
+            isArrowOrLineSelected={isArrowOrLineSelected}
+            selectedItem={selectedItem}
             selectedIds={selectedIds}
             items={items}
             stageRef={stageRef}
+            isDraggingArrow={isDraggingArrow}
+            selectedHandleIndex={selectedHandleIndex}
+            draggingPoints={draggingPoints}
+            snapIndicator={snapIndicator}
+            handleHandleClick={handleHandleClick}
+            handleArrowStartDrag={handleArrowStartDrag}
+            handleArrowControlPointDrag={handleArrowControlPointDrag}
+            handleArrowEndDrag={handleArrowEndDrag}
+            handleHandleDragEnd={handleHandleDragEnd}
           />
         </Layer>
       </Stage>

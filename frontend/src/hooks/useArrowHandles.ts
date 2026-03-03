@@ -125,12 +125,17 @@ export function useArrowHandles({
     }
   };
 
+  // 핸들 드래그 시작
+  const handleHandleDragStart = () => {
+    if (!arrow) return;
+    setIsDraggingArrow(true);
+    setDraggingPoints([...arrow.points]);
+  };
+
   // 화살표 시작점 드래그
   const handleArrowStartDrag = (e: KonvaEventObject<DragEvent>) => {
     e.cancelBubble = true;
     if (!arrow) return;
-    setIsDraggingArrow(true);
-    setDraggingPoints([...arrow.points]);
 
     const { x, y } = e.target.position();
     // 부착 체크
@@ -230,6 +235,7 @@ export function useArrowHandles({
     selectedHandleIndex,
     setSelectedHandleIndex,
     handleHandleClick,
+    handleHandleDragStart,
     handleArrowStartDrag,
     handleArrowControlPointDrag,
     handleArrowEndDrag,

@@ -59,6 +59,7 @@ export default function Canvas() {
   const stageRef = useRef<Konva.Stage | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDraggingArrow, setIsDraggingArrow] = useState(false);
+  const [isDraggingHandle, setIsDraggingHandle] = useState(false);
   const [isDraggingCanvas, setIsDraggingCanvas] = useState(false);
   const [localDraggingId, setLocalDraggingId] = useState<string | null>(null);
   const [localDraggingPos, setLocalDraggingPos] = useState<{
@@ -347,7 +348,9 @@ export default function Canvas() {
             items={items}
             visibleItems={visibleItems}
             selectedIds={selectedIds}
+            singleSelectedId={singleSelectedId}
             isDraggingArrow={isDraggingArrow}
+            isDraggingHandle={isDraggingHandle}
             localDraggingId={localDraggingId}
             localDraggingPos={localDraggingPos}
             getMultiDragPosition={getMultiDragPosition}
@@ -355,6 +358,7 @@ export default function Canvas() {
             handleItemChange={handleItemChange}
             handleShapeDblClick={handleShapeDblClick}
             setIsDraggingArrow={setIsDraggingArrow}
+            setIsDraggingHandle={setIsDraggingHandle}
             startMultiDrag={startMultiDrag}
             handleDragMoveItem={handleDragMoveItem}
             handleTransformMoveItem={handleTransformMoveItem}
@@ -374,7 +378,8 @@ export default function Canvas() {
             items={items}
             stageRef={stageRef}
             isDraggingArrow={isDraggingArrow}
-            setIsDraggingArrow={setIsDraggingArrow}
+            isDraggingHandle={isDraggingHandle}
+            setIsDraggingHandle={setIsDraggingHandle}
           />
         </Layer>
       </Stage>

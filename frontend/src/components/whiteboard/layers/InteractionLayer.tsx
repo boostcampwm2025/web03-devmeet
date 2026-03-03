@@ -19,7 +19,8 @@ interface InteractionLayerProps {
   items: WhiteboardItem[];
   stageRef: React.RefObject<Konva.Stage | null>;
   isDraggingArrow: boolean;
-  setIsDraggingArrow: (isDragging: boolean) => void;
+  isDraggingHandle: boolean;
+  setIsDraggingHandle: (isDragging: boolean) => void;
 }
 
 export default function InteractionLayer({
@@ -29,12 +30,13 @@ export default function InteractionLayer({
   items,
   stageRef,
   isDraggingArrow,
-  setIsDraggingArrow,
+  setIsDraggingHandle,
 }: InteractionLayerProps) {
   const { updateItem } = useItemActions();
   const {
     selectedHandleIndex,
     handleHandleClick,
+    handleHandleDragStart,
     handleArrowStartDrag,
     handleArrowControlPointDrag,
     handleArrowEndDrag,
@@ -45,7 +47,7 @@ export default function InteractionLayer({
     arrow: isArrowOrLineSelected ? (selectedItem as ArrowItem) : null,
     items,
     updateItem,
-    setIsDraggingArrow,
+    setIsDraggingArrow: setIsDraggingHandle,
   });
 
   return (
@@ -77,6 +79,7 @@ export default function InteractionLayer({
           arrow={selectedItem as ArrowItem}
           selectedHandleIndex={selectedHandleIndex}
           onHandleClick={handleHandleClick}
+          onDragStart={handleHandleDragStart}
           onStartDrag={handleArrowStartDrag}
           onControlPointDrag={handleArrowControlPointDrag}
           onEndDrag={handleArrowEndDrag}

@@ -10,7 +10,9 @@ interface ItemRenderingLayerProps {
   items: WhiteboardItem[];
   visibleItems: WhiteboardItem[];
   selectedIds: string[];
+  singleSelectedId: string | null;
   isDraggingArrow: boolean;
+  isDraggingHandle: boolean;
   localDraggingId: string | null;
   localDraggingPos: {
     x: number;
@@ -30,6 +32,7 @@ interface ItemRenderingLayerProps {
   ) => void;
   handleShapeDblClick: (id: string) => void;
   setIsDraggingArrow: (isDragging: boolean) => void;
+  setIsDraggingHandle: (isDragging: boolean) => void;
   startMultiDrag: (id: string) => void;
   handleDragMoveItem: (id: string, x: number, y: number) => void;
   handleTransformMoveItem: (
@@ -46,6 +49,8 @@ interface ItemRenderingLayerProps {
 export default function ItemRenderingLayer({
   items,
   visibleItems,
+  singleSelectedId,
+  isDraggingHandle,
   localDraggingId,
   localDraggingPos,
   getMultiDragPosition,
@@ -105,6 +110,14 @@ export default function ItemRenderingLayer({
           }
         }
 
+        if (
+          isDraggingHandle &&
+          item.id === singleSelectedId &&
+          (item.type === 'arrow' || item.type === 'line')
+        ) {
+          return null;
+        }
+
         return (
           <RenderItem
             key={item.id}
@@ -117,9 +130,13 @@ export default function ItemRenderingLayer({
             onArrowDblClick={insertArrowControlPoint}
             onShapeDblClick={handleShapeDblClick}
             onDragStart={() => {
-              if (item.type === 'arrow' || item.type === 'line') {
-                setIsDraggingArrow(true);
+              if (
+                item.id === singleSelectedId &&
+                (item.type === 'arrow' || item.type === 'line')
+              ) {
+                // 핸들 드래그와 구분하기 위한 상태는 InteractionLayer에서 관리
               }
+              setIsDraggingArrow(true);
               startMultiDrag(item.id);
             }}
             onDragMove={handleDragMoveItem}

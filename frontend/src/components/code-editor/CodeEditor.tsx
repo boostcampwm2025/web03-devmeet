@@ -51,18 +51,12 @@ export default function CodeEditor({
   const mergeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const BUFFER_WINDOW_MS = 50; // 로컬 update를 모아서 한번에 전송하는 time window (50ms)
-  const MAX_PENDING_UPDATES = 10; // ack를 기다리는 동안 동시에 쌓아둘 수 있는 최대 update 개수
-  const MAX_MERGED_BYTES = 8 * 1024; // 8KB (한번에 병합해서 보낼 update 데이터의 최대 크기)
 
   // 동기화 관련 refs
   const syncState = useRef({
-    lastSeq: 0,
-    awaitingAck: false,
     suppressSend: false,
-    dirty: false,
     syncReqInFlight: false,
     readySent: false,
-    lastSendAt: 0, // RTT 측정용
   });
 
   // states
@@ -167,21 +161,27 @@ export default function CodeEditor({
           message: 'Yjs 트랜잭션 적용 실패',
           extra: { updateCount: updates.length },
         });
+        return false;
       } finally {
         syncState.current.suppressSend = false;
       }
+
+      return true;
     };
 
-    const requestSync = (reason: YjsSyncReqPayload['reason'] = 'SEQ_GAP') => {
+    const requestSync = (reason: YjsSyncReqPayload['reason'] = 'UNKNOWN') => {
       if (syncState.current.syncReqInFlight) return;
+      if (!providerRef.current) return;
 
-      // [모니터링] 시퀀스 갭 발생 시 Sentry 카운트 증가
-      Sentry.metrics.count('editor.sync.gap', 1, { attributes: { reason } });
+      Sentry.metrics.count('editor.sync.repair_request', 1, {
+        attributes: { reason },
+      });
 
       syncState.current.syncReqInFlight = true;
+      const stateVector = Y.encodeStateVector(providerRef.current.ydoc);
 
       socket.emit('yjs-sync-req', {
-        last_seq: syncState.current.lastSeq,
+        state_vector: stateVector,
         reason,
       } satisfies YjsSyncReqPayload);
 
@@ -189,36 +189,6 @@ export default function CodeEditor({
       setTimeout(() => {
         syncState.current.syncReqInFlight = false;
       }, 1500);
-    };
-
-    const sendFullStateOnce = () => {
-      if (!providerRef.current) return;
-
-      // ack 기다리는 중이면 큐 쌓지 말고 dirty만 표시
-      if (syncState.current.awaitingAck) {
-        syncState.current.dirty = true;
-        return;
-      }
-
-      const full = Y.encodeStateAsUpdate(providerRef.current.ydoc);
-      syncState.current.awaitingAck = true;
-      syncState.current.dirty = false;
-      syncState.current.lastSendAt = performance.now(); // 측정용
-
-      const payload: YjsUpdateClientPayload = {
-        last_seq: syncState.current.lastSeq,
-        update: full,
-      };
-      socket.emit('yjs-update', payload);
-
-      syncLog(
-        'emit-full-state',
-        {
-          lastSeq: syncState.current.lastSeq,
-          bytes: full.length,
-        },
-        'info',
-      );
     };
 
     const clearPendingUpdates = () => {
@@ -234,29 +204,14 @@ export default function CodeEditor({
       if (updates.length === 0) return;
 
       const merged = Y.mergeUpdates(updates);
+      socket.emit('yjs-update', {
+        update: merged,
+      } satisfies YjsUpdateClientPayload);
 
-      // 사이즈 초과 시 full-state fallback
-      if (merged.byteLength > MAX_MERGED_BYTES) {
-        syncLog(
-          'sync.merge.fallback.full_state',
-          { mergedBytes: merged.byteLength },
-          'warning',
-        );
-        sendFullStateOnce();
-      } else {
-        syncState.current.awaitingAck = true;
-        syncState.current.lastSendAt = performance.now();
-
-        socket.emit('yjs-update', {
-          last_seq: syncState.current.lastSeq,
-          update: merged,
-        } satisfies YjsUpdateClientPayload);
-
-        syncLog('sync.emit.merged_update', {
-          updates: updates.length,
-          bytes: merged.byteLength,
-        });
-      }
+      syncLog('sync.emit.merged_update', {
+        updates: updates.length,
+        bytes: merged.byteLength,
+      });
 
       clearPendingUpdates();
     };
@@ -301,17 +256,12 @@ export default function CodeEditor({
       syncLog(
         'yjs-init',
         {
-          seq: data.seq,
           size: data.update?.byteLength,
         },
         'info',
       );
 
       applyUpdatesNoSend([data.update]);
-      syncState.current.lastSeq = data.seq;
-
-      syncState.current.awaitingAck = false;
-      syncState.current.dirty = false;
       syncState.current.syncReqInFlight = false;
     };
     socket.on('yjs-init', onYjsInit);
@@ -326,127 +276,28 @@ export default function CodeEditor({
           extra: { payload: msg },
         });
 
-        syncState.current.awaitingAck = false;
         syncState.current.syncReqInFlight = false;
         return;
       }
 
-      if (msg.type === 'ack') {
-        const rtt = performance.now() - syncState.current.lastSendAt;
-        syncLog('sync.ack.received', {
-          serverSeq: msg.server_seq,
-          rtt,
-          dirtyAfterAck: syncState.current.dirty,
-        });
-
-        syncState.current.lastSeq = Math.max(
-          syncState.current.lastSeq,
-          msg.server_seq,
-        );
-        syncState.current.awaitingAck = false;
+      if (msg.type === 'diff') {
+        if (msg.update.byteLength > 0) {
+          applyUpdatesNoSend([msg.update]);
+        }
         syncState.current.syncReqInFlight = false;
-
-        // ack 기다리는 동안 더 입력이 있었다면 full-state 한 방
-        if (syncState.current.dirty) {
-          // sendFullStateOnce();
-
-          if (pendingUpdatesRef.current.length > 0) {
-            syncLog(
-              'sync.flush.after_ack',
-              { pending: pendingUpdatesRef.current.length },
-              'info',
-            );
-            emitMergedUpdates();
-          }
-        }
-        return;
-      }
-
-      if (msg.type === 'full' || msg.type === 'patch') {
-        const rtt = performance.now() - syncState.current.lastSendAt;
-        // Sentry Distribution으로 RTT 분포 측정
-        Sentry.metrics.distribution('editor.sync.rtt', rtt, {
-          unit: 'millisecond',
-        });
-
-        // 500ms 이상 지연 시 함께 기록
-        if (rtt > 500) {
-          syncLog(
-            'high-latency',
-            {
-              rtt,
-              type: msg.type,
-            },
-            'warning',
-          );
-        }
-
-        applyUpdatesNoSend(msg.type === 'full' ? [msg.update] : msg.updates);
-
-        const syncLatestSeq = msg.type === 'full' ? msg.server_seq : msg.to_seq;
-
-        syncState.current.lastSeq = Math.max(
-          syncState.current.lastSeq,
-          syncLatestSeq,
-        );
-
-        syncState.current.awaitingAck = false;
-        syncState.current.syncReqInFlight = false;
-
-        // UPDATE_REJECTED인 경우만 재전송(A안)
-        if (msg.origin === 'UPDATE_REJECTED') {
-          sendFullStateOnce();
-        }
         return;
       }
     };
     socket.on('yjs-sync', onYjsSync);
 
-    /**
-     * ---- Socket -> Yjs (remote updates) ----
-     * 단일/배치 모두 커버 + seq gap이면 sync-req
-     */
     const onYjsRemoteUpdate = (msg: YjsRemoteUpdate) => {
-      // 단일
-      if ('seq' in msg) {
-        const expected = syncState.current.lastSeq + 1;
-        if (msg.seq !== expected) {
-          syncLog(
-            'sync.anomaly.seq_gap',
-            {
-              expected,
-              got: msg.seq,
-              awaitingAck: syncState.current.awaitingAck,
-              dirty: syncState.current.dirty,
-            },
-            'error',
-          );
+      const updates = msg.updates ?? (msg.update ? [msg.update] : []);
+      if (updates.length === 0) return;
 
-          requestSync('SEQ_GAP');
-          return;
-        }
-
-        syncLog('sync.remote.apply', {
-          seq: msg.seq,
-          bytes: msg.update.byteLength,
-        });
-
-        applyUpdatesNoSend([msg.update]);
-        syncState.current.lastSeq = msg.seq;
-        syncState.current.syncReqInFlight = false;
-        return;
+      const ok = applyUpdatesNoSend(updates);
+      if (!ok) {
+        requestSync('REMOTE_APPLY_FAILED');
       }
-
-      // 배치
-      const expectedFrom = syncState.current.lastSeq + 1;
-      if (msg.from_seq !== expectedFrom) {
-        requestSync('SEQ_GAP');
-        return;
-      }
-
-      applyUpdatesNoSend(msg.updates);
-      syncState.current.lastSeq = msg.to_seq;
-      syncState.current.syncReqInFlight = false;
     };
     socket.on('yjs-update', onYjsRemoteUpdate);
 
@@ -455,70 +306,23 @@ export default function CodeEditor({
      */
     if (!syncState.current.readySent) {
       syncState.current.readySent = true;
-      socket.emit('yjs-ready');
+      socket.emit('yjs-ready', {
+        state_vector: Y.encodeStateVector(ydoc),
+        reason: 'INIT',
+      } satisfies YjsSyncReqPayload);
     }
 
     //---- Yjs -> Socket (local updates) ----
     const onYdocUpdate = (update: Uint8Array, origin: unknown) => {
-      // 로컬 입력이 실제로 얼마나 발생했는지, ack 대기 중에 몇 개 누적됐는지
       syncLog('sync.local.update', {
         bytes: update.length,
-        awaitingAck: syncState.current.awaitingAck,
-        dirty: syncState.current.dirty,
-        lastSeq: syncState.current.lastSeq,
       });
 
       if (origin === remoteOrigin) return;
       if (syncState.current.suppressSend) return;
 
-      syncState.current.dirty = true;
-
-      // ack 기다리는 중이면 쌓지 않고 표시만
-      // if (syncState.current.awaitingAck) { // 이게 사실상 full-state 빈도 높은 이유
-      // return;
-      // }
-      if (syncState.current.awaitingAck) {
-        pendingUpdatesRef.current.push(update);
-
-        syncLog(
-          'sync.local.buffered',
-          {
-            pending: pendingUpdatesRef.current.length,
-            bytes: update.length,
-          },
-          'warning',
-        );
-
-        // overflow 방어
-        if (pendingUpdatesRef.current.length >= MAX_PENDING_UPDATES) {
-          syncLog(
-            'sync.buffer.overflow',
-            { pending: pendingUpdatesRef.current.length },
-            'error',
-          );
-          sendFullStateOnce();
-          clearPendingUpdates();
-        } else {
-          scheduleMergeEmit();
-        }
-
-        return;
-      }
-
-      syncState.current.awaitingAck = true;
-      syncState.current.dirty = false;
-      syncState.current.lastSendAt = performance.now(); // [측정 시작]
-
-      const payload: YjsUpdateClientPayload = {
-        last_seq: syncState.current.lastSeq,
-        update,
-      };
-      socket.emit('yjs-update', payload);
-
-      syncLog('sync.emit.update', {
-        seq: syncState.current.lastSeq,
-        bytes: update.length,
-      });
+      pendingUpdatesRef.current.push(update);
+      scheduleMergeEmit();
     };
     ydoc.on('update', onYdocUpdate);
 
@@ -584,7 +388,7 @@ export default function CodeEditor({
 
     const updatePresenterState = (states: Map<number, AwarenessState>) => {
       const presenter = [...states.entries()].find(
-        ([_, state]) => state.user?.role === 'presenter',
+        ([, state]) => state.user?.role === 'presenter',
       );
 
       const presenterId = presenter?.[0] ?? null;

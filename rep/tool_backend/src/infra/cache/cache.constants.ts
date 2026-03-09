@@ -18,6 +18,9 @@ export class OutbouncCache<T> {
 export const SNAPSHOT_N = 300; // snapshot을 찍는 stream 갯수들
 export const STREAM_MAXLEN = 5000; // stream이 유지할수 있는 최대 길이
 export const SNAPSHOT_LOCK_TTL_MS = 10_000; // 살아있는 시간이다 스냅샷을 찍는 락을 잡는다. 여러 pod에서 작업시 필요하다.
+export const CODEEDITOR_BATCH_WINDOW_MS = 1000; // 1초 동안 codeeditor update를 모아서 Redis에 반영
+export const CODEEDITOR_BATCH_MAX_UPDATES = 300; // 너무 오래 대기하지 않도록 즉시 flush 캡
+export const CODEEDITOR_SNAPSHOT_EVERY_MS = 60_000; // codeeditor snapshot 최소 주기 (1분)
 
 // whiteboard와 관련된 변수들
 export const WHITEBOARD_STREAM_MAXLEN = 50_000; // 50000의 stream을 최댓값으로 가진다.

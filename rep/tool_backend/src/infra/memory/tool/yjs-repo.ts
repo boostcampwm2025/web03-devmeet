@@ -1,4 +1,4 @@
-import { IsDefined, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 import * as Y from 'yjs';
 
 export const YJS_ENTITY_MAX_NUMBER = 1000; // 최대 사이즈
@@ -46,36 +46,30 @@ export interface YjsRepository {
 }
 
 export class YjsUpdateClientPayload {
-  @IsInt()
-  @Min(0)
-  last_seq: number; // 클라가 마지막으로 적용한 서버 seq
-
   @IsOptional()
   update?: unknown; // yjs update (socket.io 전송용) 지금은 unknown으로하고 서버에서 검증
 
   @IsOptional()
   updates?: unknown; // 한번에 보낼때 이를 참고
+
+  @IsOptional()
+  ts?: unknown;
 }
 
 export type YjsSyncOrigin =
-  | 'UPDATE_REJECTED' // yjs-update 처리 중 missed라서 drop + sync 내려준다
   | 'SYNC_REQ' // yjs-sync-req 요청에 대한 응답
   | 'INIT' // 최초 접속/재접속 등
   | 'ADMIN';
 
 // sync와 관련된 payload
 export type YjsSyncServerPayload =
-  | { type: 'ack'; ok: true; server_seq: number; origin?: YjsSyncOrigin }
   | {
-      type: 'patch';
+      type: 'diff';
       ok: true;
-      from_seq: number;
-      to_seq: number;
-      updates: Buffer[];
-      server_seq: number;
+      update: Buffer;
+      server_state_vector?: Buffer;
       origin: YjsSyncOrigin;
     }
-  | { type: 'full'; ok: true; server_seq: number; update: Buffer; origin: YjsSyncOrigin }
   | {
       type: 'error';
       ok: false;
@@ -85,9 +79,13 @@ export type YjsSyncServerPayload =
     }; // error 코드들 BAD_PAYLOAD는 update의 종류에 따라서
 
 export class YjsSyncReqPayload {
-  @IsInt()
-  @Min(0)
-  last_seq: number;
+  @IsOptional()
+  state_vector?: unknown;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  reason?: string;
 }
 
 // 아래는 화이트 보드용

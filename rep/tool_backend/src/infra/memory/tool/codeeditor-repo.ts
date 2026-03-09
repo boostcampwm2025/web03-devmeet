@@ -7,6 +7,67 @@ import * as Y from 'yjs';
 export class CodeeditorRepository implements YjsRepository {
   private readonly roomDocs = new Map<string, YjsRoomEntry>();
 
+  getRoomCount(): number {
+    return this.roomDocs.size;
+  }
+
+  getRoomStats(room_id: string): {
+    room_id: string;
+    seq: number;
+    client_struct_buckets: number;
+    total_structs: number;
+    encode_full_bytes: number;
+  } | null {
+    const entry = this.roomDocs.get(room_id);
+    if (!entry) return null;
+
+    const store = (entry.doc as any).store;
+    const clients: Map<number, Array<unknown>> | undefined = store?.clients;
+
+    let totalStructs = 0;
+    let clientStructBuckets = 0;
+    if (clients && typeof clients.forEach === 'function') {
+      clientStructBuckets = clients.size;
+      clients.forEach((arr) => {
+        totalStructs += Array.isArray(arr) ? arr.length : 0;
+      });
+    }
+
+    const encodeFullBytes = Y.encodeStateAsUpdate(entry.doc).byteLength;
+
+    return {
+      room_id,
+      seq: entry.seq,
+      client_struct_buckets: clientStructBuckets,
+      total_structs: totalStructs,
+      encode_full_bytes: encodeFullBytes,
+    };
+  }
+
+  getAllRoomStats(limit = 5): Array<{
+    room_id: string;
+    seq: number;
+    client_struct_buckets: number;
+    total_structs: number;
+    encode_full_bytes: number;
+  }> {
+    const stats: Array<{
+      room_id: string;
+      seq: number;
+      client_struct_buckets: number;
+      total_structs: number;
+      encode_full_bytes: number;
+    }> = [];
+
+    for (const room_id of this.roomDocs.keys()) {
+      const stat = this.getRoomStats(room_id);
+      if (stat) stats.push(stat);
+      if (stats.length >= limit) break;
+    }
+
+    return stats;
+  }
+
   // yjs room 정보 가져오기
   get(room_id: string): YjsRoomEntry | undefined {
     return this.roomDocs.get(room_id);

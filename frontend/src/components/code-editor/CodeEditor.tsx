@@ -205,6 +205,13 @@ export default function CodeEditor({
       if (updates.length === 0) return;
 
       const merged = Y.mergeUpdates(updates);
+
+      console.log(
+        'sync payload size (client->server):',
+        merged.byteLength,
+        'bytes',
+      );
+
       socket.emit('yjs-update', {
         update: merged,
         ts: Date.now(),
@@ -255,6 +262,12 @@ export default function CodeEditor({
 
     // Socket -> Yjs (init)
     const onYjsInit = (data: YjsInitPayload) => {
+      console.log(
+        'initial sync payload size:',
+        data.update.byteLength,
+        'bytes',
+      );
+
       syncLog(
         'yjs-init',
         {
@@ -283,6 +296,8 @@ export default function CodeEditor({
       }
 
       if (msg.type === 'diff') {
+        console.log('sync diff payload size:', msg.update.byteLength, 'bytes');
+
         if (msg.update.byteLength > 0) {
           applyUpdatesNoSend([msg.update]);
         }
@@ -295,6 +310,10 @@ export default function CodeEditor({
     const onYjsRemoteUpdate = (msg: YjsRemoteUpdate) => {
       const updates = msg.updates ?? (msg.update ? [msg.update] : []);
       if (updates.length === 0) return;
+
+      // payload size 디버깅용
+      const size = updates.reduce((acc, u) => acc + u.byteLength, 0);
+      console.log('sync payload size (server->client):', size, 'bytes');
 
       // latency 측정
       if (msg.ts) {

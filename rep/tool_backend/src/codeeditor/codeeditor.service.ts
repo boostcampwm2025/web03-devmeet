@@ -7,24 +7,76 @@ import {
   CACHE_CODEEDITOR_SNAPSHOT_KEY_NAME,
   CACHE_CODEEDITOR_STREAM_KEY_NAME,
   CACHE_NAMESPACE_NAME,
+  CODEEDITOR_BATCH_MAX_UPDATES,
+  CODEEDITOR_BATCH_WINDOW_MS,
+  CODEEDITOR_SNAPSHOT_EVERY_MS,
   decodeB64,
   encodeB64,
   REDIS_SERVER,
-  SNAPSHOT_N,
   STREAM_MAXLEN,
 } from '@/infra/cache/cache.constants';
 import type { RedisClientType } from 'redis';
 import { CodeeditorRepository, UpdateEntry, YjsUpdateClientPayload } from '@/infra/memory/tool';
+import * as Y from 'yjs';
 
 @Injectable()
 export class CodeeditorService {
   private logger = new Logger(CodeeditorService.name);
+  private pendingStreamWrites = new Map<
+    string,
+    {
+      updates: Uint8Array[];
+      user_id: string;
+      timer?: NodeJS.Timeout;
+      flushing: boolean;
+    }
+  >();
+  private lastSnapshotAt = new Map<string, number>();
+  private perSec = {
+    queuedUpdates: 0,
+    flushes: 0,
+    redisWrites: 0,
+    mergedUpdatesToRedis: 0,
+  };
+  private readonly perSecTimer: NodeJS.Timeout;
+  private readonly memoryProbeTimer?: NodeJS.Timeout;
 
   constructor(
     private readonly guard: GuardService,
     @Inject(REDIS_SERVER) private readonly redis: RedisClientType<any, any>, // redis를 사용하기 위한 부분
     private readonly codeeditorRepo: CodeeditorRepository,
-  ) {}
+  ) {
+    this.perSecTimer = setInterval(() => {
+      const { queuedUpdates, flushes, redisWrites, mergedUpdatesToRedis } = this.perSec;
+      if (queuedUpdates > 0 || flushes > 0 || redisWrites > 0 || mergedUpdatesToRedis > 0) {
+        this.logger.log(
+          `[codeeditor-throughput/1s] queued_updates=${queuedUpdates} flushes=${flushes} redis_writes=${redisWrites} merged_updates_to_redis=${mergedUpdatesToRedis}`,
+        );
+      }
+      this.perSec.queuedUpdates = 0;
+      this.perSec.flushes = 0;
+      this.perSec.redisWrites = 0;
+      this.perSec.mergedUpdatesToRedis = 0;
+    }, 1000);
+    this.perSecTimer.unref();
+
+    if (process.env.CODEEDITOR_MEMORY_PROBE === 'true') {
+      this.memoryProbeTimer = setInterval(() => {
+        const mu = process.memoryUsage();
+        this.logger.log(
+          `[codeeditor-memory/10s] rooms=${this.codeeditorRepo.getRoomCount()} rss_mb=${(mu.rss / 1048576).toFixed(1)} heap_used_mb=${(mu.heapUsed / 1048576).toFixed(1)} heap_total_mb=${(mu.heapTotal / 1048576).toFixed(1)} external_mb=${(mu.external / 1048576).toFixed(1)}`,
+        );
+
+        const samples = this.codeeditorRepo.getAllRoomStats(5);
+        for (const s of samples) {
+          this.logger.log(
+            `[codeeditor-room/10s] room=${s.room_id} seq=${s.seq} struct_buckets=${s.client_struct_buckets} total_structs=${s.total_structs} encode_full_bytes=${s.encode_full_bytes}`,
+          );
+        }
+      }, 10_000);
+      this.memoryProbeTimer.unref();
+    }
+  }
 
   async guardService(token: string, type: 'main' | 'sub'): Promise<ToolBackendPayload> {
     const verified = await this.guard.verify(token);
@@ -57,6 +109,12 @@ export class CodeeditorService {
     if (value instanceof ArrayBuffer) return Buffer.from(new Uint8Array(value));
     return null;
   }
+
+  normalizeToUint8Array(value: unknown): Uint8Array | null {
+    const buf = this.normalizeToBuffer(value);
+    return buf ? new Uint8Array(buf) : null;
+  }
+
   normalizeToBuffers(payload: YjsUpdateClientPayload): Buffer[] | null {
     // 검증을 위한 buf
     const toBuf = (v: any): Buffer | null => {
@@ -140,31 +198,91 @@ export class CodeeditorService {
 
   // stream update
   async appendUpdatesToStream(room_id: string, updates: Uint8Array[], user_id: string) {
-    const streamKey: string = this.streamKey(room_id);
-    let lastId: string = '0-0';
+    if (!updates.length) return '0-0';
 
-    for (const u of updates) {
-      lastId = await this.redis.xAdd(streamKey, '*', {
-        [CACHE_CODEEDITOR_STREAM_KEY_NAME.UPDATE]: encodeB64(u),
-        [CACHE_CODEEDITOR_STREAM_KEY_NAME.TX]: String(Date.now()),
-        [CACHE_CODEEDITOR_STREAM_KEY_NAME.USER_ID]: user_id,
-      });
-    }
+    const streamKey: string = this.streamKey(room_id);
+    const merged = updates.length === 1 ? updates[0] : Y.mergeUpdates(updates);
+    const lastId = await this.redis.xAdd(streamKey, '*', {
+      [CACHE_CODEEDITOR_STREAM_KEY_NAME.UPDATE]: encodeB64(merged),
+      [CACHE_CODEEDITOR_STREAM_KEY_NAME.TX]: String(Date.now()),
+      [CACHE_CODEEDITOR_STREAM_KEY_NAME.USER_ID]: user_id,
+    });
+    this.perSec.redisWrites += 1;
+    this.perSec.mergedUpdatesToRedis += updates.length;
 
     return lastId;
   }
 
-  // stream 300 마다 snapshot 작성
-  async maybeSnapShot(room_id: string) {
-    const state = this.codeeditorRepo.ensure(room_id);
-    if (state.seq % SNAPSHOT_N !== 0) return; // 현재 stream이 정한 갯수 만큼 찍혔다면 업데이트한다.
+  queueUpdatesToStream(room_id: string, updates: Uint8Array[], user_id: string) {
+    if (!updates.length) return;
+    this.perSec.queuedUpdates += updates.length;
+    const pending = this.pendingStreamWrites.get(room_id) ?? {
+      updates: [],
+      user_id,
+      flushing: false,
+    };
+    pending.updates.push(...updates);
+    pending.user_id = user_id;
+    this.pendingStreamWrites.set(room_id, pending);
+    this.logger.debug(
+      `queue-stream room=${room_id} incoming=${updates.length} queued=${pending.updates.length}`,
+    );
 
-    // 추후 여러 pod 대비 lock을 추가해야 한다. ( 지금은 스킵 )
+    if (pending.updates.length >= CODEEDITOR_BATCH_MAX_UPDATES) {
+      void this.flushRoomUpdates(room_id);
+      return;
+    }
+
+    if (!pending.timer) {
+      pending.timer = setTimeout(() => {
+        void this.flushRoomUpdates(room_id);
+      }, CODEEDITOR_BATCH_WINDOW_MS);
+    }
+  }
+
+  async flushRoomUpdates(room_id: string) {
+    const pending = this.pendingStreamWrites.get(room_id);
+    if (!pending || pending.flushing || pending.updates.length === 0) return;
+    this.perSec.flushes += 1;
+
+    pending.flushing = true;
+    if (pending.timer) {
+      clearTimeout(pending.timer);
+      pending.timer = undefined;
+    }
 
     try {
-      const snapU8 = this.codeeditorRepo.encodeSnapshot(room_id); // snapshot을 만든다. ( 성능 병목 현상이 뜨는 장소 )
+      const updates = pending.updates;
+      pending.updates = [];
+
+      this.logger.debug(`flush-stream room=${room_id} updates=${updates.length}`);
+      await this.appendUpdatesToStream(room_id, updates, pending.user_id);
+      await this.maybeSnapShot(room_id);
+    } catch (err) {
+      this.logger.error(`flushRoomUpdates error room=${room_id}`, err as any);
+      pending.flushing = false;
+      return;
+    }
+
+    pending.flushing = false;
+
+    if (pending.updates.length > 0) {
+      void this.flushRoomUpdates(room_id);
+      return;
+    }
+
+    this.pendingStreamWrites.delete(room_id);
+  }
+
+  // time-window 기반 snapshot 생성
+  async maybeSnapShot(room_id: string, force = false) {
+    const now = Date.now();
+    const lastAt = this.lastSnapshotAt.get(room_id) ?? 0;
+    if (!force && now - lastAt < CODEEDITOR_SNAPSHOT_EVERY_MS) return;
+
+    try {
+      const snapU8 = this.codeeditorRepo.encodeSnapshot(room_id);
       const snapB64 = encodeB64(snapU8);
-      const ts = String(Date.now());
 
       const streamKey = this.streamKey(room_id);
       const latest = await this.redis.xRevRange(streamKey, '+', '-', { COUNT: 1 });
@@ -176,15 +294,26 @@ export class CodeeditorService {
       tx.hSet(snapKey, {
         [CACHE_CODEEDITOR_SNAPSHOT_KEY_NAME.SNAP]: snapB64,
         [CACHE_CODEEDITOR_SNAPSHOT_KEY_NAME.IDX]: idx,
-        [CACHE_CODEEDITOR_SNAPSHOT_KEY_NAME.TX]: ts,
+        [CACHE_CODEEDITOR_SNAPSHOT_KEY_NAME.TX]: String(now),
       });
 
-      tx.xTrim(streamKey, 'MAXLEN', STREAM_MAXLEN, { strategyModifier: '~' }); // 원자성 보장
+      tx.xTrim(streamKey, 'MAXLEN', STREAM_MAXLEN, { strategyModifier: '~' });
 
       const res = await tx.exec();
       if (!res) return;
+
+      this.lastSnapshotAt.set(room_id, now);
     } catch (err) {
       this.logger.error(err);
     }
+  }
+
+  clearRoomState(room_id: string) {
+    const pending = this.pendingStreamWrites.get(room_id);
+    if (pending?.timer) {
+      clearTimeout(pending.timer);
+    }
+    this.pendingStreamWrites.delete(room_id);
+    this.lastSnapshotAt.delete(room_id);
   }
 }

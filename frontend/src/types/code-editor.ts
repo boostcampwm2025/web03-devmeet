@@ -27,36 +27,24 @@ export type AwarenessState = {
 
 export type YjsInitPayload = {
   update: ArrayBuffer;
-  seq: number;
+  state_vector?: ArrayBuffer;
   origin?: 'INIT';
 };
 
-export type YjsRemoteUpdateSingle = { seq: number; update: ArrayBuffer };
-export type YjsRemoteUpdateBatch = {
-  from_seq: number;
-  to_seq: number;
-  updates: ArrayBuffer[];
+export type YjsRemoteUpdate = {
+  update?: ArrayBuffer;
+  updates?: ArrayBuffer[];
+  ts?: number;
 };
-export type YjsRemoteUpdate = YjsRemoteUpdateSingle | YjsRemoteUpdateBatch;
 
-export type YjsSyncOrigin = 'UPDATE_REJECTED' | 'SYNC_REQ' | 'INIT';
+export type YjsSyncOrigin = 'SYNC_REQ' | 'INIT';
 
 export type YjsSyncServerPayload =
-  | { type: 'ack'; ok: true; server_seq: number; origin?: YjsSyncOrigin }
   | {
-      type: 'patch';
+      type: 'diff';
       ok: true;
-      from_seq: number;
-      to_seq: number;
-      updates: ArrayBuffer[];
-      server_seq: number;
-      origin: YjsSyncOrigin;
-    }
-  | {
-      type: 'full';
-      ok: true;
-      server_seq: number;
       update: ArrayBuffer;
+      server_state_vector?: ArrayBuffer;
       origin: YjsSyncOrigin;
     }
   | {
@@ -68,12 +56,17 @@ export type YjsSyncServerPayload =
     };
 
 export type YjsSyncReqPayload = {
-  last_seq: number;
-  reason?: 'SEQ_GAP' | 'MANUAL' | 'UNKNOWN' | 'INIT';
+  state_vector: Uint8Array;
+  reason?:
+    | 'MANUAL'
+    | 'UNKNOWN'
+    | 'INIT'
+    | 'REMOTE_APPLY_FAILED'
+    | 'SERVER_HINT';
 };
 
 export type YjsUpdateClientPayload = {
-  last_seq: number;
   update?: Uint8Array;
   updates?: Uint8Array[];
+  ts?: number;
 };

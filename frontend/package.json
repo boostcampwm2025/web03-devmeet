@@ -15,7 +15,8 @@
     "cz": "cz",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:ci": "jest --ci"
+    "test:ci": "jest --ci",
+    "test:codeeditor:load": "node scripts/codeeditor-load-test.mjs"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

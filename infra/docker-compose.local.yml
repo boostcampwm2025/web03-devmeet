@@ -1,24 +1,48 @@
 services:
-  mysql:
+  main_local_mysql:
     image: mysql:8.0
-    container_name: local_mysql
+    container_name: main_local_mysql
     ports:
       - "3308:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       TZ: Asia/Seoul
     volumes:
-      - ./mysql/data:/var/lib/mysql
-      - ./mysql/conf.d:/etc/mysql/conf.d # mysql에 설정을 위한 폴더
+      - ./main-mysql/data:/var/lib/mysql
+      - ./main-mysql/conf.d:/etc/mysql/conf.d # mysql에 설정을 위한 폴더
     restart: unless-stopped
 
-  redis:
+  tool_local_mysql:
+    image: mysql:8.0
+    container_name: tool_local_mysql
+    ports:
+      - "3309:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      TZ: Asia/Seoul
+    volumes:
+      - ./tool-mysql/data:/var/lib/mysql
+      - ./tool-mysql/conf.d:/etc/mysql/conf.d # mysql에 설정을 위한 폴더
+    restart: unless-stopped
+
+  main_local_redis:
     image: redis:7.0-alpine
-    container_name: local_redis
+    container_name: main_local_redis
     ports:
       - "6381:6379"
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    command: ["redis-server", "--requirepass", "${MAIN_REDIS_PASSWORD}"]
     volumes:
-      - ./redis/data:/data
-      - ./redis/reds.conf:/usr/local/etc/redis/redis.conf:ro # redis에 설정 파일이 들어갈 예정i
+      - ./main-redis/data:/data
+      - ./main-redis/reds.conf:/usr/local/etc/redis/redis.conf:ro
+    restart: unless-stopped
+
+  tool_local_redis:
+    image: redis:7.0-alpine
+    container_name: tool_local_redis
+    ports:
+      - "6382:6379"
+    command: ["redis-server", "--requirepass", "${TOOL_REDIS_PASSWORD}"]
+    volumes:
+      - ./tool-redis/data:/data
+      - ./tool-redis/reds.conf:/usr/local/etc/redis/redis.conf:ro
     restart: unless-stopped

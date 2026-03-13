@@ -45,8 +45,8 @@ export const useResetMessages = () => {
 };
 
 export const useMessageLength = () => {
-  const messageLenth = useChatStore((store) => store.messages.length);
-  return messageLenth;
+  const messageLength = useChatStore((store) => store.messages.length);
+  return messageLength;
 };
 
 export const useLastMessage = () => {

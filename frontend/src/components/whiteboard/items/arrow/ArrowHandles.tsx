@@ -4,12 +4,13 @@ import { Circle } from 'react-konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import { getControlPoints } from '@/utils/arrow';
 import { useCursorStyle } from '@/hooks/useCursorStyle';
-import type { ArrowItem } from '@/types/whiteboard';
+import type { ArrowItem, LineItem } from '@/types/whiteboard';
 
 interface ArrowHandlesProps {
-  arrow: ArrowItem;
+  arrow: ArrowItem | LineItem;
   selectedHandleIndex: number | null;
   onHandleClick: (e: KonvaEventObject<MouseEvent>, index: number) => void;
+  onDragStart: (handleType: 'start' | 'end' | 'mid') => void;
   onStartDrag: (e: KonvaEventObject<DragEvent>) => void;
   onControlPointDrag: (
     pointIndex: number,
@@ -24,6 +25,7 @@ export default function ArrowHandles({
   arrow,
   selectedHandleIndex,
   onHandleClick,
+  onDragStart,
   onStartDrag,
   onControlPointDrag,
   onEndDrag,
@@ -52,6 +54,7 @@ export default function ArrowHandles({
         stroke="#0369A1"
         strokeWidth={2}
         draggable
+        onDragStart={() => onDragStart('start')}
         onDragMove={onStartDrag}
         onDragEnd={() => onDragEnd('start')}
         onClick={(e) => onHandleClick(e, 0)}
@@ -72,6 +75,7 @@ export default function ArrowHandles({
             stroke="#B8E6FE"
             strokeWidth={isHandleSelected ? 3 : 2}
             draggable
+            onDragStart={() => onDragStart('mid')}
             onDragMove={(e) => onControlPointDrag(point.index, e)}
             onDragEnd={() => onDragEnd('mid')}
             onClick={(e) => onHandleClick(e, point.index)}
@@ -90,6 +94,7 @@ export default function ArrowHandles({
         stroke="#0369A1"
         strokeWidth={2}
         draggable
+        onDragStart={() => onDragStart('end')}
         onDragMove={onEndDrag}
         onDragEnd={() => onDragEnd('end')}
         onClick={(e) => onHandleClick(e, points.length - 2)}

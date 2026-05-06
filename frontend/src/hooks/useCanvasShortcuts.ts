@@ -7,14 +7,10 @@ import { CursorMode } from '@/types/whiteboard/base';
 
 interface UseCanvasShortcutsProps {
   isArrowOrLineSelected: boolean;
-  selectedHandleIndex: number | null;
-  deleteControlPoint: () => boolean;
 }
 
 export const useCanvasShortcuts = ({
   isArrowOrLineSelected,
-  selectedHandleIndex,
-  deleteControlPoint,
 }: UseCanvasShortcutsProps) => {
   const selectedIds = useWhiteboardLocalStore((state) => state.selectedIds);
   const selectedId = selectedIds[0] ?? null;
@@ -24,7 +20,10 @@ export const useCanvasShortcuts = ({
   const clearSelection = useWhiteboardLocalStore(
     (state) => state.clearSelection,
   );
-  const { deleteItem, deleteItems } = useItemActions();
+  const selectedHandleIndex = useWhiteboardLocalStore(
+    (state) => state.selectedHandleIndex,
+  );
+  const { deleteItem, deleteItems, deleteArrowControlPoint } = useItemActions();
   const { undo, redo } = useWhiteboardHistory();
   const { copy, paste } = useWhiteboardClipboard();
 
@@ -112,7 +111,10 @@ export const useCanvasShortcuts = ({
           isArrowOrLineSelected &&
           selectedHandleIndex !== null
         ) {
-          const deleted = deleteControlPoint();
+          const deleted = deleteArrowControlPoint(
+            selectedId,
+            selectedHandleIndex,
+          );
           if (deleted) return;
         }
 
@@ -150,7 +152,7 @@ export const useCanvasShortcuts = ({
     deleteItems,
     isArrowOrLineSelected,
     selectedHandleIndex,
-    deleteControlPoint,
+    deleteArrowControlPoint,
     clearSelection,
     undo,
     redo,

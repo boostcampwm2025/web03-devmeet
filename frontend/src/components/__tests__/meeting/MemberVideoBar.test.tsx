@@ -2,9 +2,12 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { useMeetingStore } from '@/store/useMeetingStore';
 import { useMeetingSocketStore } from '@/store/useMeetingSocketStore';
 import { MeetingMemberInfo } from '@/types/meeting';
-import { getMembersPerPage } from '@/utils/meeting';
+import { getMembersPerPage, getVideoConsumerIds } from '@/utils/meeting';
+import { MemberProviderInfo } from '@/types/meeting';
 import { useWindowSize } from '@/hooks/useWindowSize';
 import MemberVideoBar from '@/components/meeting/MemberVideoBar';
+import { Socket } from 'socket.io-client';
+import { Device, Transport } from 'mediasoup-client/types';
 
 jest.mock('@/utils/meeting', () => ({
   getMembersPerPage: jest.fn(),
@@ -70,27 +73,66 @@ describe('<MemberVideoBar />', () => {
   });
 
   it('1페이지(6슬롯)에서는 MyVideo가 보이고, 나머지 5칸에 멤버들이 표시된다', () => {
+    const mockSocket = {
+      emitWithAck: jest.fn().mockResolvedValue({ consumerInfos: [] }),
+      emit: jest.fn(),
+      on: jest.fn(),
+      off: jest.fn(),
+    } as unknown as Socket;
+
+    const mockTransport = {
+      id: 'test-transport',
+    } as unknown as Transport;
+
+    const mockDevice = {
+      rtpCapabilities: {},
+    } as unknown as Device;
+
+    useMeetingSocketStore.setState({
+      socket: mockSocket,
+      recvTransport: mockTransport,
+      device: mockDevice,
+      consumers: {},
+      addConsumers: jest.fn(),
+    });
+
     // Given: 멤버 10명
     const members: Record<string, MeetingMemberInfo> = {};
     const orderedIds: string[] = [];
+    const producers: Record<
+      string,
+      { cam?: MemberProviderInfo | null; mic?: MemberProviderInfo | null }
+    > = {};
+
     for (let i = 1; i <= 10; i++) {
       const m = createMember(i);
       members[m.user_id] = m;
       orderedIds.push(m.user_id);
+      // also add dummy producer info to ensure it gets passed
+      producers[m.user_id] = { cam: null, mic: null };
     }
-    useMeetingStore.setState({ members, orderedMemberIds: orderedIds });
+
+    useMeetingStore.setState({
+      members,
+      orderedMemberIds: orderedIds,
+      memberProducers: producers,
+    });
 
     render(<MemberVideoBar />);
 
-    // Then
+    // Then layout should still be correct
     expect(screen.getByTestId('my-video')).toBeInTheDocument();
-
-    // 1페이지 멤버: 총 6슬롯 - MyVideo(1) = 5명
     const memberVideos = screen.getAllByTestId('member-video');
     expect(memberVideos).toHaveLength(5);
-
     expect(memberVideos[0]).toHaveTextContent('Member 1');
     expect(memberVideos[4]).toHaveTextContent('Member 5');
+
+    // getVideoConsumerIds should be called with producers map
+    expect(
+      (getVideoConsumerIds as jest.Mock).mock.calls.length,
+    ).toBeGreaterThan(0);
+    const firstArg = (getVideoConsumerIds as jest.Mock).mock.calls[0][0];
+    expect(firstArg).toBe(producers);
   });
 
   it('다음 버튼을 누르면 2페이지로 이동하고 MyVideo 없이 6명의 멤버가 표시된다', () => {

@@ -24,12 +24,14 @@ export default function MemberVideoBar() {
 
   const {
     members,
+    memberProducers,
     setMemberStream,
     removeMemberStream,
     orderedMemberIds,
     pinnedMemberIds,
     lastSpeakerId,
     moveToFront,
+    setMemberProducer,
   } = useMeetingStore();
 
   const { socket, recvTransport, device, addConsumers } =
@@ -111,7 +113,11 @@ export default function MemberVideoBar() {
         pauseConsumerIds,
         visibleStreamTracks,
         hiddenUserIds,
-      } = getVideoConsumerIds(members, targetStreamMembers, currentConsumers);
+      } = getVideoConsumerIds(
+        memberProducers,
+        targetStreamMembers,
+        currentConsumers,
+      );
 
       const allResumeIds = [...resumeConsumerIds];
 
@@ -138,11 +144,13 @@ export default function MemberVideoBar() {
         newConsumers.forEach(({ producerId, consumer }) => {
           allResumeIds.push(consumer.id);
 
-          const userId = Object.values(members).find(
-            (m) => m.cam?.provider_id === producerId,
-          )?.user_id;
+          const userEntry = Object.entries(memberProducers).find(
+            ([, prod]) => prod.cam?.provider_id === producerId,
+          );
+          const userId = userEntry ? userEntry[0] : undefined;
           if (userId) {
-            if (members[userId].cam?.is_paused) {
+            const isPaused = memberProducers[userId]?.cam?.is_paused;
+            if (isPaused) {
               removeMemberStream(userId, 'cam');
             } else {
               setMemberStream(userId, 'cam', new MediaStream([consumer.track]));
@@ -157,13 +165,15 @@ export default function MemberVideoBar() {
 
         allResumeIds.forEach((consumerId) => {
           const consumer = currentConsumers[consumerId];
-          const userId = Object.values(members).find(
-            (m) => m.cam?.provider_id === consumerId,
-          )?.user_id;
+          const userEntry = Object.entries(memberProducers).find(
+            ([, prod]) => prod.cam?.provider_id === consumerId,
+          );
+          const userId = userEntry ? userEntry[0] : undefined;
 
           if (consumer && userId) {
             // 생산자가 진짜로 pause한 상태라면 연결하지 않음
-            if (members[userId].cam?.is_paused) {
+            const isPaused = memberProducers[userId]?.cam?.is_paused;
+            if (isPaused) {
               removeMemberStream(userId, 'cam');
             } else {
               setMemberStream(userId, 'cam', new MediaStream([consumer.track]));
@@ -173,7 +183,8 @@ export default function MemberVideoBar() {
 
         // 이미 활성화되어 있던 트랙들도 확실하게 다시 세팅
         visibleStreamTracks.forEach(({ userId, track }) => {
-          if (members[userId].cam?.is_paused) removeMemberStream(userId, 'cam');
+          const isPaused = memberProducers[userId]?.cam?.is_paused;
+          if (isPaused) removeMemberStream(userId, 'cam');
           else setMemberStream(userId, 'cam', new MediaStream([track]));
         });
       }
@@ -191,7 +202,7 @@ export default function MemberVideoBar() {
     socket,
     recvTransport,
     device,
-    members,
+    memberProducers,
     setMemberStream,
     removeMemberStream,
     addConsumers,
@@ -223,6 +234,13 @@ export default function MemberVideoBar() {
     const onCameraProduced = async (producerInfo: ProducerInfo) => {
       const { user_id: userId, producer_id: producerId, type } = producerInfo;
 
+      setMemberProducer(userId, type as 'cam' | 'mic', {
+        provider_id: producerId,
+        kind: producerInfo.kind,
+        type: producerInfo.type as 'cam' | 'mic',
+        is_paused: producerInfo.is_paused ?? false,
+      });
+
       // 기존 컨슈머가 있는지 확인 (Resume 처리)
       const consumers = useMeetingSocketStore.getState().consumers;
       const existingConsumer = consumers[producerId];
@@ -251,6 +269,17 @@ export default function MemberVideoBar() {
     };
 
     const onAlertProduced = (producerInfo: ProducerInfo) => {
+      setMemberProducer(
+        producerInfo.user_id,
+        producerInfo.type as 'cam' | 'mic',
+        {
+          provider_id: producerInfo.producer_id,
+          kind: producerInfo.kind,
+          type: producerInfo.type as 'cam' | 'mic',
+          is_paused: producerInfo.is_paused,
+        },
+      );
+
       if (producerInfo.type === 'cam' && producerInfo.is_restart) {
         checkAndMoveToFront(producerInfo.user_id);
       }

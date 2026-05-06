@@ -1,21 +1,24 @@
-import {
-  INITIAL_MEDIA_STATE,
-  INITIAL_MEETING_INFO,
-  VISIBLE_COUNT,
-} from '@/constants/meeting';
+import { INITIAL_MEDIA_STATE, INITIAL_MEETING_INFO } from '@/constants/meeting';
 import {
   MediaState,
   MediaType,
   MeetingInfo,
   MeetingMemberInfo,
   MemberStream,
+  MemberProviderInfo,
 } from '@/types/meeting';
-import { reorderMembers } from '@/utils/meeting';
 import { create } from 'zustand';
 
 interface MeetingState {
   media: MediaState;
   members: Record<string, MeetingMemberInfo>;
+  memberProducers: Record<
+    string,
+    {
+      cam?: MemberProviderInfo | null;
+      mic?: MemberProviderInfo | null;
+    }
+  >;
   memberStreams: Record<string, MemberStream>;
   hasNewChat: boolean;
   screenSharer: { id: string; nickname: string } | null;
@@ -39,6 +42,11 @@ interface MeetingActions {
   setMembers: (members: MeetingMemberInfo[]) => void;
   addMember: (member: MeetingMemberInfo) => void;
   removeMember: (userId: string) => void;
+  setMemberProducer: (
+    userId: string,
+    type: 'cam' | 'mic',
+    info: MemberProviderInfo | null,
+  ) => void;
   setScreenSharer: (sharer: { id: string; nickname: string } | null) => void;
   setSpeaking: (
     userId: string,
@@ -78,6 +86,7 @@ interface MeetingActions {
 export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
   media: INITIAL_MEDIA_STATE,
   members: {},
+  memberProducers: {},
   memberStreams: {},
   hasNewChat: false,
   screenSharer: null,
@@ -104,9 +113,20 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
       );
       const newOrderedIds = members.map((m) => m.user_id);
 
+      const newProducersMap: Record<
+        string,
+        { cam?: MemberProviderInfo; mic?: MemberProviderInfo }
+      > = {};
+      members.forEach((m) => {
+        newProducersMap[m.user_id] = {};
+        if (m.cam) newProducersMap[m.user_id].cam = m.cam;
+        if (m.mic) newProducersMap[m.user_id].mic = m.mic;
+      });
+
       return {
         members: newMembersMap,
         orderedMemberIds: newOrderedIds,
+        memberProducers: newProducersMap,
       };
     }),
   addMember: (member) =>
@@ -115,10 +135,19 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
 
       const userId = member.user_id;
       const existingStream = state.memberStreams[member.user_id] || {};
+      const existingProducers = state.memberProducers[userId] || {};
 
       if (state.orderedMemberIds.includes(userId)) {
         return {
           members: { ...state.members, [userId]: member },
+          memberProducers: {
+            ...state.memberProducers,
+            [userId]: {
+              ...existingProducers,
+              cam: member.cam,
+              mic: member.mic,
+            },
+          },
         };
       }
 
@@ -137,6 +166,13 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
           ...state.members,
           [userId]: member,
         },
+        memberProducers: {
+          ...state.memberProducers,
+          [userId]: {
+            cam: member.cam,
+            mic: member.mic,
+          },
+        },
         memberStreams: {
           ...state.memberStreams,
           [userId]: existingStream,
@@ -152,15 +188,26 @@ export const useMeetingStore = create<MeetingState & MeetingActions>((set) => ({
       delete nextMemberStreams[userId];
       const nextSpeakingMembers = { ...state.speakingMembers };
       delete nextSpeakingMembers[userId];
+      const nextProducers = { ...state.memberProducers };
+      delete nextProducers[userId];
 
       return {
         members: nextMembers,
+        memberProducers: nextProducers,
         memberStreams: nextMemberStreams,
         speakingMembers: nextSpeakingMembers,
         orderedMemberIds: state.orderedMemberIds.filter((id) => id !== userId),
         pinnedMemberIds: state.pinnedMemberIds.filter((id) => id !== userId),
         lastSpeakerId:
           state.lastSpeakerId === userId ? null : state.lastSpeakerId,
+      };
+    }),
+  setMemberProducer: (userId, type, info) =>
+    set((state) => {
+      const existing = state.memberProducers[userId] || {};
+      const updated = { ...existing, [type]: info };
+      return {
+        memberProducers: { ...state.memberProducers, [userId]: updated },
       };
     }),
   setScreenSharer: (sharer) => set(() => ({ screenSharer: sharer })),

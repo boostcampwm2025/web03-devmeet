@@ -1,12 +1,20 @@
-import { ConsumerInfo, MeetingMemberInfo } from '@/types/meeting';
+import {
+  ConsumerInfo,
+  MeetingMemberInfo,
+  MemberProviderInfo,
+} from '@/types/meeting';
 import { Consumer, Transport } from 'mediasoup-client/types';
 
+export interface MemberProducers {
+  cam?: MemberProviderInfo | null;
+  mic?: MemberProviderInfo | null;
+}
+
 export const getVideoConsumerIds = (
-  members: Record<string, MeetingMemberInfo>,
+  producers: Record<string, MemberProducers>,
   visibleMembers: MeetingMemberInfo[],
   consumers: Record<string, Consumer>,
 ) => {
-  const allMembers = Object.values(members);
   const visibleIdsSet = new Set(visibleMembers.map((member) => member.user_id));
 
   const newVideoConsumers: string[] = [];
@@ -16,27 +24,21 @@ export const getVideoConsumerIds = (
   const visibleStreamTracks: { userId: string; track: MediaStreamTrack }[] = [];
   const hiddenUserIds: string[] = [];
 
-  allMembers.forEach((member) => {
-    const producerId = member.cam?.provider_id;
+  Object.entries(producers).forEach(([userId, prod]) => {
+    const producerId = prod.cam?.provider_id;
     if (!producerId) return;
 
     const consumer = consumers[producerId];
 
-    if (visibleIdsSet.has(member.user_id)) {
-      // 새로운 consume 대상
+    if (visibleIdsSet.has(userId)) {
       if (!consumer) {
         newVideoConsumers.push(producerId);
       } else {
-        // resume 대상 계산
         resumeConsumerIds.push(consumer.id);
-        visibleStreamTracks.push({
-          userId: member.user_id,
-          track: consumer.track,
-        });
+        visibleStreamTracks.push({ userId, track: consumer.track });
       }
     } else {
-      // pause 대상 계산
-      hiddenUserIds.push(member.user_id);
+      hiddenUserIds.push(userId);
       if (consumer) {
         pauseConsumerIds.push(consumer.id);
       }
@@ -53,16 +55,14 @@ export const getVideoConsumerIds = (
 };
 
 export const getAudioConsumerIds = (
-  members: Record<string, MeetingMemberInfo>,
+  producers: Record<string, MemberProducers>,
   consumers: Record<string, Consumer>,
 ) => {
-  const allMembers = Object.values(members);
   const newAudioConsumers: string[] = [];
 
-  allMembers.forEach((member) => {
-    const micId = member.mic?.provider_id;
+  Object.values(producers).forEach((prod) => {
+    const micId = prod.mic?.provider_id;
     if (!micId) return;
-
     if (!consumers[micId]) {
       newAudioConsumers.push(micId);
     }

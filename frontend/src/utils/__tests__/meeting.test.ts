@@ -1,9 +1,10 @@
 import { Consumer } from 'mediasoup-client/types';
-import { MeetingMemberInfo } from '@/types/meeting';
+import { MeetingMemberInfo, MemberProviderInfo } from '@/types/meeting';
 import {
   getAudioConsumerIds,
   getMembersPerPage,
   getVideoConsumerIds,
+  MemberProducers,
   reorderMembers,
 } from '@/utils/meeting';
 
@@ -73,11 +74,23 @@ describe('reorderMembers', () => {
 });
 
 describe('getVideoConsumerIds', () => {
-  const member = (id: string, camId?: string): MeetingMemberInfo =>
-    ({
-      user_id: id,
-      cam: camId ? { provider_id: camId } : undefined,
-    }) as MeetingMemberInfo;
+  const visible = (id: string): MeetingMemberInfo =>
+    ({ user_id: id }) as MeetingMemberInfo;
+  const producersFor = (
+    id: string,
+    camId?: string,
+  ): Record<string, MemberProducers> => {
+    const entry: Record<string, MemberProviderInfo> = {};
+    if (camId) {
+      entry.cam = {
+        provider_id: camId,
+        kind: 'video',
+        type: 'cam',
+        is_paused: false,
+      };
+    }
+    return { [id]: entry };
+  };
 
   const consumer = (id: string): Consumer =>
     ({
@@ -87,10 +100,8 @@ describe('getVideoConsumerIds', () => {
 
   it('visible 멤버 중 consumer가 없으면 newVideoConsumers에 포함된다', () => {
     const result = getVideoConsumerIds(
-      {
-        a: member('a', 'cam-a'),
-      },
-      [member('a', 'cam-a')],
+      producersFor('a', 'cam-a'),
+      [visible('a')],
       {},
     );
 
@@ -99,10 +110,8 @@ describe('getVideoConsumerIds', () => {
 
   it('visible 멤버의 consumer는 resume 대상이 된다', () => {
     const result = getVideoConsumerIds(
-      {
-        a: member('a', 'cam-a'),
-      },
-      [member('a', 'cam-a')],
+      producersFor('a', 'cam-a'),
+      [visible('a')],
       {
         'cam-a': consumer('consumer-a'),
       },
@@ -113,15 +122,9 @@ describe('getVideoConsumerIds', () => {
   });
 
   it('hidden 멤버의 consumer는 pause 대상이 된다', () => {
-    const result = getVideoConsumerIds(
-      {
-        a: member('a', 'cam-a'),
-      },
-      [],
-      {
-        'cam-a': consumer('consumer-a'),
-      },
-    );
+    const result = getVideoConsumerIds(producersFor('a', 'cam-a'), [], {
+      'cam-a': consumer('consumer-a'),
+    });
 
     expect(result.pauseConsumerIds).toEqual(['consumer-a']);
     expect(result.hiddenUserIds).toEqual(['a']);
@@ -129,17 +132,27 @@ describe('getVideoConsumerIds', () => {
 });
 
 describe('getAudioConsumerIds', () => {
-  const member = (id: string, micId?: string): MeetingMemberInfo =>
-    ({
-      user_id: id,
-      mic: micId ? { provider_id: micId } : undefined,
-    }) as MeetingMemberInfo;
+  const producersFor = (
+    id: string,
+    micId?: string,
+  ): Record<string, MemberProducers> => {
+    const entry: Record<string, MemberProviderInfo> = {};
+    if (micId) {
+      entry.mic = {
+        provider_id: micId,
+        kind: 'audio',
+        type: 'mic',
+        is_paused: false,
+      };
+    }
+    return { [id]: entry };
+  };
 
   it('consumer가 없는 mic만 newAudioConsumers에 포함된다', () => {
     const result = getAudioConsumerIds(
       {
-        a: member('a', 'mic-a'),
-        b: member('b', 'mic-b'),
+        ...producersFor('a', 'mic-a'),
+        ...producersFor('b', 'mic-b'),
       },
       {
         'mic-b': {} as Consumer,

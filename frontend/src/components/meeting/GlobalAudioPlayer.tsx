@@ -8,8 +8,12 @@ import { getAudioConsumerIds, getConsumerInstances } from '@/utils/meeting';
 import { useEffect, useRef } from 'react';
 
 export const GlobalAudioPlayer = () => {
-  const { members, memberStreams, setMemberStream, removeMemberStream } =
-    useMeetingStore();
+  const {
+    memberProducers,
+    memberStreams,
+    setMemberStream,
+    removeMemberStream,
+  } = useMeetingStore();
   const { socket, recvTransport, device, addConsumers } =
     useMeetingSocketStore();
 
@@ -25,7 +29,7 @@ export const GlobalAudioPlayer = () => {
 
       const currentConsumers = useMeetingSocketStore.getState().consumers;
       const { newAudioConsumers } = getAudioConsumerIds(
-        members,
+        memberProducers,
         currentConsumers,
       );
 
@@ -59,18 +63,16 @@ export const GlobalAudioPlayer = () => {
         addConsumers(newInstances);
 
         newInstances.forEach(({ producerId, consumer }) => {
-          const member = Object.values(members).find(
-            (m) => m.mic?.provider_id === producerId,
+          const entry = Object.entries(memberProducers).find(
+            ([, prod]) => prod.mic?.provider_id === producerId,
           );
-          if (member) {
-            if (!member.mic?.is_paused) {
-              setMemberStream(
-                member.user_id,
-                'mic',
-                new MediaStream([consumer.track]),
-              );
+          const userId = entry ? entry[0] : undefined;
+          if (userId) {
+            const isPaused = memberProducers[userId]?.mic?.is_paused;
+            if (!isPaused) {
+              setMemberStream(userId, 'mic', new MediaStream([consumer.track]));
             } else {
-              removeMemberStream(member.user_id, 'mic');
+              removeMemberStream(userId, 'mic');
             }
           }
         });
@@ -96,7 +98,7 @@ export const GlobalAudioPlayer = () => {
     return () => {
       isCancelled = true;
     };
-  }, [members, socket, recvTransport, device]);
+  }, [memberProducers, socket, recvTransport, device]);
 
   return (
     <div id="remote-audio-container" style={{ display: 'none' }}>

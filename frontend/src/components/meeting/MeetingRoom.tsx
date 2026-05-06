@@ -51,6 +51,7 @@ export default function MeetingRoom() {
     removeMemberStream,
     setIsOpen,
     setScreenSharer,
+    setMemberProducer,
   } = useMeetingStore();
   const { userId } = useUserStore();
 
@@ -262,7 +263,16 @@ export default function MeetingRoom() {
         nickname: producerNickname,
         is_paused: isPaused,
         producer_id: producerId,
+        kind,
       } = producerInfo;
+
+      // memberProducer 정보 업데이트
+      setMemberProducer(userId, producerType as 'cam' | 'mic', {
+        provider_id: producerId,
+        kind,
+        type: producerType as 'cam' | 'mic',
+        is_paused: isPaused,
+      });
 
       const existingConsumer =
         useMeetingSocketStore.getState().consumers[producerId];

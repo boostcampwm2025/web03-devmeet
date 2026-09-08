@@ -176,12 +176,47 @@ jobs:
           # caching 작업 - 모든 빌드단계 레이어 캐싱 즉 max를 설정해서 용량은 많이 쓰지만 성능은 높인다. 
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_TOOL_BACKEND_TEST_SERVER_IMG }}:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ vars.DOCKER_TOOL_BACKEND_TEST_SERVER_IMG }}:buildcache,mode=max
+  
   # frontend 테스트 진행
+  frontend-test:
+    name: frontend 테스트 진행
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout frontend
+        uses: actions/checkout@v5
+
+      - name: pnpm 사용을 위한 세팅
+        uses: pnpm/action-setup@v4
+        with: 
+          version: 10
+      
+      - name: nodejs 설정
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: "pnpm"
+          cache-dependency-path: ./frontend/pnpm-lock.yaml 
+
+      - name: frontend package 설치
+        working-directory: ./frontend
+        run: pnpm install --frozen-lockfile
+
+      # 프론트엔드 관련 환경변수 추가
+      - name: frontend 환경변수 파일 추가 
+        working-directory: ./frontend
+        run: echo "${{ secrets.NODE_FRONTEND_LOCAL_ENV }}" > .env
+      
+      # backend 단위 테스트 실행
+      - name: frontend 단위테스트 실행
+        working-directory: ./frontend
+        run: pnpm test
 
   # frontend 빌드
   frontend-build:
     name: Docker 프론트엔드 빌드
     runs-on: ubuntu-22.04
+    needs: frontend-test
 
     steps:
       - name: Checkout docker frontend

@@ -13,7 +13,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./nginx.frontend-gateway.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx.test-gateway.conf:/etc/nginx/conf.d/default.conf:ro
       - /etc/certbot/www:/var/www/certbot:rw
     depends_on:
       - frontend
